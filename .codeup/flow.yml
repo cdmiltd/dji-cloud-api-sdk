@@ -81,7 +81,7 @@ stages:
             step: JavaBuild
             with:
               jdkVersion: '21'
-              mavenVersion: '3.9.6'
+              mavenVersion: '3.9.3'
               run: |
                 TAG="${CI_COMMIT_REF_NAME}"
                 if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
