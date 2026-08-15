@@ -54,12 +54,16 @@ stages:
               run: |
                 git remote add github "https://oauth2:${GITHUB_TOKEN}@github.com/cdmiltd/dji-cloud-api-sdk.git"
 
+                # 获取触发 tag 名称（不依赖环境变量，从 git 提取）
+                TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+                echo "触发 tag: ${TAG}"
+
                 # 重试推送（国内访问 GitHub 不稳定）
                 MAX_RETRIES=3
                 RETRY_DELAY=15
                 for i in $(seq 1 ${MAX_RETRIES}); do
                   if git push github refs/remotes/origin/*:refs/heads/* --force && \
-                     git push github "refs/tags/${CI_COMMIT_REF_NAME}" --force; then
+                     git push github "refs/tags/${TAG}" --force; then
                     echo "GitHub 推送成功"
                     break
                   fi
@@ -81,8 +85,13 @@ stages:
             with:
               run: |
                 git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/alpeai/dji-cloud-api-sdk.git"
+
+                # 获取触发 tag 名称
+                TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+                echo "触发 tag: ${TAG}"
+
                 git push gitee refs/remotes/origin/*:refs/heads/* --force
-                git push gitee "refs/tags/${CI_COMMIT_REF_NAME}" --force
+                git push gitee "refs/tags/${TAG}" --force
                 git remote remove gitee
                 echo "Gitee 推送完成"
 
