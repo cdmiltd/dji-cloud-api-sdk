@@ -1,0 +1,22 @@
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Review / comparison artifacts (not part of SDK source)
+prerelease-review/
+sdk-review-round3/
+dji-cloud-api-doc-comparison/
+.trae-html-share-packages/
