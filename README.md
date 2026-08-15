@@ -43,6 +43,17 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 </dependency>
 ```
 
+### 直接下载 JAR
+
+非 Maven 项目可直接下载预构建 JAR（包含源码包）：
+
+| 平台 | 下载地址 |
+|---|---|
+| GitHub | [releases/latest](https://github.com/cdmiltd/dji-cloud-api-sdk/releases/latest) |
+| Gitee | [releases](https://gitee.com/alpeai/dji-cloud-api-sdk/releases) |
+
+> JAR 文件名格式：`dji-cloud-api-sdk-{version}.jar`，如 `dji-cloud-api-sdk-1.16.1.0.jar`
+
 ### 通用调用模式
 
 `MessageCodec` 提供三个对称入口，分别对应三类协议通道，调用方式完全一致（先提取消息类型 → switch 路由 → parse 反序列化为类型安全 POJO）：

@@ -1,7 +1,7 @@
 # =============================================================================
 # 云效 Flow 流水线 — DJI Cloud API SDK Release
 # =============================================================================
-# 用途：当 Codeup 仓库收到 v* 格式的 tag 推送时，自动将代码镜像到 GitHub 和
+# 用途：当 Codeup 仓库收到版本号格式的 tag 推送时，自动将代码镜像到 GitHub 和
 #       Gitee，打包源码（仅 src/、docs/、根目录文件），并在两平台创建 Release。
 #
 # 使用方式：
@@ -13,7 +13,7 @@
 #   4. 在「代码源」中配置 Codeup 服务连接，将 <service-connection-id> 替换为实际 ID
 #   5. 保存并运行
 #
-# 触发条件：推送 v* 格式的 tag（如 v1.16.1.0）
+# 触发条件：推送版本号格式的 tag（如 1.16.1.0）
 # =============================================================================
 
 # ==================== 流水线源 ====================
@@ -25,7 +25,6 @@ sources:
     branch: main
     triggerEvents:
       - tagPush                    # Tag 创建时触发
-    branchesFilter: 'v.*'          # 仅 v 开头的 tag 触发
     certificate:
       type: serviceConnection
       serviceConnection: <service-connection-id>  # 在 Flow 服务连接管理中创建后填入
@@ -77,16 +76,28 @@ stages:
         name: 打包源码并发布 Release
         runsOn: public/cn-beijing
         steps:
+          build:
+            name: Maven 构建 JAR
+            step: JavaBuild
+            with:
+              jdkVersion: '21'
+              mavenVersion: '3.9.6'
+              run: |
+                TAG="${CI_COMMIT_REF_NAME}"
+                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
+                  TAG=$(git describe --tags --abbrev=0)
+                fi
+                echo "构建版本: ${TAG}"
+                mvn versions:set -DnewVersion="${TAG}" -DgenerateBackupPoms=false
+                mvn -B clean package -DskipTests
+                echo "${TAG}" > /tmp/release_tag.txt
+
           package:
             name: 打包源码
             step: Command
             with:
               run: |
-                # 获取 tag 名称
-                TAG="${CI_COMMIT_REF_NAME}"
-                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
-                  TAG=$(git describe --tags --abbrev=0)
-                fi
+                TAG=$(cat /tmp/release_tag.txt)
                 echo "当前发布版本: ${TAG}"
 
                 # 打包（仅包含 src/、docs/ 和根目录文件）
@@ -99,11 +110,11 @@ stages:
                 zip -r "dji-cloud-api-sdk-${TAG}-src.zip" "${PKG_DIR}"
                 tar czf "dji-cloud-api-sdk-${TAG}-src.tar.gz" "${PKG_DIR}"
 
-                # 输出文件信息
-                ls -lh dji-cloud-api-sdk-${TAG}-src.*
+                # 复制 JAR 包
+                cp target/dji-cloud-api-sdk-${TAG}.jar .
 
-                # 保存 TAG 供后续步骤使用
-                echo "${TAG}" > /tmp/release_tag.txt
+                # 输出文件信息
+                ls -lh dji-cloud-api-sdk-${TAG}-src.* dji-cloud-api-sdk-${TAG}.jar
 
           github_release:
             name: 创建 GitHub Release
@@ -120,7 +131,7 @@ stages:
                   -d "{
                     \"tag_name\": \"${TAG}\",
                     \"name\": \"${TAG}\",
-                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n源码包包含 src/、docs/ 目录及根目录配置文件。\",
+                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n包含源码包（src/、docs/、根目录文件）和预构建 JAR。\",
                     \"generate_release_notes\": true
                   }")
                 echo "GitHub Release 创建结果: ${RELEASE_RESPONSE}"
@@ -149,6 +160,13 @@ stages:
                   -H "Content-Type: application/gzip" \
                   --data-binary "@dji-cloud-api-sdk-${TAG}-src.tar.gz"
 
+                # 上传 JAR 包
+                curl -s -X POST \
+                  "${UPLOAD_URL}?name=dji-cloud-api-sdk-${TAG}.jar" \
+                  -H "Authorization: token ${GITHUB_TOKEN}" \
+                  -H "Content-Type: application/java-archive" \
+                  --data-binary "@dji-cloud-api-sdk-${TAG}.jar"
+
                 echo "GitHub Release ${TAG} 发布完成"
 
           gitee_release:
@@ -166,7 +184,7 @@ stages:
                     \"access_token\": \"${GITEE_TOKEN}\",
                     \"tag_name\": \"${TAG}\",
                     \"name\": \"${TAG}\",
-                    \"body\": \"DJI Cloud API SDK ${TAG} 源码包\\n\\n包含 src/、docs/ 目录及根目录配置文件。\",
+                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n包含源码包（src/、docs/、根目录文件）和预构建 JAR。\",
                     \"target_commitish\": \"main\"
                   }")
                 RELEASE_ID=$(echo "${RESPONSE}" | jq -r '.id')
@@ -190,5 +208,12 @@ stages:
                   -H "Content-Type: multipart/form-data" \
                   -F "access_token=${GITEE_TOKEN}" \
                   -F "file=@dji-cloud-api-sdk-${TAG}-src.tar.gz"
+
+                # 上传 JAR 包
+                curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${RELEASE_ID}/attach_files" \
+                  -H "Content-Type: multipart/form-data" \
+                  -F "access_token=${GITEE_TOKEN}" \
+                  -F "file=@dji-cloud-api-sdk-${TAG}.jar"
 
                 echo "Gitee Release ${TAG} 发布完成"
