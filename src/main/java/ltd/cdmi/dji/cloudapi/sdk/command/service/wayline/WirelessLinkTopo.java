@@ -17,7 +17,6 @@ package ltd.cdmi.dji.cloudapi.sdk.command.service.wayline;
 import java.util.List;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
@@ -26,19 +25,15 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>对应 DJI Cloud API {@code flighttask_execute} 请求 data 中
  * {@code multi_dock_task.wireless_link_topo} 字段。
  *
- * <p><b>secretCode 字段</b>：simulator 仅记录 {@code secret_code.size()}，
- * 未明确字段类型（可能是 String 密钥或 Object 结构），本 POJO 用 String 兜底。
+ * <p><b>secretCode 字段</b>：DJI 文档定义为 {@code array<int>}，固定 28 元素，
+ * 从飞行器的设备属性中获取。
  *
  * @see MultiDockTask#wirelessLinkTopo()
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator WaylineTaskSimulator.parseMultiDockTask 已对接 hivemind 验证")
-@Inferred(
-    reason = "secret_code 字段类型 simulator 仅记录 size() 未明确类型，用 String 兜底",
-    verifyPoint = "DJI 文档确认 secret_code 是 String 密钥还是 Object 结构"
-)
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
+@Verified(basis = "DJI Dock3 wayline 文档 — secret_code 为 array<int>，固定 28 元素")
 public record WirelessLinkTopo(
-    String secretCode,
+    List<Integer> secretCode,
     CenterNode centerNode,
     List<LeafNode> leafNodes
 ) {}
