@@ -148,6 +148,18 @@ stages:
                     -s "$@"
                 }
 
+                # 幂等：删除已有 Release（重复触发不冲突）
+                EXISTING=$(gh_curl \
+                  "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases/tags/${TAG}" \
+                  -H "Authorization: token ${GITHUB_TOKEN}")
+                EXISTING_ID=$(echo "${EXISTING}" | jq -r '.id // empty')
+                if [ -n "${EXISTING_ID}" ] && [ "${EXISTING_ID}" != "null" ]; then
+                  echo "删除已有 GitHub Release (ID: ${EXISTING_ID})"
+                  gh_curl -X DELETE \
+                    "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases/${EXISTING_ID}" \
+                    -H "Authorization: token ${GITHUB_TOKEN}"
+                fi
+
                 # 创建 Release
                 RELEASE_RESPONSE=$(gh_curl -X POST \
                   "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases" \
@@ -205,6 +217,18 @@ stages:
             with:
               run: |
                 TAG=$(cat /tmp/release_tag.txt)
+
+                # 幂等：删除已有 Release（重复触发不冲突）
+                EXISTING=$(curl -s \
+                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")
+                EXISTING_ID=$(echo "${EXISTING}" | jq -r '.id // empty')
+                if [ -n "${EXISTING_ID}" ] && [ "${EXISTING_ID}" != "null" ]; then
+                  echo "删除已有 Gitee Release (ID: ${EXISTING_ID})"
+                  curl -s -X DELETE \
+                    "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${EXISTING_ID}" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"access_token\": \"${GITEE_TOKEN}\"}"
+                fi
 
                 # 创建 Release
                 RESPONSE=$(curl -s -X POST \
