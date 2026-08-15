@@ -59,7 +59,7 @@ stages:
                 RETRY_DELAY=15
                 for i in $(seq 1 ${MAX_RETRIES}); do
                   if git push github refs/remotes/origin/*:refs/heads/* --force && \
-                     git push github "${CI_COMMIT_REF}" --force; then
+                     git push github "refs/tags/${CI_COMMIT_REF_NAME}" --force; then
                     echo "GitHub 推送成功"
                     break
                   fi
@@ -82,7 +82,7 @@ stages:
               run: |
                 git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/alpeai/dji-cloud-api-sdk.git"
                 git push gitee refs/remotes/origin/*:refs/heads/* --force
-                git push gitee "${CI_COMMIT_REF}" --force
+                git push gitee "refs/tags/${CI_COMMIT_REF_NAME}" --force
                 git remote remove gitee
                 echo "Gitee 推送完成"
 
