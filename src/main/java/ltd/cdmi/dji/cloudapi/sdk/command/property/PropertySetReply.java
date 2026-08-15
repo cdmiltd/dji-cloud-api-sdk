@@ -16,6 +16,9 @@ package ltd.cdmi.dji.cloudapi.sdk.command.property;
 
 import java.util.Map;
 
+import com.fasterxml.jackson.annotation.JsonAnyGetter;
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
@@ -23,9 +26,12 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * property/set_reply 消息 data：属性设置回复。
  *
  * <p>property/set 通道（cloud-to-device）用于设置设备属性，设备回复每个属性的设置结果。
- * data 结构为属性名→{@link PropertySetResult} 的映射。
+ * data 结构为属性名→{@link PropertySetResult} 的扁平映射（无包裹键）。
  *
- * <p>示例：
+ * <p>JSON 序列化为扁平 map（{@code @JsonAnyGetter} 展开 properties 到顶层），
+ * 反序列化同理（{@code @JsonCreator(DELEGATING)} 将整个 JSON 对象作为 Map 传入）。
+ *
+ * <p>示例（DJI 协议 data）：
  * <pre>{@code
  * {
  *   "battery_store_mode": { "code": 0 },
@@ -41,4 +47,20 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 public record PropertySetReply(
         /** 属性名→设置结果的映射 */
         Map<String, PropertySetResult> properties
-) {}
+) {
+    /**
+     * 序列化时将 properties 展开为顶层属性（不包裹在 "properties" 键下）。
+     */
+    @JsonAnyGetter
+    public Map<String, PropertySetResult> properties() {
+        return properties;
+    }
+
+    /**
+     * 反序列化时将整个 JSON 对象作为 Map 传入（扁平 map → record）。
+     */
+    @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
+    public static PropertySetReply of(Map<String, PropertySetResult> properties) {
+        return new PropertySetReply(properties);
+    }
+}
