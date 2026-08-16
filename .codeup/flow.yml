@@ -17,8 +17,10 @@
 #   1. 进入云效 Flow → 新建流水线 → 选择「YAML 化编排」→ 空模板
 #   2. 将本文件内容粘贴到流水线「流程配置」中
 #   3. 在「变量和缓存 → 变量」中添加以下变量：
-#      - GITHUB_TOKEN: GitHub Personal Access Token（需 repo 权限，用于镜像推送）
-#      - GITEE_TOKEN:  Gitee 私人令牌（需 projects 权限，用于镜像推送）
+#      - GITHUB_TOKEN:    GitHub Personal Access Token（需 repo 权限，用于镜像推送）
+#      - GITEE_TOKEN:     Gitee 私人令牌（需 projects 权限，用于镜像推送）
+#      - MAVEN_REPO_USER: 云效 Maven 制品仓库用户名
+#      - MAVEN_REPO_PASS: 云效 Maven 制品仓库密码
 #   4. 在「代码源」中配置 Codeup 服务连接，将 <service-connection-id> 替换为实际 ID
 #   5. 保存并运行
 #
@@ -55,21 +57,49 @@ stages:
               jdkVersion: '21'
               mavenVersion: '3.9.3'
               run: |
+                set -e   # 任何命令失败立即退出
+
                 # 提取 tag：环境变量 → git describe → git tag 最新
                 TAG="${CI_COMMIT_REF_NAME:-}"
-                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
+                # 处理 refs/tags/ 前缀
+                TAG="${TAG#refs/tags/}"
+                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ] || [ "${TAG}" = "refs/heads/main" ]; then
                   TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
                 fi
                 if [ -z "${TAG}" ]; then
                   TAG=$(git tag --sort=-creatordate 2>/dev/null | head -1 || echo "")
                 fi
                 echo "构建版本: ${TAG}"
+                if [ -z "${TAG}" ]; then
+                  echo "::error::无法提取 tag 版本号"
+                  exit 1
+                fi
+
+                # 生成 settings.xml（制品仓库认证）
+                # 需要在 Flow 变量中配置 MAVEN_REPO_USER 和 MAVEN_REPO_PASS
+                cat > /tmp/settings.xml <<EOF
+                <?xml version="1.0" encoding="UTF-8"?>
+                <settings xmlns="http://maven.apache.org/SETTINGS/1.0.0"
+                          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.0.0 http://maven.apache.org/xsd/settings-1.0.0.xsd">
+                    <servers>
+                        <server>
+                            <id>2103345-snapshot-VnUPUJ</id>
+                            <username>\${MAVEN_REPO_USER}</username>
+                            <password>\${MAVEN_REPO_PASS}</password>
+                        </server>
+                    </servers>
+                </settings>
+                EOF
+                echo "已生成 settings.xml"
 
                 # 多模块版本号统一更新（父 pom + sdk + sdk-wayline）
-                mvn versions:set -DnewVersion="${TAG}" -DprocessAllModules=true -DgenerateBackupPoms=false
+                mvn -s /tmp/settings.xml versions:set -DnewVersion="${TAG}" -DprocessAllModules=true -DgenerateBackupPoms=false
+                echo "版本号已更新为 ${TAG}"
 
                 # 构建 + 发布到云效 Maven 制品仓库
-                mvn -B clean deploy -DskipTests
+                mvn -s /tmp/settings.xml -B clean deploy -DskipTests
+                echo "Maven 构建并 deploy 完成"
 
                 # 列出构建产物
                 echo "=== 构建产物 ==="
