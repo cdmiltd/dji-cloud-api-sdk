@@ -1,0 +1,164 @@
+# =============================================================================
+# Gitee Go — DJI Cloud API SDK Release（Gitee 侧：打包 + 创建 Release）
+# =============================================================================
+# 用途：当 Gitee 仓库收到版本号格式的 tag 推送时（通常由 Codeup 镜像推送触发），
+#       自动在 Gitee 侧独立执行 Maven 打包并创建 Gitee Release。
+#
+# 流程：
+#   1. Maven 多模块构建（使用 tag 作为版本号）
+#   2. 打包源码（zip + tar.gz）
+#   3. 创建 Gitee Release 并上传源码包 + 两个 JAR
+#
+# 多模块结构：
+#   - dji-cloud-api-sdk（协议定义层）
+#   - dji-cloud-api-sdk-wayline（航线工具层，依赖 sdk）
+#
+# 配置说明：
+#   1. 将本文件放在仓库根目录的 .workflow/ 目录下
+#   2. 在 Gitee 仓库 → 服务 → Gitee Go → 流水线变量中添加：
+#      - GITEE_TOKEN: Gitee 私人令牌（需 projects + releases 权限，用于调用 Gitee API 创建 Release）
+#   3. 触发条件：推送版本号格式的 tag（如 1.16.1.0）
+#
+# 注意：Gitee Go 的 YAML 语法可能随平台更新而变化，如本文件无法导入，
+#       请在 Gitee Go 网页端参考本配置手动创建流水线。
+# =============================================================================
+
+name: release
+displayName: '发布打包'
+
+# ==================== 触发条件 ====================
+triggers:
+  tagPush:
+    - matchType: REGULAR
+      tag: '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+'   # 仅版本号格式的 tag 触发
+
+# ==================== 流水线变量 ====================
+# 在 Gitee Go 流水线设置中配置以下变量：
+#   - GITEE_TOKEN: Gitee 私人令牌（用于调用 Gitee API 创建 Release）
+variables:
+  GITEE_OWNER: alpeai
+  GITEE_REPO: dji-cloud-api-sdk
+
+# ==================== 流水线阶段 ====================
+stages:
+  # -------------------- 阶段 1：构建 + 打包 --------------------
+  - stage:
+      name: build
+      displayName: '构建打包'
+      failFast: true
+      steps:
+        # --- 1.1 设置版本号 + Maven 构建 ---
+        - step: build@maven
+          name: maven-build
+          displayName: 'Maven 多模块构建'
+          inputs:
+            jdkVersion: '21'
+            mavenVersion: '3.9.3'
+            goals: 'versions:set -DnewVersion=${GITEE_TAG} -DprocessAllModules=true -DgenerateBackupPoms=false clean package -DskipTests'
+
+        # --- 1.2 打包源码 + 复制 JAR ---
+        - step: shell
+          name: package-source
+          displayName: '打包源码与 JAR'
+          inputs:
+            commands:
+              - |
+                TAG="${GITEE_TAG}"
+                echo "当前发布版本: ${TAG}"
+
+                # 打包（多模块结构：sdk/ + sdk-wayline/ + docs/ + 根目录文件）
+                PKG_DIR="dji-cloud-api-sdk-${TAG}"
+                mkdir -p "${PKG_DIR}"
+                cp -r sdk sdk-wayline docs "${PKG_DIR}/"
+                cp pom.xml README.md LICENSE AGENTS.md "${PKG_DIR}/"
+
+                # 生成 zip 和 tar.gz
+                zip -r "dji-cloud-api-sdk-${TAG}-src.zip" "${PKG_DIR}"
+                tar czf "dji-cloud-api-sdk-${TAG}-src.tar.gz" "${PKG_DIR}"
+
+                # 复制两个 JAR 包到工作目录
+                cp sdk/target/dji-cloud-api-sdk-${TAG}.jar .
+                cp sdk-wayline/target/dji-cloud-api-sdk-wayline-${TAG}.jar .
+
+                # 输出文件信息
+                echo "=== 发布产物 ==="
+                ls -lh dji-cloud-api-sdk-${TAG}-src.* dji-cloud-api-sdk-${TAG}.jar dji-cloud-api-sdk-wayline-${TAG}.jar
+
+  # -------------------- 阶段 2：创建 Gitee Release --------------------
+  - stage:
+      name: release
+      displayName: '创建 Gitee Release'
+      dependOn: build
+      failFast: true
+      steps:
+        - step: shell
+          name: create-release
+          displayName: '创建 Release 并上传资产'
+          inputs:
+            commands:
+              - |
+                TAG="${GITEE_TAG}"
+                OWNER="${GITEE_OWNER}"
+                REPO="${GITEE_REPO}"
+                echo "Gitee Release 版本: ${TAG}"
+
+                # 幂等：删除已有 Release
+                EXISTING=$(curl -s \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")
+                EXISTING_ID=$(echo "${EXISTING}" | jq -r '.id // empty')
+                if [ -n "${EXISTING_ID}" ] && [ "${EXISTING_ID}" != "null" ]; then
+                  echo "删除已有 Gitee Release (ID: ${EXISTING_ID})"
+                  curl -s -X DELETE \
+                    "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/${EXISTING_ID}" \
+                    -H "Content-Type: application/json" \
+                    -d "{\"access_token\": \"${GITEE_TOKEN}\"}"
+                fi
+
+                # 创建 Release
+                RESPONSE=$(curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases" \
+                  -H "Content-Type: application/json" \
+                  -d "{
+                    \"access_token\": \"${GITEE_TOKEN}\",
+                    \"tag_name\": \"${TAG}\",
+                    \"name\": \"${TAG}\",
+                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n多模块结构：\\n- dji-cloud-api-sdk（协议定义层）\\n- dji-cloud-api-sdk-wayline（航线工具层）\\n\\n包含源码包和预构建 JAR。\",
+                    \"target_commitish\": \"main\"
+                  }")
+                RELEASE_ID=$(echo "${RESPONSE}" | jq -r '.id')
+
+                if [ "${RELEASE_ID}" = "null" ] || [ -z "${RELEASE_ID}" ]; then
+                  echo "::error::Gitee Release 创建失败: ${RESPONSE}"
+                  exit 1
+                fi
+                echo "Gitee Release ID: ${RELEASE_ID}"
+
+                # 上传源码 zip 包
+                curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/attach_files" \
+                  -H "Content-Type: multipart/form-data" \
+                  -F "access_token=${GITEE_TOKEN}" \
+                  -F "file=@dji-cloud-api-sdk-${TAG}-src.zip"
+
+                # 上传源码 tar.gz 包
+                curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/attach_files" \
+                  -H "Content-Type: multipart/form-data" \
+                  -F "access_token=${GITEE_TOKEN}" \
+                  -F "file=@dji-cloud-api-sdk-${TAG}-src.tar.gz"
+
+                # 上传 sdk JAR 包
+                curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/attach_files" \
+                  -H "Content-Type: multipart/form-data" \
+                  -F "access_token=${GITEE_TOKEN}" \
+                  -F "file=@dji-cloud-api-sdk-${TAG}.jar"
+
+                # 上传 sdk-wayline JAR 包
+                curl -s -X POST \
+                  "https://gitee.com/api/v5/repos/${OWNER}/${REPO}/releases/${RELEASE_ID}/attach_files" \
+                  -H "Content-Type: multipart/form-data" \
+                  -F "access_token=${GITEE_TOKEN}" \
+                  -F "file=@dji-cloud-api-sdk-wayline-${TAG}.jar"
+
+                echo "Gitee Release ${TAG} 发布完成"

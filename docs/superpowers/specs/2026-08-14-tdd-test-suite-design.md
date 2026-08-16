@@ -47,7 +47,7 @@
 | `http` | 3 | HttpApiPath / HttpResponseEnvelope / StsCredentials |
 | `model` | 7 | DeviceModel / DroneModel / DockModel / DeviceCompatibility 等 |
 | `protocol`（含子包） | 18 | TopicChannel / ServiceMethod / RequestEnvelope / DjiErrorCode 等 |
-| `telemetry` | 5 | OsdField / StateField / DroneOsd / DockOsd / ControllerOsd |
+| `telemetry` | 5 | OsdField / StateField / DroneOsd / DockOsd / RcOsd |
 | `telemetry.enumtype` | 23 | Gear / DroneModeCode / CameraMode / DongleType / BatteryStoreMode 等 22 枚举 |
 | `websocket` | 8 | WsBizCode / WsPushMessage / DeviceOsdPushData 等 |
 
@@ -117,14 +117,14 @@ src/test/java/ltd/cdmi/dji/cloudapi/sdk/
 │   └── status/        UpdateTopoParseTest（待实现）
 ├── http/              HttpApiPathTest（待实现）
 ├── model/             DeviceDomainTest, DeviceModelTest, DroneModelTest, DockModelTest,
-│                      ControllerModelTest, DeviceCompatibilityTest
+│                      RcModelTest, DeviceCompatibilityTest
 ├── protocol/
 │   ├── topic/         TopicChannelTest, TopicDirectionTest, TopicTemplateTest, TopicBuilderTest
 │   ├── method/        StatusMethodTest, RequestsMethodTest, EventMethodTest, DrcMethodTest,
 │   │                  DrcUpMethodTest, ServiceMethodTest, PropertySetMethodTest
 │   ├── envelope/      RequestEnvelopeTest, ReplyEnvelopeTest, EventEnvelopeTest
 │   └── error/         DjiErrorCodeTest, ErrorInfoTest
-├── telemetry/         OsdFieldTest, StateFieldTest, DroneOsdTest, DockOsdTest, ControllerOsdTest
+├── telemetry/         OsdFieldTest, StateFieldTest, DroneOsdTest, DockOsdTest, RcOsdTest
 │   └── enumtype/      GearTest, DroneModeCodeTest, DockModeCodeTest, PositionStateTest,
 │                      DroneChargeStateTest, BatteryStoreModeTest, ModeCodeReasonTest,
 │                      CameraModeTest, DongleTypeTest, ThermalGainModeTest,
@@ -202,8 +202,8 @@ void shouldDeserializeSnakeCaseJson_whenToCamelCaseRecord() {
 
 | # | 位置 | 问题 | 严重度 | 处理 |
 |---|---|---|---|---|
-| 1 | `MessageCodec` | `ObjectMapper` 仅配 `FAIL_ON_UNKNOWN_PROPERTIES=false`，**未配 `PropertyNamingStrategy`**。DJI OSD/state JSON 字段为 snake_case（`mode_code`），而 `DroneOsd`/`DockOsd`/`ControllerOsd` record 字段为 camelCase（`modeCode`）。`fromJson(json, DroneOsd.class)` 时字段名不匹配，**所有字段为 null**。 | **关键 bug** | `@Disabled` 标红 + 用例文档登记 |
-| 3 | `DeviceCompatibility.isCompatible(ControllerModel, DroneModel)` | switch 表达式仅覆盖 `RC_PLUS`/`RC_PLUS_2`/`RC_PRO`，**未覆盖 `SMART_CONTROLLER_ENTERPRISE`**。传入该值触发 `IllegalStateException`（switch 表达式要求穷尽）。 | 重要 | `@Disabled` 标红 + 用例文档登记 |
+| 1 | `MessageCodec` | `ObjectMapper` 仅配 `FAIL_ON_UNKNOWN_PROPERTIES=false`，**未配 `PropertyNamingStrategy`**。DJI OSD/state JSON 字段为 snake_case（`mode_code`），而 `DroneOsd`/`DockOsd`/`RcOsd` record 字段为 camelCase（`modeCode`）。`fromJson(json, DroneOsd.class)` 时字段名不匹配，**所有字段为 null**。 | **关键 bug** | `@Disabled` 标红 + 用例文档登记 |
+| 3 | `DeviceCompatibility.isCompatible(RcModel, DroneModel)` | switch 表达式仅覆盖 `RC_PLUS`/`RC_PLUS_2`/`RC_PRO`，**未覆盖 `SMART_CONTROLLER_ENTERPRISE`**。传入该值触发 `IllegalStateException`（switch 表达式要求穷尽）。 | 重要 | `@Disabled` 标红 + 用例文档登记 |
 
 ### 8.2 已处理 — 测试锁定为绿/验证标注
 

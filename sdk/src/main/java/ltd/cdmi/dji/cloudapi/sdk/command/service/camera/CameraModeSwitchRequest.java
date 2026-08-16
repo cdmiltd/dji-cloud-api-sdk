@@ -1,0 +1,48 @@
+// Copyright (C) 2026 CDMI.LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ltd.cdmi.dji.cloudapi.sdk.command.service.camera;
+
+import java.util.Objects;
+
+import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
+import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.CameraMode;
+
+/**
+ * camera_mode_switch 指令请求 data。
+ *
+ * <p>切换相机工作模式。
+ *
+ * <p>Reply 使用 {@link NoOutputReply}（services_reply 仅返回 result=0，无 output 字段）。
+ *
+ * <p><b>类型化字段</b>：{@code camera_mode} 字段使用类型化枚举 {@link CameraMode}，
+ * 通过 Jackson {@code @JsonValue}/{@code @JsonCreator}（见枚举类）实现 DJI 协议 int 值
+ * 与枚举的双向绑定。未知值（如 M30 文档的 -1=不支持的模式）反序列化时会抛
+ * {@link IllegalArgumentException}，由 Jackson 包装为 {@code JsonMappingException}。
+ *
+ * @see CameraMode
+ */
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
+@Verified(basis = "simulator PayloadControlHandler 已对接 hivemind 验证")
+public record CameraModeSwitchRequest(
+    String payloadIndex,
+    /** 相机工作模式（类型化枚举，Jackson 自动绑定 int↔enum，见 {@link CameraMode}） */
+    CameraMode cameraMode
+) {
+    public CameraModeSwitchRequest {
+        Objects.requireNonNull(payloadIndex, "payloadIndex 必填，DJI JSON 缺失 payload_index 字段");
+        Objects.requireNonNull(cameraMode, "cameraMode 必填，DJI JSON 缺失 camera_mode 字段");
+    }
+}

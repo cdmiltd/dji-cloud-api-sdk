@@ -2,12 +2,12 @@
 
 ## 简介
 
-DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两个独立场景：机场上云（Dock ↔ 平台，MQTT 5 通道 services/drc/events/requests/status）与 Pilot 上云（Pilot ↔ 平台，HTTP + WebSocket），共 116 个方法、123 个 POJO。
+DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两个独立场景：机场上云（Dock ↔ 平台，MQTT 5 通道 services/drc/events/requests/status）与 Pilot 上云（Pilot ↔ 平台，HTTP + WebSocket），共 188 个方法、250 个 POJO。
 
 **为什么用这个 SDK？**
 
 - **编译期类型安全**——DJI JSON 字段名映射为 Java record 字段，拼写错误编译即报，不再运行时静默失败
-- **协议知识在 JAR 不在人脑**——116 个方法全部编码为类型安全的 record，IDE 自动补全即可发现全部能力，无需逐字阅读 DJI 文档
+- **协议知识在 JAR 不在人脑**——188 个方法全部编码为类型安全的 record，IDE 自动补全即可发现全部能力，无需逐字阅读 DJI 文档
 - **专人跟踪协议变更**——DJI 更新协议时由 SDK 维护者同步更新，消费方升级 JAR 即获取最新定义，无需自己盯文档
 - **100% 接口覆盖不随人员流动退化**——核心成员离职不会导致代码无人敢改、平台兼容性永久降级；协议知识固化在代码中，团队能力不依赖个人记忆
 - **协议权威解释，持续验证完善**——字段必填/选填、类型、回复结构等歧义由 SDK 一锤定音，消除团队内解读争议；当前已通过 simulator 对接 hivemind 平台验证（`@Verified` 标注），剩余推断项（`@Inferred`）标注待真机抓包确认，详见下方「验证状态说明」
@@ -35,10 +35,29 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 
 ### Maven 依赖
 
+自 v1.16.1.0 起拆分为两个模块，按需引入：
+
+**仅需协议定义**（services/drc/events/requests/status 指令 POJO + 遥测 + 设备型号）：
+
 ```xml
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk</artifactId>
+    <version>1.16.1.0</version>
+</dependency>
+```
+
+**需要航线文件生成/解析**（WPML 模板/Builder/Codec，额外引入）：
+
+```xml
+<dependency>
+    <groupId>ltd.cdmi</groupId>
+    <artifactId>dji-cloud-api-sdk</artifactId>
+    <version>1.16.1.0</version>
+</dependency>
+<dependency>
+    <groupId>ltd.cdmi</groupId>
+    <artifactId>dji-cloud-api-sdk-wayline</artifactId>
     <version>1.16.1.0</version>
 </dependency>
 ```
@@ -52,25 +71,25 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 | GitHub | [releases/latest](https://github.com/cdmiltd/dji-cloud-api-sdk/releases/latest) |
 | Gitee | [releases](https://gitee.com/alpeai/dji-cloud-api-sdk/releases) |
 
-> JAR 文件名格式：`dji-cloud-api-sdk-{version}.jar`，如 `dji-cloud-api-sdk-1.16.1.0.jar`
+> JAR 文件名格式：`dji-cloud-api-sdk-{version}.jar`（协议定义层）、`dji-cloud-api-sdk-wayline-{version}.jar`（航线工具层）
 
 ### 通用调用模式
 
-`MessageCodec` 提供三个对称入口，分别对应三类协议通道，调用方式完全一致（先提取消息类型 → switch 路由 → parse 反序列化为类型安全 POJO）：
+三个信封类提供对称入口，分别对应三类协议通道，调用方式完全一致（先提取消息类型 → switch 路由 → parse 反序列化为类型安全 POJO）：
 
 | 协议通道 | 提取消息类型 | 反序列化入口 | 适用场景 |
 |---|---|---|---|
-| MQTT | `extractMethod(payload)` | `parse(payload, Class)` | 机场上云（services/drc/events/requests/status 5 通道） |
-| WebSocket | `extractBizCode(payload)` | `parseWs(payload, Class)` | Pilot 上云推送（平台 → Pilot） |
-| HTTP | — | `parseHttp(body, Class)` | Pilot 上云请求（Pilot → 平台） |
+| MQTT | `DjiMessage.extractMethod(payload)` | `DjiMessage.parse(payload, Class)` | 机场上云（services/drc/events/requests/status 5 通道） |
+| WebSocket | `WsPushMessage.extractBizCode(payload)` | `WsPushMessage.parse(payload, Class)` | Pilot 上云推送（平台 → Pilot） |
+| HTTP | — | `HttpResponseEnvelope.parse(body, Class)` | Pilot 上云请求（Pilot → 平台） |
 
 **机场上云（MQTT）示例**：5 个 MQTT 通道信封结构一致 `{method, tid, bid?, data}`，用 `switch + parse` 模式，每个 case 1 行 `parse`，其余是类型安全业务代码：
 
 ```java
-String method = MessageCodec.extractMethod(payload);
+String method = DjiMessage.extractMethod(payload);
 switch (method) {
     case "fly_to_point" -> {
-        var msg = MessageCodec.parse(payload, FlyToPointRequest.class);
+        var msg = DjiMessage.parse(payload, FlyToPointRequest.class);
         msg.data().flyToId();          // 编译期类型安全，无需 cast
         String reply = MessageCodec.toJson(new NoOutputReply());
         sendReply(msg.tid(), reply);   // 发到 thing/product/{sn}/services_reply
@@ -82,7 +101,7 @@ switch (method) {
 **事件通道**同样使用 `parse`，回复用 `events_reply`：
 
 ```java
-var msg = MessageCodec.parse(payload, FlighttaskProgressData.class);
+var msg = DjiMessage.parse(payload, FlighttaskProgressData.class);
 msg.data().output().status();          // 编译期类型安全
 sendEventReply(msg.tid(), 0);           // tid 与原始 event 一致
 ```
@@ -98,26 +117,26 @@ sendEventReply(msg.tid(), 0);           // tid 与原始 event 一致
 ```java
 // 注册流程：config → airport_bind_status → airport_organization_get → airport_organization_bind
 case "config" -> {
-    var msg = MessageCodec.parse(payload, ConfigRequest.class);
+    var msg = DjiMessage.parse(payload, ConfigRequest.class);
     msg.data().appId();
     var reply = new ConfigReply(0, msg.data().appId(), "mqtt-host", 2, ...);
     sendReply(msg.tid(), MessageCodec.toJson(reply));
 }
 case "airport_bind_status" -> {
-    var msg = MessageCodec.parse(payload, AirportBindStatusRequest.class);
+    var msg = DjiMessage.parse(payload, AirportBindStatusRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new AirportBindStatusReply(0, 1)));
 }
 case "airport_organization_get" -> {
-    var msg = MessageCodec.parse(payload, AirportOrganizationGetRequest.class);
+    var msg = DjiMessage.parse(payload, AirportOrganizationGetRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new AirportOrganizationGetReply(0, ...)));
 }
 case "airport_organization_bind" -> {
-    var msg = MessageCodec.parse(payload, AirportOrganizationBindRequest.class);
+    var msg = DjiMessage.parse(payload, AirportOrganizationBindRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new AirportOrganizationBindReply(0)));
 }
 
 // 上线拓扑：设备主动上报 update_topo（status 通道）
-var topo = MessageCodec.parse(payload, UpdateTopoData.class);
+var topo = DjiMessage.parse(payload, UpdateTopoData.class);
 topo.data().subDevice();  // 子设备列表（含 domain/type/sub_type）
 ```
 
@@ -129,39 +148,39 @@ topo.data().subDevice();  // 子设备列表（含 domain/type/sub_type）
 
 ```java
 case "flighttask_prepare" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskPrepareRequest.class);
+    var msg = DjiMessage.parse(payload, FlighttaskPrepareRequest.class);
     msg.data().flightId();              // 航线 ID
     msg.data().executableConditions();   // 执行条件
     sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskPrepareReply(0, "output-url")));
 }
 case "flighttask_execute" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskExecuteRequest.class);
+    var msg = DjiMessage.parse(payload, FlighttaskExecuteRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskExecuteReply(0)));
 }
 case "flighttask_stop" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskStopRequest.class);
+    var msg = DjiMessage.parse(payload, FlighttaskStopRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "flighttask_undo" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskUndoRequest.class);
+    var msg = DjiMessage.parse(payload, FlighttaskUndoRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 
 // 航线进度事件（events 通道）
 case "flighttask_progress" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskProgressData.class);
+    var msg = DjiMessage.parse(payload, FlighttaskProgressData.class);
     msg.data().output().status();       // executing / success / failed
     msg.data().ext().currentWaypointIndex();
     sendEventReply(msg.tid(), 0);
 }
 case "flighttask_ready" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskReadyData.class);
+    var msg = DjiMessage.parse(payload, FlighttaskReadyData.class);
     sendEventReply(msg.tid(), 0);
 }
 
 // 查询进度（requests 通道）
 case "flighttask_progress_get" -> {
-    var msg = MessageCodec.parse(payload, FlighttaskProgressGetRequest.class);
+    var msg = DjiMessage.parse(payload, FlighttaskProgressGetRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskProgressGetReply(0, ...)));
 }
 ```
@@ -174,7 +193,7 @@ case "flighttask_progress_get" -> {
 
 ```java
 case "fly_to_point" -> {
-    var msg = MessageCodec.parse(payload, FlyToPointRequest.class);
+    var msg = DjiMessage.parse(payload, FlyToPointRequest.class);
     msg.data().flyToId();
     msg.data().points().get(0).height();   // DJI 协议用 points 数组
     msg.data().maxSpeed();
@@ -182,30 +201,30 @@ case "fly_to_point" -> {
     // 异步：延迟发 fly_to_point_progress 事件
 }
 case "fly_to_point_update" -> {
-    var msg = MessageCodec.parse(payload, FlyToPointUpdateRequest.class);
+    var msg = DjiMessage.parse(payload, FlyToPointUpdateRequest.class);
     msg.data().maxSpeed();              // 更新最大速度
     msg.data().points().get(0).latitude();  // 更新目标点纬度
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "takeoff_to_point" -> {
-    var msg = MessageCodec.parse(payload, TakeoffToPointRequest.class);
+    var msg = DjiMessage.parse(payload, TakeoffToPointRequest.class);
     // services_reply 仅含 result=0，无 output 字段
     // track_id 是设备内部状态（simulator 生成），不下发回平台
     sendReply(msg.tid(), MessageCodec.toJson(new TakeoffToPointReply()));
 }
 case "flight_authority_grab" -> {
-    var msg = MessageCodec.parse(payload, PayloadAuthorityGrabRequest.class);
+    var msg = DjiMessage.parse(payload, PayloadAuthorityGrabRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 
 // 飞行进度事件
 case "fly_to_point_progress" -> {
-    var msg = MessageCodec.parse(payload, FlyToPointProgressData.class);
+    var msg = DjiMessage.parse(payload, FlyToPointProgressData.class);
     msg.data().status();                // in_progress / success / failed
     sendEventReply(msg.tid(), 0);
 }
 case "takeoff_to_point_progress" -> {
-    var msg = MessageCodec.parse(payload, TakeoffToPointProgressData.class);
+    var msg = DjiMessage.parse(payload, TakeoffToPointProgressData.class);
     msg.data().status();
     sendEventReply(msg.tid(), 0);
 }
@@ -220,7 +239,7 @@ case "takeoff_to_point_progress" -> {
 ```java
 // 进入 DRC 模式（services 通道）
 case "drc_mode_enter" -> {
-    var msg = MessageCodec.parse(payload, DrcModeEnterRequest.class);
+    var msg = DjiMessage.parse(payload, DrcModeEnterRequest.class);
     // DJI 协议：mqtt_broker 是平台下发给设备的 DRC 专用连接信息（Request 字段）
     // services_reply output 仅含 result=0，无 output 字段
     // 设备解析 Request 中的 mqtt_broker 后建立专用连接，不通过 Reply 回传 broker
@@ -230,7 +249,7 @@ case "drc_mode_enter" -> {
 // DRC 通道消息（topic: thing/product/{sn}/drc/up）
 // 注意：DRC 回复格式与 services_reply 不同，data 直接是 {result}
 case "stick_control" -> {
-    var msg = MessageCodec.parse(payload, StickControlRequest.class);
+    var msg = DjiMessage.parse(payload, StickControlRequest.class);
     msg.data().roll();      // 横滚
     msg.data().pitch();     // 俯仰
     msg.data().throttle();  // 油门
@@ -238,7 +257,7 @@ case "stick_control" -> {
     // 无回包（stick_control 不需要回复）
 }
 case "heart_beat" -> {
-    var msg = MessageCodec.parse(payload, HeartBeatRequest.class);
+    var msg = DjiMessage.parse(payload, HeartBeatRequest.class);
     msg.data().timestamp();
     // 回包：HeartBeatReply（回显 timestamp）
     sendDrcReply(MessageCodec.toJson(new HeartBeatReply(msg.data().timestamp())));
@@ -257,29 +276,29 @@ case "drc_force_landing" -> {
 
 ```java
 case "camera_photo_take" -> {
-    var msg = MessageCodec.parse(payload, CameraPhotoTakeRequest.class);
+    var msg = DjiMessage.parse(payload, CameraPhotoTakeRequest.class);
     msg.data().payloadIndex();          // 负载索引
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "camera_aim" -> {
-    var msg = MessageCodec.parse(payload, CameraAimRequest.class);
+    var msg = DjiMessage.parse(payload, CameraAimRequest.class);
     msg.data().pitch();                // 云台俯仰角
     msg.data().yaw();                  // 云台偏航角
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "camera_focal_length_set" -> {
-    var msg = MessageCodec.parse(payload, CameraFocalLengthSetRequest.class);
+    var msg = DjiMessage.parse(payload, CameraFocalLengthSetRequest.class);
     msg.data().focalLength();
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "camera_exposure_mode_set" -> {
-    var msg = MessageCodec.parse(payload, CameraExposureModeSetRequest.class);
+    var msg = DjiMessage.parse(payload, CameraExposureModeSetRequest.class);
     msg.data().exposureMode();
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 // cover_open / cover_close / putter_open / putter_close 等无参数方法：
 case "cover_open" -> {
-    var msg = MessageCodec.parse(payload, NoParameterRequest.class);
+    var msg = DjiMessage.parse(payload, NoParameterRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 ```
@@ -292,27 +311,27 @@ case "cover_open" -> {
 
 ```java
 case "live_start_push" -> {
-    var msg = MessageCodec.parse(payload, LiveStartPushRequest.class);
+    var msg = DjiMessage.parse(payload, LiveStartPushRequest.class);
     msg.data().url();                  // RTMP/RTSP 推流地址
     msg.data().videoIndex();           // 视频流索引
     sendReply(msg.tid(), MessageCodec.toJson(new LiveStartPushReply(0)));
 }
 case "live_stop_push" -> {
-    var msg = MessageCodec.parse(payload, LiveStopPushRequest.class);
+    var msg = DjiMessage.parse(payload, LiveStopPushRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "live_set_quality" -> {
-    var msg = MessageCodec.parse(payload, LiveSetQualityRequest.class);
+    var msg = DjiMessage.parse(payload, LiveSetQualityRequest.class);
     msg.data().quality();              // 0=smooth, 1=SD, 2=HD, 3=superHD
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "live_lens_change" -> {
-    var msg = MessageCodec.parse(payload, LiveLensChangeRequest.class);
+    var msg = DjiMessage.parse(payload, LiveLensChangeRequest.class);
     msg.data().lens();                 // 镜头类型
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 case "live_camera_change" -> {
-    var msg = MessageCodec.parse(payload, LiveCameraChangeRequest.class);
+    var msg = DjiMessage.parse(payload, LiveCameraChangeRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 ```
@@ -326,26 +345,26 @@ case "live_camera_change" -> {
 ```java
 // 调整媒体上传优先级（services 通道）
 case "upload_flighttask_media_prioritize" -> {
-    var msg = MessageCodec.parse(payload, UploadFlighttaskMediaPrioritizeRequest.class);
+    var msg = DjiMessage.parse(payload, UploadFlighttaskMediaPrioritizeRequest.class);
     msg.data().flightId();             // 优先上传的飞行任务 ID
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 
 // 获取 STS 临时凭证（requests 通道）
 case "storage_config_get" -> {
-    var msg = MessageCodec.parse(payload, StorageConfigGetRequest.class);
+    var msg = DjiMessage.parse(payload, StorageConfigGetRequest.class);
     var reply = new StorageConfigGetReply(0, "bucket", "endpoint", "object-key-prefix/", credentials);
     sendReply(msg.tid(), MessageCodec.toJson(reply));
 }
 
 // 媒体上传回调（events 通道）
 case "file_upload_callback" -> {
-    var msg = MessageCodec.parse(payload, FileUploadCallbackData.class);
+    var msg = DjiMessage.parse(payload, FileUploadCallbackData.class);
     msg.data().file().objectKey();     // S3 对象键
     sendEventReply(msg.tid(), 0);
 }
 case "highest_priority_upload_flighttask_media" -> {
-    var msg = MessageCodec.parse(payload, HighestPriorityUploadFlighttaskMediaData.class);
+    var msg = DjiMessage.parse(payload, HighestPriorityUploadFlighttaskMediaData.class);
     msg.data().flightId();
     sendEventReply(msg.tid(), 0);
 }
@@ -359,16 +378,16 @@ case "highest_priority_upload_flighttask_media" -> {
 
 ```java
 case "flight_areas_get" -> {
-    var msg = MessageCodec.parse(payload, FlightAreasGetRequest.class);
+    var msg = DjiMessage.parse(payload, FlightAreasGetRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new FlightAreasGetReply(0, List.of())));
 }
 case "flight_areas_drone_location" -> {
-    var msg = MessageCodec.parse(payload, FlightAreasDroneLocationData.class);
+    var msg = DjiMessage.parse(payload, FlightAreasDroneLocationData.class);
     msg.data().areaId();               // 命中的飞行区 ID
     sendEventReply(msg.tid(), 0);
 }
 case "flight_areas_sync_progress" -> {
-    var msg = MessageCodec.parse(payload, FlightAreasSyncProgressData.class);
+    var msg = DjiMessage.parse(payload, FlightAreasSyncProgressData.class);
     msg.data().progress();
     sendEventReply(msg.tid(), 0);
 }
@@ -401,7 +420,7 @@ droneOsd.height();        // 高度（相对起飞点）
 
 ```java
 case "hms" -> {
-    var msg = MessageCodec.parse(payload, HmsData.class);
+    var msg = DjiMessage.parse(payload, HmsData.class);
     msg.data().list().forEach(hms -> {
         hms.code();        // HMS 错误码（参见 DjiErrorCode）
         hms.level();       // 1=warning, 2=error, 3=critical
@@ -412,7 +431,7 @@ case "hms" -> {
 
 // AirSense 避障告警（data 是数组，SDK 自动反序列化）
 case "airsense_warning" -> {
-    var msg = MessageCodec.parse(payload, AirSenseWarningData.class);
+    var msg = DjiMessage.parse(payload, AirSenseWarningData.class);
     msg.data().alerts().forEach(alert -> {
         alert.icaoAddress();  // ADS-B 目标地址
         alert.relativeLatitude();
@@ -429,22 +448,22 @@ case "airsense_warning" -> {
 
 ```java
 case "ota_progress" -> {
-    var msg = MessageCodec.parse(payload, OtaProgressData.class);
+    var msg = DjiMessage.parse(payload, OtaProgressData.class);
     msg.data().progress();            // 0-100
     sendEventReply(msg.tid(), 0);
 }
 case "fileupload_progress" -> {
-    var msg = MessageCodec.parse(payload, FileuploadProgressData.class);
+    var msg = DjiMessage.parse(payload, FileUploadProgressData.class);
     msg.data().progress();
     sendEventReply(msg.tid(), 0);
 }
 case "ota_create" -> {
-    var msg = MessageCodec.parse(payload, NoParameterRequest.class);
+    var msg = DjiMessage.parse(payload, NoParameterRequest.class);
     sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
 }
 ```
 
-**涉及 SDK 类**：`OtaProgressData`、`FileuploadProgressData`、`NoParameterRequest`（无参方法共用）
+**涉及 SDK 类**：`OtaProgressData`、`FileUploadProgressData`、`NoParameterRequest`（无参方法共用）
 
 ### 12. 喊话器与补光灯（DRC 子类）
 
@@ -453,31 +472,31 @@ case "ota_create" -> {
 ```java
 // 喊话器
 case "drc_speaker_tts_set" -> {
-    var msg = MessageCodec.parse(payload, DrcSpeakerTtsSetRequest.class);
+    var msg = DjiMessage.parse(payload, DrcSpeakerTtsSetRequest.class);
     msg.data().text();               // 播报文本
     sendDrcReply(MessageCodec.toJson(new DrcResultReply(0)));
 }
 case "drc_speaker_play_volume_set" -> {
-    var msg = MessageCodec.parse(payload, DrcSpeakerPlayVolumeSetRequest.class);
+    var msg = DjiMessage.parse(payload, DrcSpeakerPlayVolumeSetRequest.class);
     msg.data().volume();
     sendDrcReply(MessageCodec.toJson(new DrcResultReply(0)));
 }
 
 // 补光灯
 case "drc_light_brightness_set" -> {
-    var msg = MessageCodec.parse(payload, DrcLightBrightnessSetRequest.class);
+    var msg = DjiMessage.parse(payload, DrcLightBrightnessSetRequest.class);
     msg.data().brightness();
     sendDrcReply(MessageCodec.toJson(new DrcResultReply(0)));
 }
 case "drc_light_mode_set" -> {
-    var msg = MessageCodec.parse(payload, DrcLightModeSetRequest.class);
+    var msg = DjiMessage.parse(payload, DrcLightModeSetRequest.class);
     msg.data().mode();
     sendDrcReply(MessageCodec.toJson(new DrcResultReply(0)));
 }
 
 // 喊话器播放进度（events 通道）
 case "speaker_tts_play_start_progress" -> {
-    var msg = MessageCodec.parse(payload, SpeakerTtsPlayStartProgressData.class);
+    var msg = DjiMessage.parse(payload, SpeakerTtsPlayStartProgressData.class);
     msg.data().output().status();
     sendEventReply(msg.tid(), 0);
 }
@@ -501,12 +520,12 @@ String path = HttpApiPath.WAYLINE_URL
 HttpResponse resp = httpClient.get(server + path);
 ```
 
-**STS 凭证**：上传媒体/航线文件前，先调 `HttpApiPath.STS` 获取临时凭证，再用凭证向对象存储上传文件。DJI HTTP API 响应统一信封为 `{"code":0,"message":"...","data":{...}}`，用 `MessageCodec.parseHttp` 一步完成信封解析 + `data` 反序列化为类型安全 POJO——与 MQTT 通道的 `parse` 和 WebSocket 通道的 `parseWs` 对称。**不要**用 `fromJson` 直接反序列化响应体（业务数据在 `data` 内层，`fromJson` 会把 `code`/`message`/`data` 当顶层字段，导致 POJO 字段全 null）。
+**STS 凭证**：上传媒体/航线文件前，先调 `HttpApiPath.STS` 获取临时凭证，再用凭证向对象存储上传文件。DJI HTTP API 响应统一信封为 `{"code":0,"message":"...","data":{...}}`，用 `HttpResponseEnvelope.parse` 一步完成信封解析 + `data` 反序列化为类型安全 POJO——与 MQTT 通道的 `parse` 和 WebSocket 通道的 `parse` 对称。**不要**用 `fromJson` 直接反序列化响应体（业务数据在 `data` 内层，`fromJson` 会把 `code`/`message`/`data` 当顶层字段，导致 POJO 字段全 null）。
 
 ```java
 String path = HttpApiPath.STS.replace("{workspace_id}", workspaceId);
 HttpResponse resp = httpClient.post(server + path, body);
-var envelope = MessageCodec.parseHttp(resp.body(), StsCredentials.class);
+var envelope = HttpResponseEnvelope.parse(resp.body(), StsCredentials.class);
 if (envelope.code() == 0) {
     envelope.data().bucket();           // 对象存储桶名
     envelope.data().objectKeyPrefix();  // 上传 key 前缀（拼到文件名前）
@@ -518,28 +537,28 @@ if (envelope.code() == 0) {
 
 ### WebSocket 推送（平台 → Pilot）
 
-用 `MessageCodec.extractBizCode` 提取消息类型，再按 `WsBizCode` 路由，每个 case 调 `MessageCodec.parseWs` 一步完成信封解析 + `data` 反序列化为类型安全 POJO——与 MQTT 通道的 `extractMethod` + `parse` 模式完全对称。
+用 `WsPushMessage.extractBizCode` 提取消息类型，再按 `WsBizCode` 路由，每个 case 调 `WsPushMessage.parse` 一步完成信封解析 + `data` 反序列化为类型安全 POJO——与 MQTT 通道的 `extractMethod` + `parse` 模式完全对称。
 
 ```java
 void onWsMessage(String payload) {
-    String bizCode = MessageCodec.extractBizCode(payload);
+    String bizCode = WsPushMessage.extractBizCode(payload);
     switch (WsBizCode.fromCode(bizCode).orElse(null)) {
         case DEVICE_OSD -> {
-            var msg = MessageCodec.parseWs(payload, DeviceOsdPushData.class);
+            var msg = WsPushMessage.parse(payload, DeviceOsdPushData.class);
             msg.data().host().latitude();   // 类型安全，无 cast，无 instanceof
         }
         case DEVICE_ONLINE, DEVICE_OFFLINE, DEVICE_UPDATE_TOPO -> {
-            var msg = MessageCodec.parseWs(payload, WsEmptyData.class);
+            var msg = WsPushMessage.parse(payload, WsEmptyData.class);
             // 触发 HTTP 拓扑刷新
             String path = HttpApiPath.DEVICES_TOPOLOGIES.replace("{workspace_id}", workspaceId);
             httpClient.get(server + path);
         }
         case MAP_ELEMENT_CREATE, MAP_ELEMENT_UPDATE, MAP_ELEMENT_DELETE -> {
-            var msg = MessageCodec.parseWs(payload, MapElementPushData.class);
+            var msg = WsPushMessage.parse(payload, MapElementPushData.class);
             // msg.data() 类型安全访问地图元素
         }
         case MAP_GROUP_REFRESH -> {
-            var msg = MessageCodec.parseWs(payload, MapGroupRefreshData.class);
+            var msg = WsPushMessage.parse(payload, MapGroupRefreshData.class);
             // msg.data().ids() → 按 group_id 调 HTTP 拉取元素列表
         }
         case null -> log.warn("未知 biz_code: {}", bizCode);
@@ -551,7 +570,7 @@ void onWsMessage(String payload) {
 
 ### 涉及 SDK 类
 
-`HttpApiPath`（5 业务域 14 个端点）、`HttpResponseEnvelope<T>`、`StsCredentials`、`WsBizCode`（8 个：地图元素 4 + 态势感知 4）、`WsPushMessage<T>`、`MessageCodec.parseHttp`/`parseWs`/`extractBizCode`、推送 data POJO（`DeviceOsdPushData`、`MapElementPushData`、`MapGroupRefreshData`、`WsEmptyData`）
+`HttpApiPath`（5 业务域 14 个端点）、`HttpResponseEnvelope<T>`、`StsCredentials`、`WsBizCode`（8 个：地图元素 4 + 态势感知 4）、`WsPushMessage<T>`、`HttpResponseEnvelope.parse`/`WsPushMessage.parse`/`WsPushMessage.extractBizCode`、推送 data POJO（`DeviceOsdPushData`、`MapElementPushData`、`MapGroupRefreshData`、`WsEmptyData`）
 
 ### HTTP 端点按业务域
 
@@ -870,7 +889,7 @@ DJI 协议错误码为 6 位数字（如 `314001`），裸数字无法理解含�
 
 ```java
 // services_reply 返回 result=314001，查表获取官方描述
-var msg = MessageCodec.parse(payload, FlighttaskPrepareReply.class);
+var msg = DjiMessage.parse(payload, FlighttaskPrepareReply.class);
 int result = msg.data().result();
 
 DjiErrorCode.describe(result).ifPresentOrElse(
@@ -896,7 +915,7 @@ if (result == DjiErrorCode.DEVICE_FIRMWARE_UPDATING) {
 
 ```java
 void onMessage(String topic, String payload) {
-    String method = MessageCodec.extractMethod(payload);
+    String method = DjiMessage.extractMethod(payload);
     TopicResolver.TopicInfo info = TopicResolver.resolve(topic, method);
 
     log.info("[{}] {} {} → {}",
@@ -932,7 +951,7 @@ if (!ok) {
 }
 
 // 校验遥控器与飞行器
-boolean ok = DeviceCompatibility.isCompatible(ControllerModel.RC_PLUS_2, DroneModel.M4E);
+boolean ok = DeviceCompatibility.isCompatible(RcModel.RC_PLUS_2, DroneModel.M4E);
 ```
 
 **诊断意义**：在设备注册或任务下发前提前拦截不兼容组合，避免运行时协议错误。兼容矩阵源自 DJI 官方产品支持文档。
@@ -976,20 +995,20 @@ inferredClasses.forEach(clazz -> {
 });
 ```
 
-### MessageCodec 诊断能力
+### 信封类诊断能力
 
-`MessageCodec` 除了 JSON 编解码，还提供协议级诊断方法：
+三个信封类除了类型安全解析，还提供协议级诊断方法：
 
 | 方法 | 用途 | 诊断场景 |
 |---|---|---|
-| `extractMethod(payload)` | 从 MQTT 消息提取 method 名 | 路由分发前预判消息类型 |
-| `extractBizCode(payload)` | 从 WebSocket 消息提取 biz_code | WS 推送路由分发 |
-| `parseHttp(body, class)` | 解析 HTTP 响应信封 + data | 排查 HTTP API code≠0 错误 |
-| `parseWs(payload, class)` | 解析 WS 推送信封 + data | 排查 WS 推送解析失败 |
+| `DjiMessage.extractMethod(payload)` | 从 MQTT 消息提取 method 名 | 路由分发前预判消息类型 |
+| `WsPushMessage.extractBizCode(payload)` | 从 WebSocket 消息提取 biz_code | WS 推送路由分发 |
+| `HttpResponseEnvelope.parse(body, class)` | 解析 HTTP 响应信封 + data | 排查 HTTP API code≠0 错误 |
+| `WsPushMessage.parse(payload, class)` | 解析 WS 推送信封 + data | 排查 WS 推送解析失败 |
 
 ```java
 // HTTP API 返回错误时，一步提取 code + message
-var envelope = MessageCodec.parseHttp(resp.body(), StsCredentials.class);
+var envelope = HttpResponseEnvelope.parse(resp.body(), StsCredentials.class);
 if (envelope.code() != 0) {
     log.error("HTTP API 错误: code={}, message={}", envelope.code(), envelope.message());
     // envelope.data() 此时为 null（DJI 信封 code≠0 时不携带 data）
@@ -1003,9 +1022,9 @@ if (envelope.code() != 0) {
 | `protocol/` | 协议层：envelope/topic/method/error | `RequestEnvelope`/`ReplyEnvelope`/`EventEnvelope`, `TopicBuilder`, `TopicResolver`, `ServiceMethod`/`EventMethod`/`DrcMethod`, `DjiErrorCode` |
 | `command/` | 指令 POJO：5 通道 116 方法 | `service/`(69), `drc/`(19), `event/`(20), `request/`(7), `status/`(1) |
 | `codec/` | JSON 编解码 + 类型安全信封解析 | `MessageCodec`, `DjiMessage` |
-| `model/` | 设备型号/兼容性 | `DeviceModel`, `ControllerModel`, `DeviceCompatibility` |
+| `model/` | 设备型号/兼容性 | `DeviceModel`, `RcModel`, `DeviceCompatibility` |
 | `telemetry/` | OSD/State 遥测 | `DockOsd`, `DroneOsd`, `State` |
-| `flow/` | 业务流程 | `DockRegistrationFlow`, `OnlineFlow` |
+| `flow/` | 业务流程 | `DockRegistrationFlow`, `PilotRegistrationFlow` |
 | `annotation/` | 文档追踪注解 | `@DocUrl`, `@Verified`, `@Inferred` |
 | `http/` | HTTP 路径常量+响应信封+STS | `HttpApiPath`, `HttpResponseEnvelope<T>`, `StsCredentials` |
 | `websocket/` | WebSocket biz_code+推送 | `WsBizCode`, `WsPushMessage<T>` |
@@ -1051,6 +1070,17 @@ if (envelope.code() != 0) {
 - [架构设计文档](docs/architecture-design.md) — 模块设计、技术选型、目录结构
 - [Command POJO 设计](docs/superpowers/specs/2026-08-14-command-pojo-design.md) — POJO 组织策略、错误处理
 - [DJI Cloud API 官方文档](https://developer.dji.com/doc/cloud-api-tutorial/cn/) — 协议真相源
+
+## 交流沟通
+
+<p>
+  <img src="assets/friendCode.png" width="200" alt="微信二维码" />
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="assets/group.png" width="200" alt="技术交流群" />
+</p>
+
+- **左侧**：扫码添加好友
+- **右侧**：扫码加入技术交流群
 
 ## License
 

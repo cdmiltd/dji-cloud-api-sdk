@@ -1,0 +1,858 @@
+// Copyright (C) 2026 CDMI.LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ltd.cdmi.dji.cloudapi.sdk.wayline;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.function.Consumer;
+
+import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.CoordinateMode;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.ExecuteHeightMode;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.ExecuteRCLostAction;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.ExitOnRCLost;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.FinishAction;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.FlyToWaylineMode;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.HeightMode;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.PositioningType;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.ShootType;
+import static ltd.cdmi.dji.cloudapi.sdk.wayline.enumtype.WpmlEnum.codeOf;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.Document;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.DroneInfo;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.Kml;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.coordinate.LineString;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.mapping.MappingFolder;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.mapping.MappingStripPlacemark;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.MissionConfig;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.mapping.Overlap;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.PayloadInfo;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.PayloadParam;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.mapping.WaylineCoordinateSysParam;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.execute.ExecuteFolder;
+
+/**
+ * DJI WPML template.kml 航带飞行（mappingStrip）模板生成器。
+ *
+ * <p>通过 Builder 模式构造合法的 {@code template.kml} XML 字符串，
+ * 覆盖航带飞行模板（{@code templateType=mappingStrip}）。
+ *
+ * <p>高度语义：所有 {@code height} 参数为相对起飞点高度，
+ * 与 DJI WPML {@code wpml:height} 定义一致。
+ *
+ * <p>使用示例：
+ * <pre>{@code
+ * String kml = MappingStripTemplate.builder()
+ *     .author("John")
+ *     .createTime(System.currentTimeMillis())
+ *     .flyToWaylineMode(FlyToWaylineMode.SAFELY)
+ *     .finishAction(FinishAction.GO_HOME)
+ *     .exitOnRCLost(ExitOnRCLost.GO_CONTINUE)
+ *     .executeRCLostAction(ExecuteRCLostAction.HOVER)
+ *     .takeOffSecurityHeight(20)
+ *     .globalTransitionalSpeed(8)
+ *     .globalRTHHeight(100)
+ *     .droneInfo(67, 0)       // M30
+ *     .payloadInfo(52, 0)     // M30 相机
+ *     .templateId(0)
+ *     .coordinateMode(CoordinateMode.WGS84)
+ *     .heightMode(HeightMode.EGM96)
+ *     .autoFlightSpeed(7)
+ *     .globalShootHeight(100)
+ *     .positioningType(PositioningType.GPS)
+ *     .payloadParam(0, "wide,ir")
+ *     .caliFlightEnable(0)
+ *     .shootType(ShootType.TIME)
+ *     .direction(0)
+ *     .overlap(new Overlap(null, null, 80, 70, null, null, null, null))
+ *     .height(100)
+ *     .lineString("113.98057,22.987663,100 113.990000,22.987663,100")
+ *     .toXml();
+ * }</pre>
+ *
+ * @see MappingFolder
+ * @see MappingStripPlacemark
+ * @see WpmlCodec
+ */
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dji-wpml/template-kml.html")
+@Verified(basis = "DJI WPML template.kml 文档航带飞行模板元素定义")
+public final class MappingStripTemplate {
+
+    // ── Document 创建信息 ──
+    private String author;
+    private Long createTime;
+    private Long updateTime;
+
+    // ── MissionConfig 任务配置 ──
+    private FlyToWaylineMode flyToWaylineMode;
+    private FinishAction finishAction;
+    private ExitOnRCLost exitOnRCLost;
+    private ExecuteRCLostAction executeRCLostAction;
+    private Double takeOffSecurityHeight;
+    private String takeOffRefPoint;
+    private Double takeOffRefPointAGLHeight;
+    private Double globalTransitionalSpeed;
+    private Double globalRTHHeight;
+    private DroneInfo droneInfo;
+    private PayloadInfo payloadInfo;
+
+    // ── Folder 模板配置 ──
+    private Integer templateId;
+    private Double autoFlightSpeed;
+    private CoordinateMode coordinateMode;
+    private HeightMode heightMode;
+    private Double globalShootHeight;
+    private PositioningType positioningType;
+    private Integer surfaceFollowModeEnable;
+    private Double surfaceRelativeHeight;
+    private PayloadParam payloadParam;
+
+    // ── Placemark 航带配置 ──
+    private Integer caliFlightEnable;
+    private ShootType shootType;
+    private Integer direction;
+    private Integer margin;
+    private Integer singleLineEnable;
+    private Double cuttingDistance;
+    private Integer boundaryOptimEnable;
+    private Integer leftExtend;
+    private Integer rightExtend;
+    private Integer includeCenterEnable;
+    private Overlap overlap;
+    private Double ellipsoidHeight;
+    private Double height;
+    private Integer stripUseTemplateAltitude;
+    private LineString lineString;
+
+    private MappingStripTemplate() {
+    }
+
+    /**
+     * 创建 Builder 实例。
+     *
+     * @return 新的 MappingStripTemplate 实例
+     */
+    public static MappingStripTemplate builder() {
+        return new MappingStripTemplate();
+    }
+
+    // ════════════════════════════════════════════
+    //  创建信息
+    // ════════════════════════════════════════════
+
+    /**
+     * 设置文件作者。
+     *
+     * @param author 作者名称
+     * @return this
+     */
+    public MappingStripTemplate author(String author) {
+        this.author = author;
+        return this;
+    }
+
+    /**
+     * 设置创建时间。
+     *
+     * @param epochMs Unix 时间戳（毫秒）
+     * @return this
+     */
+    public MappingStripTemplate createTime(long epochMs) {
+        this.createTime = epochMs;
+        return this;
+    }
+
+    /**
+     * 设置更新时间。
+     *
+     * @param epochMs Unix 时间戳（毫秒）
+     * @return this
+     */
+    public MappingStripTemplate updateTime(long epochMs) {
+        this.updateTime = epochMs;
+        return this;
+    }
+
+    // ════════════════════════════════════════════
+    //  MissionConfig 任务配置
+    // ════════════════════════════════════════════
+
+    /**
+     * 设置飞行到航线模式。
+     *
+     * @param mode 飞行模式
+     * @return this
+     */
+    public MappingStripTemplate flyToWaylineMode(FlyToWaylineMode mode) {
+        this.flyToWaylineMode = mode;
+        return this;
+    }
+
+    /**
+     * 设置航线结束动作。
+     *
+     * @param action 结束动作
+     * @return this
+     */
+    public MappingStripTemplate finishAction(FinishAction action) {
+        this.finishAction = action;
+        return this;
+    }
+
+    /**
+     * 设置遥控器断连退出策略。
+     *
+     * @param exit 退出策略
+     * @return this
+     */
+    public MappingStripTemplate exitOnRCLost(ExitOnRCLost exit) {
+        this.exitOnRCLost = exit;
+        return this;
+    }
+
+    /**
+     * 设置遥控器断连执行动作。
+     *
+     * @param action 执行动作
+     * @return this
+     */
+    public MappingStripTemplate executeRCLostAction(ExecuteRCLostAction action) {
+        this.executeRCLostAction = action;
+        return this;
+    }
+
+    /**
+     * 设置安全起飞高度。
+     *
+     * @param height 安全起飞高度（米），遥控器 [1.2, 1500]，机场 [8, 1500]
+     * @return this
+     */
+    public MappingStripTemplate takeOffSecurityHeight(double height) {
+        this.takeOffSecurityHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置起飞参考点。
+     *
+     * @param latitude  纬度，范围 [-90, 90]
+     * @param longitude 经度，范围 [-180, 180]
+     * @param height    高度（米）
+     * @return this
+     * @throws IllegalArgumentException 如果纬度或经度超出范围
+     */
+    public MappingStripTemplate takeOffRefPoint(double latitude, double longitude, double height) {
+        if (latitude < -90 || latitude > 90) {
+            throw new IllegalArgumentException(
+                "latitude 超出范围 [-90, 90]: " + latitude);
+        }
+        if (longitude < -180 || longitude > 180) {
+            throw new IllegalArgumentException(
+                "longitude 超出范围 [-180, 180]: " + longitude);
+        }
+        this.takeOffRefPoint = String.format("%.6f,%.6f,%.1f", latitude, longitude, height);
+        return this;
+    }
+
+    /**
+     * 设置起飞参考点 AGL 高度（离地高度）。
+     *
+     * @param height AGL 高度（米）
+     * @return this
+     */
+    public MappingStripTemplate takeOffRefPointAGLHeight(double height) {
+        this.takeOffRefPointAGLHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置全局过渡速度。
+     *
+     * @param speed 过渡速度（m/s），范围 [1, 15]
+     * @return this
+     * @throws IllegalArgumentException 如果超出 [1, 15]
+     */
+    public MappingStripTemplate globalTransitionalSpeed(double speed) {
+        if (speed < 1 || speed > 15) {
+            throw new IllegalArgumentException(
+                "globalTransitionalSpeed 超出范围 [1, 15]: " + speed);
+        }
+        this.globalTransitionalSpeed = speed;
+        return this;
+    }
+
+    /**
+     * 设置全局返航高度。
+     *
+     * @param height 返航高度（米），范围 [2, 1500]
+     * @return this
+     * @throws IllegalArgumentException 如果超出 [2, 1500]
+     */
+    public MappingStripTemplate globalRTHHeight(double height) {
+        if (height < 2 || height > 1500) {
+            throw new IllegalArgumentException(
+                "globalRTHHeight 超出范围 [2, 1500]: " + height);
+        }
+        this.globalRTHHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置无人机机型信息。
+     *
+     * @param droneEnumValue    无人机主类型枚举值（如 67 = M30）
+     * @param droneSubEnumValue 无人机子类型枚举值
+     * @return this
+     */
+    public MappingStripTemplate droneInfo(int droneEnumValue, int droneSubEnumValue) {
+        this.droneInfo = new DroneInfo(droneEnumValue, droneSubEnumValue);
+        return this;
+    }
+
+    /**
+     * 设置负载信息。
+     *
+     * @param payloadEnumValue    负载类型枚举值（如 52 = M30 相机）
+     * @param payloadPositionIndex 负载挂载位置索引
+     * @return this
+     */
+    public MappingStripTemplate payloadInfo(int payloadEnumValue, int payloadPositionIndex) {
+        this.payloadInfo = new PayloadInfo(payloadEnumValue, payloadPositionIndex);
+        return this;
+    }
+
+    // ════════════════════════════════════════════
+    //  Folder 模板配置
+    // ════════════════════════════════════════════
+
+    /**
+     * 设置模板 ID。
+     *
+     * @param id 模板 ID，范围 [0, 65535]
+     * @return this
+     * @throws IllegalArgumentException 如果超出 [0, 65535]
+     */
+    public MappingStripTemplate templateId(int id) {
+        if (id < 0 || id > 65535) {
+            throw new IllegalArgumentException(
+                "templateId 超出范围 [0, 65535]: " + id);
+        }
+        this.templateId = id;
+        return this;
+    }
+
+    /**
+     * 设置自动飞行速度。
+     *
+     * @param speed 飞行速度（m/s），范围 [1, 15]
+     * @return this
+     * @throws IllegalArgumentException 如果超出 [1, 15]
+     */
+    public MappingStripTemplate autoFlightSpeed(double speed) {
+        if (speed < 1 || speed > 15) {
+            throw new IllegalArgumentException(
+                "autoFlightSpeed 超出范围 [1, 15]: " + speed);
+        }
+        this.autoFlightSpeed = speed;
+        return this;
+    }
+
+    /**
+     * 设置坐标模式。
+     *
+     * @param mode 坐标模式
+     * @return this
+     */
+    public MappingStripTemplate coordinateMode(CoordinateMode mode) {
+        this.coordinateMode = mode;
+        return this;
+    }
+
+    /**
+     * 设置高度模式。
+     *
+     * @param mode 高度模式
+     * @return this
+     */
+    public MappingStripTemplate heightMode(HeightMode mode) {
+        this.heightMode = mode;
+        return this;
+    }
+
+    /**
+     * 设置全局拍摄高度。
+     *
+     * @param height 拍摄高度（米）
+     * @return this
+     */
+    public MappingStripTemplate globalShootHeight(double height) {
+        this.globalShootHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置定位类型。
+     *
+     * @param type 定位类型
+     * @return this
+     */
+    public MappingStripTemplate positioningType(PositioningType type) {
+        this.positioningType = type;
+        return this;
+    }
+
+    /**
+     * 设置仿地飞行开关。
+     *
+     * @param enable 0=关闭，1=开启
+     * @return this
+     */
+    public MappingStripTemplate surfaceFollowModeEnable(int enable) {
+        this.surfaceFollowModeEnable = enable;
+        return this;
+    }
+
+    /**
+     * 设置仿地相对高度。
+     *
+     * @param height 仿地相对高度（米）
+     * @return this
+     */
+    public MappingStripTemplate surfaceRelativeHeight(double height) {
+        this.surfaceRelativeHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置负载参数（payloadPositionIndex 与 imageFormat）。
+     *
+     * @param payloadPositionIndex 负载挂载位置索引
+     * @param imageFormat          图片格式（如 {@code "wide,ir"}，取值：wide/zoom/ir/narrow_band/visable）
+     * @return this
+     */
+    public MappingStripTemplate payloadParam(int payloadPositionIndex, String imageFormat) {
+        this.payloadParam = new PayloadParam(
+            payloadPositionIndex, null, null, null, null, null, null, null, imageFormat);
+        return this;
+    }
+
+    /**
+     * 设置负载参数（完整配置，支持 M300/M350 激光雷达与可见光相机全部字段）。
+     *
+     * <p>通过 {@link PayloadParamBuilder} 回调集中配置，覆盖激光雷达回波模式、
+     * 采样率、扫描模式、真彩上色以及对焦/测光/畸变矫正等 M300 专用参数。
+     *
+     * @param config 负载参数配置回调
+     * @return this
+     * @see PayloadParamBuilder
+     */
+    public MappingStripTemplate payloadParam(Consumer<PayloadParamBuilder> config) {
+        PayloadParamBuilder builder = new PayloadParamBuilder();
+        config.accept(builder);
+        this.payloadParam = builder.build();
+        return this;
+    }
+
+    // ════════════════════════════════════════════
+    //  Placemark 航带配置
+    // ════════════════════════════════════════════
+
+    /**
+     * 设置标定飞行开关。
+     *
+     * @param enable 0=关闭，1=开启
+     * @return this
+     */
+    public MappingStripTemplate caliFlightEnable(int enable) {
+        this.caliFlightEnable = enable;
+        return this;
+    }
+
+    /**
+     * 设置拍照模式。
+     *
+     * @param type 拍照模式
+     * @return this
+     */
+    public MappingStripTemplate shootType(ShootType type) {
+        this.shootType = type;
+        return this;
+    }
+
+    /**
+     * 设置航线方向角。
+     *
+     * @param direction 方向角（度），范围 [0, 360]
+     * @return this
+     * @throws IllegalArgumentException 如果超出 [0, 360]
+     */
+    public MappingStripTemplate direction(int direction) {
+        if (direction < 0 || direction > 360) {
+            throw new IllegalArgumentException(
+                "direction 超出范围 [0, 360]: " + direction);
+        }
+        this.direction = direction;
+        return this;
+    }
+
+    /**
+     * 设置测区外扩距离。
+     *
+     * @param margin 外扩距离（米）
+     * @return this
+     */
+    public MappingStripTemplate margin(int margin) {
+        this.margin = margin;
+        return this;
+    }
+
+    /**
+     * 设置单航线飞行开关。
+     *
+     * @param enable 0=关闭，1=开启
+     * @return this
+     */
+    public MappingStripTemplate singleLineEnable(int enable) {
+        this.singleLineEnable = enable;
+        return this;
+    }
+
+    /**
+     * 设置子航带长度。
+     *
+     * @param distance 子航带长度（米）
+     * @return this
+     */
+    public MappingStripTemplate cuttingDistance(double distance) {
+        this.cuttingDistance = distance;
+        return this;
+    }
+
+    /**
+     * 设置边缘优化开关。
+     *
+     * @param enable 0=关闭，1=开启
+     * @return this
+     */
+    public MappingStripTemplate boundaryOptimEnable(int enable) {
+        this.boundaryOptimEnable = enable;
+        return this;
+    }
+
+    /**
+     * 设置左侧外扩距离。
+     *
+     * @param extend 外扩距离（米）
+     * @return this
+     */
+    public MappingStripTemplate leftExtend(int extend) {
+        this.leftExtend = extend;
+        return this;
+    }
+
+    /**
+     * 设置右侧外扩距离。
+     *
+     * @param extend 外扩距离（米）
+     * @return this
+     */
+    public MappingStripTemplate rightExtend(int extend) {
+        this.rightExtend = extend;
+        return this;
+    }
+
+    /**
+     * 设置是否包含中心线。
+     *
+     * @param enable 0=不包含，1=包含
+     * @return this
+     */
+    public MappingStripTemplate includeCenterEnable(int enable) {
+        this.includeCenterEnable = enable;
+        return this;
+    }
+
+    /**
+     * 设置重叠率参数。
+     *
+     * @param overlap 重叠率对象
+     * @return this
+     */
+    public MappingStripTemplate overlap(Overlap overlap) {
+        this.overlap = overlap;
+        return this;
+    }
+
+    /**
+     * 设置航带椭球高度。
+     *
+     * @param height 椭球高度（米）
+     * @return this
+     */
+    public MappingStripTemplate ellipsoidHeight(double height) {
+        this.ellipsoidHeight = height;
+        return this;
+    }
+
+    /**
+     * 设置航带全局高度（相对起飞点）。
+     *
+     * @param height 高度（米）
+     * @return this
+     */
+    public MappingStripTemplate height(double height) {
+        this.height = height;
+        return this;
+    }
+
+    /**
+     * 设置是否使用模板高度。
+     *
+     * @param enable 0=不使用，1=使用
+     * @return this
+     */
+    public MappingStripTemplate stripUseTemplateAltitude(int enable) {
+        this.stripUseTemplateAltitude = enable;
+        return this;
+    }
+
+    /**
+     * 设置航带线坐标。
+     *
+     * <p>坐标格式为 {@code "经度,纬度,高度 经度,纬度,高度 ..."}，
+     * 例如 {@code "113.98,22.98,100 113.99,22.99,100"}。
+     * 高度值仅在 {@code stripUseTemplateAltitude} 开启时读取。
+     *
+     * @param coordinates 坐标字符串
+     * @return this
+     */
+    public MappingStripTemplate lineString(String coordinates) {
+        this.lineString = new LineString(coordinates);
+        return this;
+    }
+
+    // ════════════════════════════════════════════
+    //  输出
+    // ════════════════════════════════════════════
+
+    /**
+     * 生成 template.kml XML 字符串。
+     *
+     * @return XML 字符串，含 XML 声明和格式化缩进
+     * @throws IllegalStateException 如果必需字段缺失
+     */
+    public String toXml() {
+        Kml<MappingFolder<MappingStripPlacemark>> kml = buildKml();
+        return WpmlCodec.toXml(kml);
+    }
+
+    /**
+     * 将 template.kml XML 写入文件。
+     *
+     * @param file 目标文件路径
+     * @throws java.io.IOException 如果文件写入失败
+     * @throws IllegalStateException 如果必需字段缺失
+     */
+    public void writeTo(Path file) throws java.io.IOException {
+        String xml = toXml();
+        Files.writeString(file, xml);
+    }
+
+    /**
+     * 生成 waylines.wpml XML 字符串。
+     *
+     * <p>建图模板的 Placemark 是测区配置（非航点），waylines.wpml 中的航点由
+     * DJI Pilot 导入后根据测区配置自动计算，因此 Placemark 列表为空。
+     *
+     * @return XML 字符串，含 XML 声明和格式化缩进
+     * @throws IllegalStateException 如果必需字段缺失（droneInfo/payloadInfo 等）
+     */
+    public String toWpml() {
+        validateWpmlRequiredFields();
+        Kml<ExecuteFolder> kml = buildWpmlKml();
+        return WpmlCodec.toXml(kml);
+    }
+
+    /**
+     * 将 template.kml + waylines.wpml 打包为 DJI KMZ 格式。
+     *
+     * <p>便捷方法，等价于 {@code WpmlCodec.toKmz(toXml(), toWpml())}。
+     * 调用方可自行将 {@code byte[]} 写入 {@code .kmz} 文件，SDK 不负责文件保存。
+     *
+     * @return KMZ 字节流
+     * @throws IllegalStateException 如果必需字段缺失或打包失败
+     */
+    public byte[] toKmz() {
+        return WpmlCodec.toKmz(toXml(), toWpml());
+    }
+
+    // ════════════════════════════════════════════
+    //  内部构建逻辑
+    // ════════════════════════════════════════════
+
+    private Kml<MappingFolder<MappingStripPlacemark>> buildKml() {
+        validateRequiredFields();
+
+        MissionConfig missionConfig = new MissionConfig(
+            codeOf(flyToWaylineMode),
+            codeOf(finishAction),
+            codeOf(exitOnRCLost),
+            codeOf(executeRCLostAction),
+            takeOffSecurityHeight,
+            takeOffRefPoint,
+            takeOffRefPointAGLHeight,
+            globalTransitionalSpeed,
+            globalRTHHeight,
+            null,
+            droneInfo,
+            payloadInfo
+        );
+
+        WaylineCoordinateSysParam coordSysParam = new WaylineCoordinateSysParam(
+            codeOf(coordinateMode),
+            codeOf(heightMode),
+            globalShootHeight,
+            codeOf(positioningType),
+            surfaceFollowModeEnable,
+            surfaceRelativeHeight
+        );
+
+        MappingStripPlacemark placemark = new MappingStripPlacemark(
+            caliFlightEnable,
+            codeOf(shootType),
+            direction != null ? direction : 0,
+            margin != null ? margin : 0,
+            singleLineEnable != null ? singleLineEnable : 0,
+            cuttingDistance != null ? cuttingDistance : 0.0,
+            boundaryOptimEnable != null ? boundaryOptimEnable : 0,
+            leftExtend != null ? leftExtend : 0,
+            rightExtend != null ? rightExtend : 0,
+            includeCenterEnable != null ? includeCenterEnable : 0,
+            overlap,
+            ellipsoidHeight != null ? ellipsoidHeight : 0.0,
+            height,
+            stripUseTemplateAltitude != null ? stripUseTemplateAltitude : 0,
+            lineString
+        );
+
+        MappingFolder<MappingStripPlacemark> folder = new MappingFolder<>(
+            "mappingStrip",
+            templateId,
+            autoFlightSpeed,
+            coordSysParam,
+            payloadParam,
+            placemark
+        );
+
+        Document<MappingFolder<MappingStripPlacemark>> document = new Document<>(
+            author,
+            createTime,
+            updateTime,
+            missionConfig,
+            folder
+        );
+
+        return new Kml<>(document);
+    }
+
+    private void validateRequiredFields() {
+        if (flyToWaylineMode == null) {
+            throw new IllegalStateException("flyToWaylineMode 未设置");
+        }
+        if (finishAction == null) {
+            throw new IllegalStateException("finishAction 未设置");
+        }
+        if (autoFlightSpeed == null) {
+            throw new IllegalStateException("autoFlightSpeed 未设置");
+        }
+        if (takeOffSecurityHeight == null) {
+            throw new IllegalStateException("takeOffSecurityHeight 未设置");
+        }
+        if (globalTransitionalSpeed == null) {
+            throw new IllegalStateException("globalTransitionalSpeed 未设置");
+        }
+        if (globalRTHHeight == null) {
+            throw new IllegalStateException("globalRTHHeight 未设置");
+        }
+        if (templateId == null) {
+            throw new IllegalStateException("templateId 未设置");
+        }
+        if (shootType == null) {
+            throw new IllegalStateException("shootType 未设置");
+        }
+        if (direction == null) {
+            throw new IllegalStateException("direction 未设置");
+        }
+        if (overlap == null) {
+            throw new IllegalStateException("overlap 未设置");
+        }
+        if (height == null) {
+            throw new IllegalStateException("height 未设置");
+        }
+        if (lineString == null) {
+            throw new IllegalStateException("lineString 未设置");
+        }
+    }
+
+    private void validateWpmlRequiredFields() {
+        validateRequiredFields();
+        if (droneInfo == null) {
+            throw new IllegalStateException("toWpml 需要 droneInfo（droneInfo() 未设置）");
+        }
+        if (payloadInfo == null) {
+            throw new IllegalStateException("toWpml 需要 payloadInfo（payloadInfo() 未设置）");
+        }
+    }
+
+    private Kml<ExecuteFolder> buildWpmlKml() {
+        MissionConfig wpmlMissionConfig = new MissionConfig(
+            codeOf(flyToWaylineMode),
+            codeOf(finishAction),
+            codeOf(exitOnRCLost),
+            codeOf(executeRCLostAction),
+            takeOffSecurityHeight,
+            null,
+            null,
+            globalTransitionalSpeed,
+            globalRTHHeight,
+            null,
+            droneInfo,
+            payloadInfo
+        );
+
+        ExecuteHeightMode executeHeightMode =
+            ExecuteHeightMode.fromHeightMode(codeOf(heightMode));
+
+        ExecuteFolder folder = new ExecuteFolder(
+            templateId,
+            executeHeightMode.code(),
+            0,
+            autoFlightSpeed,
+            List.of()
+        );
+
+        Document<ExecuteFolder> document = new Document<>(
+            author,
+            createTime,
+            updateTime,
+            wpmlMissionConfig,
+            folder
+        );
+
+        return new Kml<>(document);
+    }
+
+}
