@@ -201,61 +201,61 @@
 #### shouldExtractMethod_whenPresent
 - 输入：`"{\"method\":\"update_topo\"}"`
 - 预期：`"update_topo"`
-- 断言：`assertThat(MessageCodec.extractMethod("{\"method\":\"update_topo\"}")).isEqualTo("update_topo")`
+- 断言：`assertThat(DjiMessage.extractMethod("{\"method\":\"update_topo\"}")).isEqualTo("update_topo")`
 - 基准：doc:connection.html | spec | green
 
 #### shouldReturnNull_whenMethodAbsent
 - 输入：`"{\"tid\":\"x\"}"`
 - 预期：`null`
-- 断言：`assertThat(MessageCodec.extractMethod("{\"tid\":\"x\"}")).isNull()`
+- 断言：`assertThat(DjiMessage.extractMethod("{\"tid\":\"x\"}")).isNull()`
 - 基准：char | spec | green
 
 #### shouldReturnNull_whenMethodJsonInvalid
 - 输入：`"not json"`
 - 预期：`null`
-- 断言：`assertThat(MessageCodec.extractMethod("not json")).isNull()`
+- 断言：`assertThat(DjiMessage.extractMethod("not json")).isNull()`
 - 基准：char | spec | green
 
 #### shouldExtractTid_whenPresent
 - 输入：`"{\"tid\":\"uuid-1\"}"`
 - 预期：`"uuid-1"`
-- 断言：`assertThat(MessageCodec.extractTid("{\"tid\":\"uuid-1\"}")).isEqualTo("uuid-1")`
+- 断言：`assertThat(DjiMessage.extractTid("{\"tid\":\"uuid-1\"}")).isEqualTo("uuid-1")`
 - 基准：doc:connection.html | spec | green
 
 #### shouldExtractBid_whenPresent
 - 输入：`"{\"bid\":\"uuid-2\"}"`
 - 预期：`"uuid-2"`
-- 断言：`assertThat(MessageCodec.extractBid("{\"bid\":\"uuid-2\"}")).isEqualTo("uuid-2")`
+- 断言：`assertThat(DjiMessage.extractBid("{\"bid\":\"uuid-2\"}")).isEqualTo("uuid-2")`
 - 基准：doc:connection.html | spec | green
 
 #### shouldExtractResult_whenDataResultPresent
 - 输入：`"{\"data\":{\"result\":0}}"`
 - 预期：`0`
-- 断言：`assertThat(MessageCodec.extractResult("{\"data\":{\"result\":0}}")).isEqualTo(0)`
+- 断言：`assertThat(DjiMessage.extractResult("{\"data\":{\"result\":0}}")).isEqualTo(0)`
 - 基准：doc:connection.html | spec | green
 
 #### shouldExtractResult_whenNonZero
 - 输入：`"{\"data\":{\"result\":210229}}"`
 - 预期：`210229`
-- 断言：`assertThat(MessageCodec.extractResult("{\"data\":{\"result\":210229}}")).isEqualTo(210229)`
+- 断言：`assertThat(DjiMessage.extractResult("{\"data\":{\"result\":210229}}")).isEqualTo(210229)`
 - 基准：doc:error.html | spec | green
 
 #### shouldReturnMinusOne_whenResultAbsent
 - 输入：`"{\"data\":{}}"`
 - 预期：`-1`（哨兵值）
-- 断言：`assertThat(MessageCodec.extractResult("{\"data\":{}}")).isEqualTo(-1)`
+- 断言：`assertThat(DjiMessage.extractResult("{\"data\":{}}")).isEqualTo(-1)`
 - 基准：char + codec/package-info | spec | green
 
 #### shouldReturnMinusOne_whenDataAbsent
 - 输入：`"{\"tid\":\"x\"}"`
 - 预期：`-1`
-- 断言：`assertThat(MessageCodec.extractResult("{\"tid\":\"x\"}")).isEqualTo(-1)`
+- 断言：`assertThat(DjiMessage.extractResult("{\"tid\":\"x\"}")).isEqualTo(-1)`
 - 基准：char | spec | green
 
 #### shouldReturnMinusOne_whenJsonInvalid
 - 输入：`"bad"`
 - 预期：`-1`
-- 断言：`assertThat(MessageCodec.extractResult("bad")).isEqualTo(-1)`
+- 断言：`assertThat(DjiMessage.extractResult("bad")).isEqualTo(-1)`
 - 基准：char | spec | green
 
 #### shouldExtractData_whenPresent
@@ -263,7 +263,7 @@
 - 预期：非 null，`Map` 含 `k=v`
 - 断言：
   ```java
-  Object data = MessageCodec.extractData("{\"data\":{\"k\":\"v\"}}");
+  Object data = DjiMessage.extractData("{\"data\":{\"k\":\"v\"}}");
   assertThat(data).isInstanceOf(Map.class);
   assertThat(((Map<?,?>) data)).containsEntry("k", "v");
   ```
@@ -272,13 +272,13 @@
 #### shouldReturnNull_whenDataAbsent
 - 输入：`"{\"tid\":\"x\"}"`
 - 预期：`null`
-- 断言：`assertThat(MessageCodec.extractData("{\"tid\":\"x\"}")).isNull()`
+- 断言：`assertThat(DjiMessage.extractData("{\"tid\":\"x\"}")).isNull()`
 - 基准：char | spec | green
 
 #### shouldReturnNull_whenDataJsonInvalid
 - 输入：`"bad"`
 - 预期：`null`
-- 断言：`assertThat(MessageCodec.extractData("bad")).isNull()`
+- 断言：`assertThat(DjiMessage.extractData("bad")).isNull()`
 - 基准：char | spec | green
 
 #### shouldVerifyExtractResultSentinelDocumented
@@ -688,9 +688,10 @@
 
 ### 4.4 DrcMethodTest (`@Tag("spec")`)
 
-#### shouldHave19Methods_whenValues
-- 断言：`assertThat(DrcMethod.values()).hasSize(19)`
+#### shouldHave30Methods_whenValues
+- 断言：`assertThat(DrcMethod.values()).hasSize(30)`
 - 基准：doc:dock3/remote-control.html | spec | green
+- 说明：19 个 simulator catalog + 11 个 v1.16 AI 新增（Dock3 专属）
 
 #### shouldReturnNonBlankMethodNameAndDescription_whenEnumSource
 - 输入：`@EnumSource(DrcMethod.class)`
@@ -726,6 +727,12 @@
   assertThat(inf.verifyPoint()).isNotBlank();
   ```
 - 基准：meta | spec | green
+
+#### shouldFind_whenAiMethod
+- 输入：`@MethodSource` 提供 11 个 v1.16 AI method 映射：`DRC_AI_MODEL_SELECT→"drc_ai_model_select"`, `DRC_AI_IDENTIFY_SET→"drc_ai_identify_set"`, `DRC_AI_IDENTIFY_SCORE_MODE_SET→"drc_ai_identify_score_mode_set"`, `DRC_AI_IDENTIFY_SCORE_SET→"drc_ai_identify_score_set"`, `DRC_AI_IDENTIFY_SCORE_RESET→"drc_ai_identify_score_reset"`, `DRC_AI_IDENTIFY_FILTER_SET→"drc_ai_identify_filter_set"`, `DRC_AI_SPOTLIGHT_ZOOM_SET→"drc_ai_spotlight_zoom_set"`, `DRC_AI_SPOTLIGHT_ZOOM_TRACK→"drc_ai_spotlight_zoom_track"`, `DRC_AI_SPOTLIGHT_ZOOM_SELECT→"drc_ai_spotlight_zoom_select"`, `DRC_AI_SPOTLIGHT_ZOOM_CONFIRM→"drc_ai_spotlight_zoom_confirm"`, `DRC_AI_SPOTLIGHT_ZOOM_STOP→"drc_ai_spotlight_zoom_stop"`
+- 预期：`fromMethodName(methodName)` 返回对应枚举常量
+- 断言：`assertThat(DrcMethod.fromMethodName("drc_ai_model_select")).contains(DrcMethod.DRC_AI_MODEL_SELECT)`
+- 基准：doc:dock3/remote-control.html | spec | green
 
 ### 4.5 ServiceMethodTest (`@Tag("spec")`)
 
@@ -1574,6 +1581,36 @@
 - 断言：`assertThat(drone.toModel().defaultSn()).hasSize(20)`
 - 基准：char | characterization | green
 
+#### shouldFindByType_whenFromType
+- 输入：`@MethodSource`：`(67,0)→M30`, `(67,1)→M30T`, `(91,0)→M3D`, `(100,1)→M4TD`, `(77,3)→MAVIC_3TA`
+- 预期：`fromType(type, subType)` 返回对应枚举
+- 断言：`assertThat(DroneModel.fromType(type, subType)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromTypeUnknown
+- 输入：`fromType(999, 0)`
+- 预期：抛 `IllegalArgumentException`
+- 断言：`assertThrows(IllegalArgumentException.class, () -> DroneModel.fromType(999, 0))`
+- 基准：spec | green
+
+#### shouldFindByModelKey_whenFromModelKey
+- 输入：`"0-67-0"→M30`, `"0-100-1"→M4TD`, `"0-77-3"→MAVIC_3TA`
+- 预期：`fromModelKey(modelKey)` 返回对应枚举
+- 断言：`assertThat(DroneModel.fromModelKey(key)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromModelKeyWrongDomain
+- 输入：`fromModelKey("3-1-0")`（dock domain，非飞行器）
+- 预期：抛 `IllegalArgumentException`（domain 不匹配）
+- 断言：`assertThrows(IllegalArgumentException.class, () -> DroneModel.fromModelKey("3-1-0"))`
+- 基准：spec | green
+
+#### shouldDelegateToModel_whenDefaultMethods
+- 输入：`DroneModel.M30`
+- 预期：default 方法 `domain()`/`type()`/`subType()`/`modelKey()` 委托到 `toModel()`
+- 断言：`assertThat(M30.domain()).isEqualTo(0); assertThat(M30.type()).isEqualTo(67); assertThat(M30.modelKey()).isEqualTo("0-67-0")`
+- 基准：spec | green
+
 ### 8.4 DockModelTest (`@Tag("characterization")`)
 
 #### shouldHave3Models_whenValues
@@ -1596,14 +1633,38 @@
 - 断言：`assertThat(dock.toModel().defaultSn()).hasSize(15)`
 - 基准：char | characterization | green
 
-### 8.5 ControllerModelTest (`@Tag("characterization")`)
+#### shouldFindByType_whenFromType
+- 输入：`(1,0)→DOCK1`, `(2,0)→DOCK2`, `(3,0)→DOCK3`
+- 预期：`fromType(type, subType)` 返回对应枚举
+- 断言：`assertThat(DockModel.fromType(type, subType)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromTypeUnknown
+- 输入：`fromType(999, 0)`
+- 预期：抛 `IllegalArgumentException`
+- 断言：`assertThrows(IllegalArgumentException.class, () -> DockModel.fromType(999, 0))`
+- 基准：spec | green
+
+#### shouldFindByModelKey_whenFromModelKey
+- 输入：`"3-1-0"→DOCK1`, `"3-2-0"→DOCK2`, `"3-3-0"→DOCK3`
+- 预期：`fromModelKey(modelKey)` 返回对应枚举
+- 断言：`assertThat(DockModel.fromModelKey(key)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromModelKeyWrongDomain
+- 输入：`fromModelKey("0-67-0")`（飞行器 domain，非机场）
+- 预期：抛 `IllegalArgumentException`（domain 不匹配）
+- 断言：`assertThrows(IllegalArgumentException.class, () -> DockModel.fromModelKey("0-67-0"))`
+- 基准：spec | green
+
+### 8.5 RcModelTest (`@Tag("characterization")`)
 
 #### shouldHave4Models_whenValues
-- 断言：`assertThat(ControllerModel.values()).hasSize(4)`
+- 断言：`assertThat(RcModel.values()).hasSize(4)`
 - 基准：doc:product-support.html | characterization | green
 
 #### shouldImplementDeviceModelProvider
-- 断言：`assertThat(ControllerModel.class.getInterfaces()).contains(DeviceModelProvider.class)`
+- 断言：`assertThat(RcModel.class.getInterfaces()).contains(DeviceModelProvider.class)`
 - 基准：char | characterization | green
 
 #### shouldReturnTriples_whenParameterized
@@ -1611,6 +1672,30 @@
 - 预期：`toModel().modelKey()` 匹配，`domain()`=2
 - 断言：`assertThat(c.toModel().modelKey()).isEqualTo(key); assertThat(c.toModel().domain()).isEqualTo(2)`
 - 基准：doc:product-support.html | characterization | green
+
+#### shouldFindByType_whenFromType
+- 输入：`(56,0)→SMART_CONTROLLER_ENTERPRISE`, `(119,0)→RC_PLUS`, `(174,0)→RC_PLUS_2`, `(144,0)→RC_PRO`
+- 预期：`fromType(type, subType)` 返回对应枚举
+- 断言：`assertThat(RcModel.fromType(type, subType)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromTypeUnknown
+- 输入：`fromType(999, 0)`
+- 预期：抛 `IllegalArgumentException`
+- 断言：`assertThrows(IllegalArgumentException.class, () -> RcModel.fromType(999, 0))`
+- 基准：spec | green
+
+#### shouldFindByModelKey_whenFromModelKey
+- 输入：`"2-56-0"→SMART_CONTROLLER_ENTERPRISE`, `"2-119-0"→RC_PLUS`, `"2-174-0"→RC_PLUS_2`, `"2-144-0"→RC_PRO`
+- 预期：`fromModelKey(modelKey)` 返回对应枚举
+- 断言：`assertThat(RcModel.fromModelKey(key)).isEqualTo(expected)`
+- 基准：spec | green
+
+#### shouldThrow_whenFromModelKeyWrongDomain
+- 输入：`fromModelKey("3-1-0")`（机场 domain，非遥控器）
+- 预期：抛 `IllegalArgumentException`（domain 不匹配）
+- 断言：`assertThrows(IllegalArgumentException.class, () -> RcModel.fromModelKey("3-1-0"))`
+- 基准：spec | green
 
 ### 8.6 DeviceCompatibilityTest (`@Tag("characterization")`)
 
@@ -1674,14 +1759,14 @@
 
 #### shouldSmartControllerEnterpriseBeCompatibleWithM300Rtk
 - 输入：`isCompatible(SMART_CONTROLLER_ENTERPRISE, M300_RTK)`
-- 预期：`true`（DJI 带屏遥控器行业版搭配 Matrice 300 RTK，依据 ControllerModel Javadoc）
-- 断言：`assertThat(DeviceCompatibility.isCompatible(ControllerModel.SMART_CONTROLLER_ENTERPRISE, DroneModel.M300_RTK)).isTrue()`
+- 预期：`true`（DJI 带屏遥控器行业版搭配 Matrice 300 RTK，依据 RcModel Javadoc）
+- 断言：`assertThat(DeviceCompatibility.isCompatible(RcModel.SMART_CONTROLLER_ENTERPRISE, DroneModel.M300_RTK)).isTrue()`
 - 基准：doc:product-support.html | characterization | green
 
 #### shouldSmartControllerEnterpriseBeIncompatibleWithOthers
 - 输入：`@MethodSource`：`(SMART_CONTROLLER_ENTERPRISE, M30),(SMART_CONTROLLER_ENTERPRISE,M4D),(SMART_CONTROLLER_ENTERPRISE,MAVIC_3E)` 等（非 M300_RTK 的代表性型号）
 - 预期：`false`
-- 断言：`assertThat(DeviceCompatibility.isCompatible(ControllerModel.SMART_CONTROLLER_ENTERPRISE, drone)).isFalse()`
+- 断言：`assertThat(DeviceCompatibility.isCompatible(RcModel.SMART_CONTROLLER_ENTERPRISE, drone)).isFalse()`
 - 基准：doc:product-support.html | characterization | green
 
 ---
@@ -1715,76 +1800,7 @@
   ```
 - 基准：char | characterization | green
 
-### 9.2 OnlineFlowTest (`@Tag("characterization")`)
-
-#### shouldReturnUpdateTopoMethod
-- 输入：`OnlineFlow.METHOD`
-- 预期：`"update_topo"`
-- 断言：`assertThat(OnlineFlow.METHOD).isEqualTo("update_topo")`
-- 基准：doc:dock1/device.html | characterization | green
-
-#### shouldBuildPayload_whenSubDevicesGiven
-- 输入：
-  ```java
-  String json = OnlineFlow.buildUpdateTopoPayload(
-      "gateway-sn", new DeviceModel(3,3,0,"Dock3","Dock3","SN"),
-      "secret", "nonce", "3.0.0.0",
-      List.of(new OnlineFlow.SubDevice("drone-sn", new DeviceModel(0,67,0,"M30","M30","DSN"), "A", "ds", "dn", "3.0.0.0")));
-  ```
-- 预期：JSON 含 `method:"update_topo"`，`data.domain:"3"`(string)，`data.type:3`(int)，`data.sub_type:0`，`data.sub_devices` 长度 1，子设备 `sn:"drone-sn"`，`domain:"0"`(string)，`index:"A"`
-- 断言：
-  ```java
-  assertThat(json).contains("\"method\":\"update_topo\"");
-  assertThat(MessageCodec.extractMethod(json)).isEqualTo("update_topo");
-  // 解析 data 验证类型
-  Object data = MessageCodec.extractData(json);
-  assertThat(((Map<?,?>)data).get("domain")).isEqualTo("3");
-  assertThat(((Map<?,?>)data).get("type")).isEqualTo(3);
-  assertThat(((Map<?,?>)data).get("sub_devices")).isInstanceOf(List.class);
-  ```
-- 基准：doc:dock1/device.html | characterization | green
-
-#### shouldGatewaySnNotAppearInPayload
-- 输入：同上，gatewaySn=`"gateway-sn"`
-- 预期：payload JSON 不含 `"gateway-sn"`（SN 属于 topic，非 payload）
-- 断言：`assertThat(json).doesNotContain("gateway-sn")`
-- 基准：doc:dock1/device.html | characterization | green
-
-#### shouldReturnEmptySubDevices_whenEmptyList
-- 输入：`buildUpdateTopoPayload(..., List.of())`
-- 预期：`data.sub_devices` 为空数组 `[]`
-- 断言：`assertThat(json).contains("\"sub_devices\":[]")`
-- 基准：char | characterization | green
-
-#### shouldReturnEmptySubDevices_whenNullList
-- 输入：`buildUpdateTopoPayload(..., null)`
-- 预期：`data.sub_devices` 为 `[]`
-- 断言：`assertThat(json).contains("\"sub_devices\":[]")`
-- 基准：char | characterization | green
-
-#### shouldGenerateUuidTidBid
-- 输入：`buildUpdateTopoPayload(...)`
-- 预期：`tid`/`bid` 为 UUID 格式字符串（非 null）
-- 断言：
-  ```java
-  assertThat(MessageCodec.extractTid(json)).isNotBlank();
-  assertThat(MessageCodec.extractBid(json)).isNotBlank();
-  ```
-- 基准：doc:connection.html | characterization | green
-
-#### shouldDomainBeStringAndTypeBeInt
-- 输入：`buildUpdateTopoPayload(..., new DeviceModel(3,3,0,...), ...)`
-- 预期：`data.domain` 序列化为字符串 `"3"`，`data.type`/`data.sub_type` 为数字
-- 断言：
-  ```java
-  Map<?,?> data = (Map<?,?>) MessageCodec.extractData(json);
-  assertThat(data.get("domain")).isInstanceOf(String.class);
-  assertThat(data.get("type")).isInstanceOf(Integer.class);
-  assertThat(data.get("sub_type")).isInstanceOf(Integer.class);
-  ```
-- 基准：doc:dock1/device.html | characterization | green
-
-### 9.3 DockRegistrationFlowTest (`@Tag("characterization")`)
+### 9.2 DockRegistrationFlowTest (`@Tag("characterization")`)
 
 #### shouldHave5Steps_whenSteps
 - 输入：`DockRegistrationFlow.steps()`
@@ -1837,7 +1853,7 @@
 - 断言：`assertThat(fields).allMatch(f -> f.isAnnotationPresent(Verified.class))`
 - 基准：meta | characterization | green
 
-### 9.4 PilotRegistrationFlowTest (`@Tag("characterization")`)
+### 9.3 PilotRegistrationFlowTest (`@Tag("characterization")`)
 
 #### shouldHave5Steps_whenSteps
 - 断言：`assertThat(PilotRegistrationFlow.steps()).hasSize(5)`
@@ -1924,8 +1940,8 @@
 
 ### 10.2 StateFieldTest (`@Tag("characterization")`)
 
-#### shouldHave33Fields_whenValues
-- 断言：`assertThat(StateField.values()).hasSize(33)`
+#### shouldHave35Fields_whenValues
+- 断言：`assertThat(StateField.values()).hasSize(35)`
 - 基准：doc:dock2/properties.html | characterization | green
 
 #### shouldReturnFieldNameAndDescription_whenEnumSource
@@ -1994,10 +2010,10 @@
 - 断言：`assertThat(osd.modeCode()).isNull()`（锁定当前 bug 行为，修复后此测试需更新为 `isEqualTo(0)`）
 - 基准：char | characterization | green
 
-### 10.4 ControllerOsdTest (`@Tag("characterization")`)
+### 10.4 RcOsdTest (`@Tag("characterization")`)
 
 #### shouldHave5Components_whenRecord
-- 输入：`ControllerOsd.class.getRecordComponents()`
+- 输入：`RcOsd.class.getRecordComponents()`
 - 预期：`modeCode, latitude, longitude, battery, country`
 - 断言：`assertThat(names).containsExactly("modeCode","latitude","longitude","battery","country")`
 - 基准：doc:remote-controller/properties.html | characterization | green
@@ -2007,11 +2023,11 @@
 - 基准：char | characterization | green
 
 #### shouldAccessComponents_whenInstance
-- 输入：`new ControllerOsd(0,22.0,113.0,80,"CN")`
+- 输入：`new RcOsd(0,22.0,113.0,80,"CN")`
 - 预期：各访问器返回对应值
 - 断言：
   ```java
-  ControllerOsd osd = new ControllerOsd(0,22.0,113.0,80,"CN");
+  RcOsd osd = new RcOsd(0,22.0,113.0,80,"CN");
   assertThat(osd.modeCode()).isEqualTo(0);
   assertThat(osd.battery()).isEqualTo(80);
   assertThat(osd.country()).isEqualTo("CN");
@@ -2019,7 +2035,7 @@
 - 基准：char | characterization | green
 
 #### shouldDeserializeSnakeCaseJson_whenAllFieldsNull
-- 输入：`"{\"mode_code\":0,\"latitude\":22.0}"` → `fromJson(ControllerOsd.class)`
+- 输入：`"{\"mode_code\":0,\"latitude\":22.0}"` → `fromJson(RcOsd.class)`
 - 预期（特征化，当前行为）：`modeCode()`=null（因 #1）
 - 断言：`assertThat(osd.modeCode()).isNull()`
 - 基准：char | characterization | green
@@ -2122,7 +2138,51 @@
 - 断言：`assertThat(v.basis()).contains("无 output")`
 - 基准：meta | spec | green
 
-### 11.3 FlighttaskPrepareRequestTest (`@Tag("spec")`)（多嵌套字段模板）
+### 11.3 LiveLensChangeRequestTest（设备差异 + `@JsonInclude(NON_NULL)` 模板）
+
+#### shouldDeserializeDock_whenVideoIdAbsent
+- 输入：`{"video_type":"normal"}`（Dock 场景，无 video_id）
+- 预期：`videoType()="normal"`, `videoId()=null`
+- 断言：`assertEquals("normal", req.videoType()); assertNull(req.videoId())`
+- 基准：doc:dock3/live.html | spec | green
+
+#### shouldDeserializeRc_whenVideoIdPresent
+- 输入：`{"video_type":"normal","video_id":"xxx-yyy"}`（RC Plus/RC Pro 场景）
+- 预期：`videoType()="normal"`, `videoId()="xxx-yyy"`
+- 断言：`assertEquals("normal", req.videoType()); assertEquals("xxx-yyy", req.videoId())`
+- 基准：doc:github others/rc/live.md | spec | green
+
+#### shouldNotSerializeVideoId_whenNull
+- 输入：`new LiveLensChangeRequest("normal", null)`
+- 预期：JSON 含 `"video_type":"normal"`，不含 `video_id` 字段
+- 断言：`assertTrue(json.contains("\"video_type\":\"normal\"")); assertFalse(json.contains("video_id"))`
+- 基准：`@JsonInclude(NON_NULL)` | spec | green
+
+#### shouldSerializeVideoId_whenNonNull
+- 输入：`new LiveLensChangeRequest("zoom", "rc-001")`
+- 预期：JSON 同时含 `video_type` 和 `video_id`
+- 断言：`assertTrue(json.contains("\"video_type\":\"zoom\"")); assertTrue(json.contains("\"video_id\":\"rc-001\""))`
+- 基准：doc:github rc-pro/live.md | spec | green
+
+#### shouldThrow_whenVideoTypeMissing
+- 输入：`{"video_id":"xxx"}`（缺 video_type）
+- 预期：抛 `IllegalStateException`（MessageCodec 包装 NPE），根因为 `NullPointerException`
+- 断言：`assertThrows(IllegalStateException.class, ...); assertTrue(ex.getCause() instanceof NullPointerException)`
+- 基准：`Objects.requireNonNull` + MessageCodec 包装 | spec | green
+
+#### shouldRoundTrip_whenRcScenario
+- 输入：`new LiveLensChangeRequest("wide", "cam-042")` → `toJson` → `fromJson`
+- 预期：两字段保持不变
+- 断言：`assertEquals(original.videoType(), back.videoType()); assertEquals(original.videoId(), back.videoId())`
+- 基准：jackson round-trip | spec | green
+
+#### shouldRoundTrip_whenDockScenario
+- 输入：`new LiveLensChangeRequest("normal", null)` → `toJson` → `fromJson`
+- 预期：videoType 保持不变，videoId 始终为 null
+- 断言：`assertEquals("normal", back.videoType()); assertNull(back.videoId())`
+- 基准：jackson round-trip + NON_NULL | spec | green
+
+### 11.4 FlighttaskPrepareRequestTest (`@Tag("spec")`)（多嵌套字段模板）
 
 #### shouldHave14Components_whenRecord
 - 输入：`FlighttaskPrepareRequest.class.getRecordComponents()`
@@ -2304,11 +2364,15 @@
 
 ## 12. command.drc 包
 
-> 测试模式：DRC 上行推送 11 个 POJO 反序列化 + DRC 下行控制 5 子包（camera/flight/light/safety/speaker）POJO + `DrcUpMethod` 枚举双向映射
+> 测试模式：DRC 上行推送 12 个 POJO 反序列化（含 v1.16 AI 状态推送）+ DRC 下行控制 6 子包（camera/flight/light/safety/speaker/ai）POJO + `DrcUpMethod`/`DrcMethod` 枚举双向映射
 >
-> **已实现状态**（2/~41）：
+> **已实现状态**（6/~53）：
 > - ✅ `DrcUpPushDataParseTest`（11 个 DRC 上行推送 POJO 反序列化验证）
-> - ✅ `DrcUpMethodTest`（`DrcUpMethod` 枚举 method 字符串↔枚举双向映射）
+> - ✅ `DrcUpMethodTest`（`DrcUpMethod` 枚举 12 个 method 字符串↔枚举双向映射，含 v1.16 AI 状态推送）
+> - ✅ `DrcMethodTest`（`DrcMethod` 枚举 30 个 method 字符串↔枚举双向映射，含 11 个 v1.16 AI + `HEART_BEAT` @Inferred）
+> - ✅ `AiEnumTest`（6 个 AI 枚举 code↔常量双向映射）
+> - ✅ `AiRequestTest`（8 个 AI 下行 Request POJO 反序列化 + 往返闭环）
+> - ✅ `AiInfoPushDataTest`（`AiInfoPushData` DJI Example JSON 反序列化 + snake_case + 往返闭环 + 退出原因映射）
 > - ⬜ DRC 下行控制 5 子包 POJO 待实现（camera 5 + flight 5 + light 5 + safety 1 + speaker 6）
 
 ### 12.1 DrcUpPushDataParseTest (`@Tag("spec")`) — ✅ 已实现
@@ -2319,13 +2383,81 @@
 ### 12.2 DrcUpMethodTest (`@Tag("spec")`) — ✅ 已实现
 
 > **已实现**：[DrcUpMethodTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/command/drc/up/DrcUpMethodTest.java)
-> 覆盖：`DrcUpMethod` 枚举 method 字符串↔枚举双向映射
+> 覆盖：`DrcUpMethod` 枚举 12 个 method 字符串↔枚举双向映射（10 个 simulator 实现 + 1 个 Pilot `@Inferred` + 1 个 v1.16 AI `drc_ai_info_push`）
 
-### 12.3-12.4 DRC 下行控制 POJO — ⬜ 待实现
+### 12.3 DrcMethodTest (`@Tag("spec")`) — ✅ 已实现
+
+> **已实现**：[DrcMethodTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/protocol/method/DrcMethodTest.java)
+> 覆盖：`DrcMethod` 枚举 30 个 method 字符串↔枚举双向映射（19 个 simulator catalog + 11 个 v1.16 AI 新增），`HEART_BEAT` 标注 `@Inferred`，methodName 唯一无重复
+
+### 12.4 DRC 下行控制 POJO（camera/flight/light/safety/speaker） — ⬜ 待实现
 
 - 基准：doc:drc.html | spec | green
 - 测试模式：与 command.service 一致（组件数 / snake_case 反序列化 / 序列化 / 注解 / 往返）
 - 子包：camera（5）/ flight（5：DroneControlRequest/StickControlRequest/HeartBeatRequest/Reply）/ light（5）/ speaker（6）
+
+### 12.5 AiEnumTest (`@Tag("spec")`) — ✅ 已实现
+
+> **已实现**：[AiEnumTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/command/drc/ai/AiEnumTest.java)
+> 覆盖：6 个 AI 枚举 `@JsonValue` code↔常量双向映射
+> - `AiSwitchState`：0=OFF, 1=ON
+> - `AiScoreMode`：0=INVALID, 1=COUNT, 2=SEARCH_RESCUE, 3=CUSTOM
+> - `AiTrackState`：0=IDLE, 1=WAITING_SELECT, 2=WAITING_CONFIRM, 3=TRACKING
+> - `AiTrackStateReason`：正常原因 0-15 + 退出原因 160-168，共 25 个
+> - `AiImageSource`：1=WIDE, 2=ZOOM, 3=IR, 7=VISIBLE_LIGHT（enum_list 多选值域）
+> - `AiDigitalEffect`：0=WHITE_HOT, 1=BLACK_HOT, 2=RED_HOT（enum_list 多选值域）
+
+### 12.6 AiRequestTest (`@Tag("spec")`) — ✅ 已实现
+
+> **已实现**：[AiRequestTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/command/drc/ai/AiRequestTest.java)
+> 覆盖：8 个 AI 下行 Request POJO 反序列化 + 往返闭环
+> - `AiModelSelectRequest`：`{"index":0}` 反序列化 + 往返闭环
+> - `AiIdentifySetRequest`：`{"on":1}` 反序列化，`on` 映射为 `AiSwitchState.ON`
+> - `AiIdentifyScoreModeSetRequest`：`{"score_mode":3}` 反序列化，映射为 `AiScoreMode.CUSTOM`
+> - `AiIdentifyScoreSetRequest`：`{"score":100}` 反序列化 + 往返闭环
+> - `AiIdentifyFilterSetRequest`：`{"filters":[1,2,3]}` 反序列化 + 往返闭环
+> - `AiSpotlightZoomSetRequest`：`{"on":0}` 反序列化，`on` 映射为 `AiSwitchState.OFF`
+> - `AiSpotlightZoomTrackRequest`：`{"target_index":0}` 反序列化 + 往返闭环
+> - `AiSpotlightZoomSelectRequest`：归一化坐标 ×10000 反序列化 + 往返闭环
+
+### 12.7 AiInfoPushDataTest (`@Tag("spec")`) — ✅ 已实现
+
+> **已实现**：[AiInfoPushDataTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/command/drc/ai/AiInfoPushDataTest.java)
+> 覆盖：`drc_ai_info_push` 推送数据 POJO 反序列化与序列化
+> - 反序列化 DJI Example JSON：所有字段正确绑定（识别/跟随开关、跟随状态与原因、模型列表、选中模型、航线 AI 状态）
+> - 序列化后含 snake_case 字段名（`identify_on`/`spotlight_zoom_on`/`ai_spotlight_zoom`/`ai_model_list`/`selected_ai_model`/`ai_wayline_state`）
+> - 往返闭环：序列化 → 反序列化保持不变
+> - 退出原因 `state_reason=168` 映射为 `AiTrackStateReason.EXIT_RC_SIGNAL_LOST`
+
+#### shouldDeserializeFullExample_whenDjiJsonGiven
+
+- 输入：DJI 文档 `drc_ai_info_push` Example JSON（含 `identify_on`/`spotlight_zoom_on`/`ai_spotlight_zoom`/`ai_model_list`/`selected_ai_model`/`ai_wayline_state` 6 个顶层字段）
+- 预期：所有字段正确绑定，`identifyOn=AiSwitchState.ON`，`spotlightZoomOn=AiSwitchState.ON`，`aiSpotlightZoom.state=AiTrackState.IDLE`，`aiSpotlightZoom.stateReason=AiTrackStateReason.NORMAL`，`aiModelList` 含 2 个模型（DJI 内置 index=0 + 三方模型 index=128），`selectedAiModel.labels` 含 2 个标签（摩托车/自行车），`aiWaylineState.countDownTime=23`
+- 断言：`assertThat(data.identifyOn()).isEqualTo(AiSwitchState.ON); assertThat(data.aiModelList()).hasSize(2); assertThat(data.aiWaylineState().countDownTime()).isEqualTo(23)`
+
+#### shouldSerializeToSnakeCase_whenRoundTrip
+
+- 输入：反序列化后的 `AiInfoPushData` 对象
+- 预期：序列化 JSON 含 `"identify_on"`/`"spotlight_zoom_on"`/`"ai_spotlight_zoom"`/`"ai_model_list"`/`"selected_ai_model"`/`"ai_wayline_state"` snake_case 字段名
+- 断言：`assertThat(json).contains("\"identify_on\"", "\"ai_wayline_state\"")`
+
+#### shouldRoundTrip_whenSerializeThenDeserialize
+
+- 输入：反序列化 → 序列化 → 反序列化后的对象
+- 预期：两次反序列化结果相等
+- 断言：`assertThat(roundTrip).isEqualTo(original)`
+
+#### shouldMapExitReason_whenStateReason168
+
+- 输入：`{"state_reason":168}` 的 `ai_spotlight_zoom` 子结构
+- 预期：`stateReason` 映射为 `AiTrackStateReason.EXIT_RC_SIGNAL_LOST`（168=丢失遥控/图传信号，退出 AI 跟随）
+- 断言：`assertThat(state.stateReason()).isEqualTo(AiTrackStateReason.EXIT_RC_SIGNAL_LOST)`
+
+#### shouldMarkInferred_whenAiWaylineState
+
+- 输入：`AiInfoPushData.AiWaylineState.class` 的 `@Inferred` 注解
+- 预期：DJI 文档 Data 表未列出 `ai_wayline_state`，基于 Example JSON 推断字段名与类型，标注 `@Inferred`
+- 断言：`assertThat(AiInfoPushData.AiWaylineState.class.getAnnotation(Inferred.class)).isNotNull()`
 
 ---
 
@@ -2351,21 +2483,21 @@
 ### 13.3-13.10 其余 event POJO — ⬜ 待实现
 
 - 基准：doc:dock3/events.html | spec | green
-- 子包：system（4：OtaProgressData/FileuploadProgressData/ServiceProgressData）/ flight（10：CameraPhotoTakeProgressData/FlyToPointProgressData/TakeoffToPointProgressData/PhotoProgressData/PoiCircleStatusData/ObstacleAvoidanceNotifyData/JoystickInvalidNotifyData）/ wayline（6：FlighttaskProgressData/FlighttaskReadyData/InFlightWaylineProgressData/ReturnHomeInfoData/DeviceExitHomingNotifyData）/ media（3）/ alert（5）/ speaker（4）/ psdk（4）/ esdk（2）/ flightarea（3）
+- 子包：system（4：OtaProgressData/FileUploadProgressData/ServiceProgressData）/ flight（10：CameraPhotoTakeProgressData/FlyToPointProgressData/TakeoffToPointProgressData/PhotoProgressData/PoiCircleStatusData/ObstacleAvoidanceNotifyData/JoystickInvalidNotifyData）/ wayline（6：FlighttaskProgressData/FlighttaskReadyData/InFlightWaylineProgressData/ReturnHomeInfoData/DeviceExitHomingNotifyData）/ media（3）/ alert（5）/ speaker（4）/ psdk（4）/ esdk（2）/ flightarea（3）
 - **CameraPhotoTakeProgressDataTest** 已实现（[测试文件](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/command/event/flight/CameraPhotoTakeProgressDataTest.java)，ext.cameraMode 反序列化 + 嵌套结构）
 
 ---
 
 ## 14. command.property 包
 
-> 测试模式：`property/set` 通道 `PropertySetRequest`/`PropertySetReply`/`PropertySetResult` + `PropertySetMethod` 枚举 15 个可设置属性
+> 测试模式：`property/set` 通道 `PropertySetRequest`/`PropertySetReply`/`PropertySetResult` + `PropertySetMethod` 枚举 18 个可设置属性
 >
 > **已实现状态**（0/4）：全部待实现
 
 ### 14.1-14.4 PropertySet 相关 — ⬜ 待实现
 
 - 基准：doc:dock3/property-set.html | spec | green
-- 测试模式：`PropertySetMethod` 枚举 15 个可设置属性 method 字符串↔枚举双向映射、`PropertySetRequest` 批量属性设置反序列化、`PropertySetReply`/`PropertySetResult` 回复解析
+- 测试模式：`PropertySetMethod` 枚举 18 个可设置属性 method 字符串↔枚举双向映射、`PropertySetRequest` 批量属性设置反序列化、`PropertySetReply`/`PropertySetResult` 回复解析
 
 ---
 
@@ -2455,8 +2587,8 @@
 
 - **测试类数**：15（model 6 + flow 4 + telemetry 5）
 - **`@Disabled` 标红项**：1（DeviceCompatibility #3：SMART_CONTROLLER_ENTERPRISE switch 未覆盖）
-- **特征化锁定 #1 bug 行为**：DroneOsd/ControllerOsd/DockOsd 各有 `shouldDeserializeSnakeCaseJson_whenAllFieldsNull`，锁定"snake_case 反序列化字段为 null"的当前行为（修复后需更新为正确映射断言）
-- **DeviceModelProvider 契约**：由 DroneModel/DockModel/ControllerModel 3 个测试类的 `shouldImplementDeviceModelProvider` + `shouldReturnToModel_*` 覆盖
+- **特征化锁定 #1 bug 行为**：DroneOsd/RcOsd/DockOsd 各有 `shouldDeserializeSnakeCaseJson_whenAllFieldsNull`，锁定"snake_case 反序列化字段为 null"的当前行为（修复后需更新为正确映射断言）
+- **DeviceModelProvider 契约**：由 DroneModel/DockModel/RcModel 3 个测试类的 `shouldImplementDeviceModelProvider` + `shouldReturnToModel_*` 覆盖
 - **全矩阵参数化**：DeviceCompatibility 的 dock(3×14=42) 与 controller(4×14=56) 兼容矩阵全覆盖
 
 ---

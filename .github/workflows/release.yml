@@ -1,0 +1,106 @@
+# =============================================================================
+# GitHub Actions — DJI Cloud API SDK Release（GitHub 侧：打包 + 创建 Release）
+# =============================================================================
+# 用途：当 GitHub 仓库收到版本号格式的 tag 推送时（通常由 Codeup 镜像推送触发），
+#       自动在 GitHub 侧独立执行 Maven 打包并创建 GitHub Release。
+#
+# 流程：
+#   1. Checkout 代码
+#   2. 设置 JDK 21 + Maven
+#   3. 多模块版本号统一更新（使用 tag 作为版本号）
+#   4. Maven 多模块构建（package）
+#   5. 打包源码（zip + tar.gz）
+#   6. 创建 GitHub Release 并上传源码包 + 两个 JAR
+#
+# 多模块结构：
+#   - dji-cloud-api-sdk（协议定义层）
+#   - dji-cloud-api-sdk-wayline（航线工具层，依赖 sdk）
+#
+# 触发条件：推送版本号格式的 tag（如 1.16.1.0）
+# =============================================================================
+
+name: Release
+
+on:
+  push:
+    tags:
+      # 仅版本号格式的 tag 触发（如 1.16.1.0、1.16.1.1）
+      - '[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+
+permissions:
+  contents: write   # 创建 Release 需要写权限
+
+jobs:
+  release:
+    name: 打包并创建 GitHub Release
+    runs-on: ubuntu-latest
+    steps:
+      # --- 1. Checkout 代码 ---
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # 完整历史，便于生成 Release notes
+
+      # --- 2. 设置 JDK 21 + Maven ---
+      - name: Setup JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: maven
+
+      # --- 3. 多模块版本号统一更新 ---
+      - name: 设置版本号（对齐 tag）
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "构建版本: ${TAG}"
+          mvn versions:set -DnewVersion="${TAG}" -DprocessAllModules=true -DgenerateBackupPoms=false
+
+      # --- 4. Maven 多模块构建 ---
+      - name: Maven 构建
+        run: mvn -B clean package -DskipTests
+
+      # --- 5. 打包源码 ---
+      - name: 打包源码
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "当前发布版本: ${TAG}"
+
+          # 打包（多模块结构：sdk/ + sdk-wayline/ + docs/ + 根目录文件）
+          PKG_DIR="dji-cloud-api-sdk-${TAG}"
+          mkdir -p "${PKG_DIR}"
+          cp -r sdk sdk-wayline docs "${PKG_DIR}/"
+          cp pom.xml README.md LICENSE AGENTS.md "${PKG_DIR}/"
+
+          # 生成 zip 和 tar.gz
+          zip -r "dji-cloud-api-sdk-${TAG}-src.zip" "${PKG_DIR}"
+          tar czf "dji-cloud-api-sdk-${TAG}-src.tar.gz" "${PKG_DIR}"
+
+          # 复制两个 JAR 包到工作目录
+          cp sdk/target/dji-cloud-api-sdk-${TAG}.jar .
+          cp sdk-wayline/target/dji-cloud-api-sdk-wayline-${TAG}.jar .
+
+          # 输出文件信息
+          echo "=== 发布产物 ==="
+          ls -lh dji-cloud-api-sdk-${TAG}-src.* dji-cloud-api-sdk-${TAG}.jar dji-cloud-api-sdk-wayline-${TAG}.jar
+
+      # --- 6. 创建 GitHub Release 并上传资产 ---
+      - name: 创建 Release 并上传资产
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: ${{ github.ref_name }}
+          body: |
+            DJI Cloud API SDK ${{ github.ref_name }}
+
+            多模块结构：
+            - `dji-cloud-api-sdk`（协议定义层）
+            - `dji-cloud-api-sdk-wayline`（航线工具层）
+
+            包含源码包和预构建 JAR。
+          generate_release_notes: true
+          files: |
+            dji-cloud-api-sdk-${{ github.ref_name }}-src.zip
+            dji-cloud-api-sdk-${{ github.ref_name }}-src.tar.gz
+            dji-cloud-api-sdk-${{ github.ref_name }}.jar
+            dji-cloud-api-sdk-wayline-${{ github.ref_name }}.jar

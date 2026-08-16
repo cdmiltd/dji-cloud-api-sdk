@@ -1,15 +1,24 @@
 # =============================================================================
-# 云效 Flow 流水线 — DJI Cloud API SDK Release
+# 云效 Flow 流水线 — DJI Cloud API SDK（Codeup 侧：构建 + 制品仓库 + 代码同步）
 # =============================================================================
-# 用途：当 Codeup 仓库收到版本号格式的 tag 推送时，自动将代码镜像到 GitHub 和
-#       Gitee，打包源码（仅 src/、docs/、根目录文件），并在两平台创建 Release。
+# 用途：当 Codeup 仓库收到版本号格式的 tag 推送时，自动：
+#   1. Maven 多模块构建 + 发布到云效 Maven 制品仓库
+#   2. 镜像推送代码（含 tags）到 GitHub 和 Gitee
+#
+# 后续动作（由各平台 CI 独立完成，不在本流水线内）：
+#   - GitHub Actions 收到 tag 推送后打包并创建 GitHub Release
+#   - Gitee Go 收到 tag 推送后打包并创建 Gitee Release
+#
+# 多模块结构：
+#   - dji-cloud-api-sdk（协议定义层）
+#   - dji-cloud-api-sdk-wayline（航线工具层，依赖 sdk）
 #
 # 使用方式：
 #   1. 进入云效 Flow → 新建流水线 → 选择「YAML 化编排」→ 空模板
 #   2. 将本文件内容粘贴到流水线「流程配置」中
 #   3. 在「变量和缓存 → 变量」中添加以下变量：
-#      - GITHUB_TOKEN: GitHub Personal Access Token（需 repo 权限）
-#      - GITEE_TOKEN:  Gitee 私人令牌（需 projects + releases 权限）
+#      - GITHUB_TOKEN: GitHub Personal Access Token（需 repo 权限，用于镜像推送）
+#      - GITEE_TOKEN:  Gitee 私人令牌（需 projects 权限，用于镜像推送）
 #   4. 在「代码源」中配置 Codeup 服务连接，将 <service-connection-id> 替换为实际 ID
 #   5. 保存并运行
 #
@@ -31,40 +40,70 @@ sources:
 
 # ==================== 流水线阶段 ====================
 stages:
-  # -------------------- 阶段 1：镜像推送 --------------------
-  mirror_stage:
-    name: 镜像推送
+  # -------------------- 阶段 1：构建 + 发布到云效制品仓库 --------------------
+  build_stage:
+    name: 构建并发布到制品仓库
     jobs:
-      mirror_job:
-        name: 推送到 GitHub 和 Gitee
+      build_job:
+        name: Maven 多模块构建 + deploy
         runsOn: public/cn-beijing
         steps:
-          git_config:
-            name: 配置 Git
-            step: Command
+          build:
+            name: Maven 构建 + 发布到云效 Maven 制品仓库
+            step: JavaBuild
             with:
+              jdkVersion: '21'
+              mavenVersion: '3.9.3'
               run: |
-                git config --global user.name "yunxiao-flow"
-                git config --global user.email "yunxiao-flow@aliyun.com"
-                echo "Git 配置完成"
+                # 提取 tag：环境变量 → git describe → git tag 最新
+                TAG="${CI_COMMIT_REF_NAME:-}"
+                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
+                  TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
+                fi
+                if [ -z "${TAG}" ]; then
+                  TAG=$(git tag --sort=-creatordate 2>/dev/null | head -1 || echo "")
+                fi
+                echo "构建版本: ${TAG}"
+
+                # 多模块版本号统一更新（父 pom + sdk + sdk-wayline）
+                mvn versions:set -DnewVersion="${TAG}" -DprocessAllModules=true -DgenerateBackupPoms=false
+
+                # 构建 + 发布到云效 Maven 制品仓库
+                mvn -B clean deploy -DskipTests
+
+                # 列出构建产物
+                echo "=== 构建产物 ==="
+                ls -lh sdk/target/dji-cloud-api-sdk-${TAG}.jar
+                ls -lh sdk-wayline/target/dji-cloud-api-sdk-wayline-${TAG}.jar
+                echo "已发布到云效 Maven 制品仓库"
+
+  # -------------------- 阶段 2：镜像推送代码到 GitHub / Gitee --------------------
+  sync_stage:
+    name: 同步代码到 GitHub / Gitee
+    dependsOn: build_stage
+    jobs:
+      sync_job:
+        name: 镜像推送代码（含 tags）
+        runsOn: public/cn-beijing
+        steps:
+          # --- 2.1 推送到 GitHub ---
           push_github:
             name: 推送到 GitHub
             step: Command
             with:
               run: |
-                git remote add github "https://oauth2:${GITHUB_TOKEN}@github.com/cdmiltd/dji-cloud-api-sdk.git"
+                git config --global user.name "yunxiao-flow"
+                git config --global user.email "yunxiao-flow@aliyun.com"
 
-                # 获取触发 tag 名称（不依赖环境变量，从 git 提取）
-                TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-                echo "触发 tag: ${TAG}"
+                git remote add github "https://oauth2:${GITHUB_TOKEN}@github.com/cdmiltd/dji-cloud-api-sdk.git"
 
                 # 重试推送（国内访问 GitHub 不稳定）
                 MAX_RETRIES=3
                 RETRY_DELAY=15
                 for i in $(seq 1 ${MAX_RETRIES}); do
                   if git push github refs/remotes/origin/*:refs/heads/* --force && \
-                     git push github "refs/tags/${TAG}" --force; then
-                    echo "GitHub 推送成功"
+                     git push github --tags --force; then
+                    echo "GitHub 推送成功（分支 + tags）"
                     break
                   fi
                   if [ ${i} -lt ${MAX_RETRIES} ]; then
@@ -78,205 +117,16 @@ stages:
                 done
 
                 git remote remove github
-                echo "GitHub 推送完成"
+                echo "GitHub 推送完成，GitHub Actions 将自动触发打包与 Release"
+
+          # --- 2.2 推送到 Gitee ---
           push_gitee:
             name: 推送到 Gitee
             step: Command
             with:
               run: |
                 git remote add gitee "https://oauth2:${GITEE_TOKEN}@gitee.com/alpeai/dji-cloud-api-sdk.git"
-
-                # 获取触发 tag 名称
-                TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "")
-                echo "触发 tag: ${TAG}"
-
                 git push gitee refs/remotes/origin/*:refs/heads/* --force
-                git push gitee "refs/tags/${TAG}" --force
+                git push gitee --tags --force
                 git remote remove gitee
-                echo "Gitee 推送完成"
-
-  # -------------------- 阶段 2：打包 + 发布 --------------------
-  release_stage:
-    name: 打包发布
-    jobs:
-      release_job:
-        name: 打包源码并发布 Release
-        runsOn: public/cn-beijing
-        steps:
-          build:
-            name: Maven 构建 JAR
-            step: JavaBuild
-            with:
-              jdkVersion: '21'
-              mavenVersion: '3.9.3'
-              run: |
-                TAG="${CI_COMMIT_REF_NAME}"
-                if [ -z "${TAG}" ] || [ "${TAG}" = "main" ]; then
-                  TAG=$(git describe --tags --abbrev=0)
-                fi
-                echo "构建版本: ${TAG}"
-                mvn versions:set -DnewVersion="${TAG}" -DgenerateBackupPoms=false
-                mvn -B clean package -DskipTests
-                echo "${TAG}" > /tmp/release_tag.txt
-
-          package:
-            name: 打包源码
-            step: Command
-            with:
-              run: |
-                TAG=$(cat /tmp/release_tag.txt)
-                echo "当前发布版本: ${TAG}"
-
-                # 打包（仅包含 src/、docs/ 和根目录文件）
-                PKG_DIR="dji-cloud-api-sdk-${TAG}"
-                mkdir -p "${PKG_DIR}"
-                cp -r src docs "${PKG_DIR}/"
-                cp pom.xml README.md LICENSE "${PKG_DIR}/"
-
-                # 生成 zip 和 tar.gz
-                zip -r "dji-cloud-api-sdk-${TAG}-src.zip" "${PKG_DIR}"
-                tar czf "dji-cloud-api-sdk-${TAG}-src.tar.gz" "${PKG_DIR}"
-
-                # 复制 JAR 包
-                cp target/dji-cloud-api-sdk-${TAG}.jar .
-
-                # 输出文件信息
-                ls -lh dji-cloud-api-sdk-${TAG}-src.* dji-cloud-api-sdk-${TAG}.jar
-
-          github_release:
-            name: 创建 GitHub Release
-            step: Command
-            with:
-              run: |
-                TAG=$(cat /tmp/release_tag.txt)
-
-                # GitHub API 请求函数（内置重试：3 次，间隔 15 秒）
-                gh_curl() {
-                  curl --connect-timeout 30 --max-time 300 \
-                    --retry 3 --retry-delay 15 --retry-connrefused \
-                    -s "$@"
-                }
-
-                # 幂等：删除已有 Release（重复触发不冲突）
-                EXISTING=$(gh_curl \
-                  "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases/tags/${TAG}" \
-                  -H "Authorization: token ${GITHUB_TOKEN}")
-                EXISTING_ID=$(echo "${EXISTING}" | jq -r '.id // empty')
-                if [ -n "${EXISTING_ID}" ] && [ "${EXISTING_ID}" != "null" ]; then
-                  echo "删除已有 GitHub Release (ID: ${EXISTING_ID})"
-                  gh_curl -X DELETE \
-                    "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases/${EXISTING_ID}" \
-                    -H "Authorization: token ${GITHUB_TOKEN}"
-                fi
-
-                # 创建 Release
-                RELEASE_RESPONSE=$(gh_curl -X POST \
-                  "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases" \
-                  -H "Authorization: token ${GITHUB_TOKEN}" \
-                  -H "Content-Type: application/json" \
-                  -d "{
-                    \"tag_name\": \"${TAG}\",
-                    \"name\": \"${TAG}\",
-                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n包含源码包（src/、docs/、根目录文件）和预构建 JAR。\",
-                    \"generate_release_notes\": true
-                  }")
-                echo "GitHub Release 创建结果: ${RELEASE_RESPONSE}"
-
-                # 获取上传 URL
-                UPLOAD_URL=$(echo "${RELEASE_RESPONSE}" | jq -r '.upload_url' | sed 's/{?name,label}//')
-                if [ -z "${UPLOAD_URL}" ] || [ "${UPLOAD_URL}" = "null" ]; then
-                  echo "::error::GitHub Release 创建失败，尝试获取已有 Release"
-                  UPLOAD_URL=$(gh_curl \
-                    "https://api.github.com/repos/cdmiltd/dji-cloud-api-sdk/releases/tags/${TAG}" \
-                    -H "Authorization: token ${GITHUB_TOKEN}" \
-                    | jq -r '.upload_url' | sed 's/{?name,label}//')
-                fi
-
-                if [ -z "${UPLOAD_URL}" ] || [ "${UPLOAD_URL}" = "null" ]; then
-                  echo "::error::无法获取 GitHub Release 上传 URL，终止"
-                  exit 1
-                fi
-
-                # 上传 zip 包
-                gh_curl -X POST \
-                  "${UPLOAD_URL}?name=dji-cloud-api-sdk-${TAG}-src.zip" \
-                  -H "Authorization: token ${GITHUB_TOKEN}" \
-                  -H "Content-Type: application/zip" \
-                  --data-binary "@dji-cloud-api-sdk-${TAG}-src.zip"
-
-                # 上传 tar.gz 包
-                gh_curl -X POST \
-                  "${UPLOAD_URL}?name=dji-cloud-api-sdk-${TAG}-src.tar.gz" \
-                  -H "Authorization: token ${GITHUB_TOKEN}" \
-                  -H "Content-Type: application/gzip" \
-                  --data-binary "@dji-cloud-api-sdk-${TAG}-src.tar.gz"
-
-                # 上传 JAR 包
-                gh_curl -X POST \
-                  "${UPLOAD_URL}?name=dji-cloud-api-sdk-${TAG}.jar" \
-                  -H "Authorization: token ${GITHUB_TOKEN}" \
-                  -H "Content-Type: application/java-archive" \
-                  --data-binary "@dji-cloud-api-sdk-${TAG}.jar"
-
-                echo "GitHub Release ${TAG} 发布完成"
-
-          gitee_release:
-            name: 创建 Gitee Release
-            step: Command
-            with:
-              run: |
-                TAG=$(cat /tmp/release_tag.txt)
-
-                # 幂等：删除已有 Release（重复触发不冲突）
-                EXISTING=$(curl -s \
-                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/tags/${TAG}?access_token=${GITEE_TOKEN}")
-                EXISTING_ID=$(echo "${EXISTING}" | jq -r '.id // empty')
-                if [ -n "${EXISTING_ID}" ] && [ "${EXISTING_ID}" != "null" ]; then
-                  echo "删除已有 Gitee Release (ID: ${EXISTING_ID})"
-                  curl -s -X DELETE \
-                    "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${EXISTING_ID}" \
-                    -H "Content-Type: application/json" \
-                    -d "{\"access_token\": \"${GITEE_TOKEN}\"}"
-                fi
-
-                # 创建 Release
-                RESPONSE=$(curl -s -X POST \
-                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases" \
-                  -H "Content-Type: application/json" \
-                  -d "{
-                    \"access_token\": \"${GITEE_TOKEN}\",
-                    \"tag_name\": \"${TAG}\",
-                    \"name\": \"${TAG}\",
-                    \"body\": \"DJI Cloud API SDK ${TAG}\\n\\n包含源码包（src/、docs/、根目录文件）和预构建 JAR。\",
-                    \"target_commitish\": \"main\"
-                  }")
-                RELEASE_ID=$(echo "${RESPONSE}" | jq -r '.id')
-
-                if [ "${RELEASE_ID}" = "null" ] || [ -z "${RELEASE_ID}" ]; then
-                  echo "::error::Gitee Release 创建失败: ${RESPONSE}"
-                  exit 1
-                fi
-                echo "Gitee Release ID: ${RELEASE_ID}"
-
-                # 上传 zip 包
-                curl -s -X POST \
-                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${RELEASE_ID}/attach_files" \
-                  -H "Content-Type: multipart/form-data" \
-                  -F "access_token=${GITEE_TOKEN}" \
-                  -F "file=@dji-cloud-api-sdk-${TAG}-src.zip"
-
-                # 上传 tar.gz 包
-                curl -s -X POST \
-                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${RELEASE_ID}/attach_files" \
-                  -H "Content-Type: multipart/form-data" \
-                  -F "access_token=${GITEE_TOKEN}" \
-                  -F "file=@dji-cloud-api-sdk-${TAG}-src.tar.gz"
-
-                # 上传 JAR 包
-                curl -s -X POST \
-                  "https://gitee.com/api/v5/repos/alpeai/dji-cloud-api-sdk/releases/${RELEASE_ID}/attach_files" \
-                  -H "Content-Type: multipart/form-data" \
-                  -F "access_token=${GITEE_TOKEN}" \
-                  -F "file=@dji-cloud-api-sdk-${TAG}.jar"
-
-                echo "Gitee Release ${TAG} 发布完成"
+                echo "Gitee 推送完成，Gitee Go 将自动触发打包与 Release"

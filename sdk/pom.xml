@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ltd.cdmi</groupId>
+        <artifactId>dji-cloud-api-sdk-parent</artifactId>
+        <version>1.16.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dji-cloud-api-sdk</artifactId>
+    <packaging>jar</packaging>
+
+    <name>DJI Cloud API SDK — Protocol Definition</name>
+    <description>
+        DJI Cloud API 协议定义层：纯 Java 类型（record + enum）表达协议常量与数据结构，
+        零业务逻辑，零运行时框架依赖（仅 Jackson）。
+    </description>
+
+    <dependencies>
+        <!-- JSON 编解码（codec 层使用） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+        <!-- Java 8 时间类型支持（java.time.*） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-jsr310</artifactId>
+        </dependency>
+        <!-- XML 注解（wayline/model POJO 使用 @JacksonXmlRootElement/@JacksonXmlProperty） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

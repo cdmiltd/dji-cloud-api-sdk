@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>ltd.cdmi</groupId>
+        <artifactId>dji-cloud-api-sdk-parent</artifactId>
+        <version>1.16.1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>dji-cloud-api-sdk-wayline</artifactId>
+    <packaging>jar</packaging>
+
+    <name>DJI Cloud API SDK — Wayline Tools</name>
+    <description>
+        DJI Cloud API 航线工具层：WPML 航线文件生成（Builder/Template）、
+        解析（Codec）、ZIP(KMZ) 打包、XML 序列化。
+        依赖 sdk 模块的 WPML 协议 POJO 定义。
+    </description>
+
+    <dependencies>
+        <!-- SDK 协议定义层（WPML POJO + 枚举） -->
+        <dependency>
+            <groupId>ltd.cdmi</groupId>
+            <artifactId>dji-cloud-api-sdk</artifactId>
+        </dependency>
+        <!-- XML 编解码（WpmlCodec 使用） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+        </dependency>
+        <!-- JSON 编解码（间接依赖，显式声明） -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+        </dependency>
+
+        <!-- 测试 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+        </dependency>
+    </dependencies>
+</project>

@@ -19,4 +19,9 @@ Thumbs.db
 prerelease-review/
 sdk-review-round3/
 dji-cloud-api-doc-comparison/
+dji-sdk-final-review/
+doc-change-tracker/
 .trae-html-share-packages/
+
+# Maven settings (contains credentials)
+settings.xml

@@ -5,15 +5,21 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>ltd.cdmi</groupId>
-    <artifactId>dji-cloud-api-sdk</artifactId>
+    <artifactId>dji-cloud-api-sdk-parent</artifactId>
     <version>1.16.1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
 
     <name>DJI Cloud API SDK</name>
     <description>
         DJI Cloud API 协议定义 SDK，从 DJI Dock 模拟器抽取的协议层定义，
         供模拟器与 hivemind 平台共同引用，实现 DJI Cloud API 协议定义的单一真相源。
+        多模块结构：sdk（协议定义层）+ sdk-wayline（航线工具层）。
     </description>
+
+    <modules>
+        <module>sdk</module>
+        <module>sdk-wayline</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
@@ -24,34 +30,41 @@
         <junit.version>5.10.2</junit.version>
     </properties>
 
-    <dependencies>
-        <!-- JSON 编解码（codec 层使用） -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <!-- Java 8 时间类型支持（java.time.*） -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <!-- XML 编解码（wayline 包使用） -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <!-- 测试 -->
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-    </dependencies>
+    <dependencyManagement>
+        <dependencies>
+            <!-- JSON 编解码（codec 层使用） -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-databind</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <!-- Java 8 时间类型支持（java.time.*） -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.datatype</groupId>
+                <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <!-- XML 编解码（sdk-wayline 模块使用） -->
+            <dependency>
+                <groupId>com.fasterxml.jackson.dataformat</groupId>
+                <artifactId>jackson-dataformat-xml</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <!-- SDK 协议定义层 -->
+            <dependency>
+                <groupId>ltd.cdmi</groupId>
+                <artifactId>dji-cloud-api-sdk</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <!-- 测试 -->
+            <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <licenses>
         <license>
@@ -62,20 +75,34 @@
     </licenses>
 
     <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <release>21</release>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.2.5</version>
-            </plugin>
-        </plugins>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <version>3.13.0</version>
+                    <configuration>
+                        <release>21</release>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-surefire-plugin</artifactId>
+                    <version>3.2.5</version>
+                </plugin>
+            </plugins>
+        </pluginManagement>
     </build>
+
+    <!-- 云效 Maven 私服配置 -->
+    <distributionManagement>
+        <snapshotRepository>
+            <id>2103345-snapshot-VnUPUJ</id>
+            <url>https://packages.aliyun.com/609ea63cb8df5d7f444983ac/maven/2103345-snapshot-vnupuj</url>
+        </snapshotRepository>
+        <repository>
+            <id>2103345-snapshot-VnUPUJ</id>
+            <url>https://packages.aliyun.com/609ea63cb8df5d7f444983ac/maven/2103345-snapshot-vnupuj</url>
+        </repository>
+    </distributionManagement>
 </project>

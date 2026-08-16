@@ -1,0 +1,79 @@
+// Copyright (C) 2026 CDMI.LTD
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package ltd.cdmi.dji.cloudapi.sdk.command.request.wayline;
+
+import ltd.cdmi.dji.cloudapi.sdk.codec.MessageCodec;
+
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+/**
+ * 验证 {@link FlighttaskProgressGetRequest} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
+ *
+ * <p><b>核心证明</b>：flighttask_progress_get 请求 data（flight_id 必填，sn 可选-蛙跳场景）
+ * 能反序列化为 record；缺失 flight_id 时构造器抛 NPE。
+ */
+class FlighttaskProgressGetRequestTest {
+
+    private static final String SAMPLE_JSON =
+            "{\"flight_id\":\"FLIGHT001\",\"sn\":\"DOCK_SN001\"}";
+
+    @Test
+    @DisplayName("反序列化：flight_id + sn → 字段正确绑定")
+    void testDeserialize() {
+        FlighttaskProgressGetRequest req = MessageCodec.fromJson(SAMPLE_JSON, FlighttaskProgressGetRequest.class);
+        assertEquals("FLIGHT001", req.flightId());
+        assertEquals("DOCK_SN001", req.sn());
+    }
+
+    @Test
+    @DisplayName("序列化：record → JSON 含 flight_id 与 sn")
+    void testSerialize() {
+        FlighttaskProgressGetRequest req = new FlighttaskProgressGetRequest("FLIGHT001", "DOCK_SN001");
+        String json = MessageCodec.toJson(req);
+        assertTrue(json.contains("\"flight_id\":\"FLIGHT001\""), "JSON 应含 flight_id，实际: " + json);
+        assertTrue(json.contains("\"sn\":\"DOCK_SN001\""), "JSON 应含 sn，实际: " + json);
+    }
+
+    @Test
+    @DisplayName("往返闭环：序列化→反序列化保持不变")
+    void testRoundTrip() {
+        FlighttaskProgressGetRequest original = new FlighttaskProgressGetRequest("FLIGHT001", "DOCK_SN001");
+        String json = MessageCodec.toJson(original);
+        FlighttaskProgressGetRequest back = MessageCodec.fromJson(json, FlighttaskProgressGetRequest.class);
+        assertEquals(original, back);
+    }
+
+    @Test
+    @DisplayName("可空字段：sn 省略时为 null（非蛙跳场景）")
+    void testOptionalSnNull() {
+        String json = "{\"flight_id\":\"FLIGHT001\"}";
+        FlighttaskProgressGetRequest req = MessageCodec.fromJson(json, FlighttaskProgressGetRequest.class);
+        assertEquals("FLIGHT001", req.flightId());
+        assertNull(req.sn(), "sn 省略时应为 null");
+    }
+
+    @Test
+    @DisplayName("缺失 flight_id 字段：构造器抛 NPE（包装为 IllegalStateException）")
+    void testMissingFlightIdThrowsNpe() {
+        assertThrows(IllegalStateException.class,
+                () -> MessageCodec.fromJson("{\"sn\":\"DOCK\"}", FlighttaskProgressGetRequest.class));
+    }
+}
