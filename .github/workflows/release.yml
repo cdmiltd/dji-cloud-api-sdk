@@ -70,7 +70,7 @@ jobs:
           PKG_DIR="dji-cloud-api-sdk-${TAG}"
           mkdir -p "${PKG_DIR}"
           cp -r sdk sdk-wayline docs "${PKG_DIR}/"
-          cp pom.xml README.md LICENSE AGENTS.md "${PKG_DIR}/"
+          cp pom.xml README.md LICENSE "${PKG_DIR}/"
 
           # 生成 zip 和 tar.gz
           zip -r "dji-cloud-api-sdk-${TAG}-src.zip" "${PKG_DIR}"
