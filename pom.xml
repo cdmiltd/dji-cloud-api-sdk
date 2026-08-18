@@ -6,7 +6,7 @@
 
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk-parent</artifactId>
-    <version>1.16.1.0-SNAPSHOT</version>
+    <version>1.16.1.1-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>DJI Cloud API SDK</name>

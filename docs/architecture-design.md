@@ -44,6 +44,9 @@
 
 自 v1.16.1.0 起，项目拆分为两个 Maven 模块，分离"协议定义层"与"航线工具层"：
 
+**v1.16.1.1**（SDK 补丁版本）：新增 `model/DeviceModels` 工具类，封装跨枚举统一查询能力
+（`findByDomainTypeSubType`），补充 SDK 未提供的 (domain, type, sub_type) 三元组 → `DeviceModel` 反查入口。
+
 ```
 dji-cloud-api-sdk/                        ← Git 根目录
 ├── pom.xml                               ← 父 pom（packaging=pom）
@@ -314,14 +317,15 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   └── UpdateTopoReplyData        result, subType?（0=上线/1=下线，@Inferred 待验证）
 │   └── package-info.java         command 子包总说明（与 envelope/method 对齐）
 │
-├── model/                   ← 设备型号层（7 类）
+├── model/                   ← 设备型号层（8 类）
 │   ├── DeviceDomain.java        domain 枚举（0=飞行器/2=遥控器/3=机场）
 │   ├── DeviceModel.java         型号三元组 record（domain/type/subType + 展示信息）
 │   ├── DeviceModelProvider.java 接口（enum → DeviceModel 转换契约 + default 委托方法）
 │   ├── DroneModel.java          14 种飞行器型号枚举 + fromType/fromModelKey 反查
 │   ├── DockModel.java           3 种机场型号枚举 + fromType/fromModelKey 反查
 │   ├── RcModel.java             4 种遥控器型号枚举 + fromType/fromModelKey 反查
-│   └── DeviceCompatibility.java 兼容性矩阵（dock↔drone / controller↔drone）
+│   ├── DeviceCompatibility.java 兼容性矩阵（dock↔drone / controller↔drone）
+│   └── DeviceModels.java        跨枚举统一查询（findByDomainTypeSubType）
 │
 ├── telemetry/               ← 遥测数据层
 │   ├── OsdField.java            65 个 OSD 字段名枚举（pushMode=0，周期推送）
@@ -662,6 +666,7 @@ sdk/
 | `DockModel` | 3 种机场 + `fromType(type, subType)` / `fromModelKey("3-3-0")` 反查 |
 | `RcModel` | 4 种遥控器 + `fromType(type, subType)` / `fromModelKey("2-119-0")` 反查 |
 | `DeviceCompatibility` | 兼容矩阵：`isCompatible(DockModel, DroneModel)` + `isCompatible(RcModel, DroneModel)` |
+| `DeviceModels` | 跨枚举反查：`findByDomainTypeSubType(int, int, int) → Optional<DeviceModel>`（按三元组分发到 `DroneModel`/`RcModel`/`DockModel` 的 `fromType`）+ `findByShortName(String) → Optional<DeviceModel>`（按简称遍历三枚举反查） |
 
 **已知缺陷**：无（已修复 #3 switch 未覆盖 SMART_CONTROLLER_ENTERPRISE，见 §6.2 修复记录）。
 

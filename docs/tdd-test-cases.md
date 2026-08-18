@@ -1769,6 +1769,124 @@
 - 断言：`assertThat(DeviceCompatibility.isCompatible(RcModel.SMART_CONTROLLER_ENTERPRISE, drone)).isFalse()`
 - 基准：doc:product-support.html | characterization | green
 
+### 8.7 DeviceModelsTest (`@Tag("spec")`)
+
+> 覆盖 `DeviceModels.findByDomainTypeSubType(int, int, int)` 跨枚举反查能力。
+> 设计依据：DJI Cloud API 通过 (domain, type, sub_type) 三元组唯一标识设备型号
+> （见 [DJI 产品支持](https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html)），
+> SDK 将型号按 domain 拆分到 `DroneModel`/`RcModel`/`DockModel` 三个独立枚举，
+> 本工具类封装跨枚举的统一查询入口。
+
+#### shouldReturnDroneModel_whenDomainIsAircraft
+- 输入：`findByDomainTypeSubType(0, 67, 0)` / `findByDomainTypeSubType(0, 100, 1)`
+- 预期：返回 `Optional.of(M30.toModel())` / `Optional.of(M4TD.toModel())`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(0, 67, 0))
+      .contains(DroneModel.M30.toModel());
+  assertThat(DeviceModels.findByDomainTypeSubType(0, 100, 1))
+      .contains(DroneModel.M4TD.toModel());
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnControllerModel_whenDomainIsController
+- 输入：`findByDomainTypeSubType(2, 119, 0)` / `findByDomainTypeSubType(2, 174, 0)`
+- 预期：返回 `Optional.of(RC_PLUS.toModel())` / `Optional.of(RC_PLUS_2.toModel())`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(2, 119, 0))
+      .contains(RcModel.RC_PLUS.toModel());
+  assertThat(DeviceModels.findByDomainTypeSubType(2, 174, 0))
+      .contains(RcModel.RC_PLUS_2.toModel());
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnDockModel_whenDomainIsDock
+- 输入：`findByDomainTypeSubType(3, 1, 0)` / `findByDomainTypeSubType(3, 3, 0)`
+- 预期：返回 `Optional.of(DOCK1.toModel())` / `Optional.of(DOCK3.toModel())`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(3, 1, 0))
+      .contains(DockModel.DOCK1.toModel());
+  assertThat(DeviceModels.findByDomainTypeSubType(3, 3, 0))
+      .contains(DockModel.DOCK3.toModel());
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnEmpty_whenDomainUnknown
+- 输入：`findByDomainTypeSubType(1, 0, 0)` / `findByDomainTypeSubType(99, 0, 0)` / `findByDomainTypeSubType(-1, 0, 0)`
+- 预期：返回 `Optional.empty()`（DJI 协议未定义 domain=1，domain=99/-1 非法）
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(1, 0, 0)).isEmpty();
+  assertThat(DeviceModels.findByDomainTypeSubType(99, 0, 0)).isEmpty();
+  assertThat(DeviceModels.findByDomainTypeSubType(-1, 0, 0)).isEmpty();
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnEmpty_whenTypeSubTypeUnknown
+- 输入：`findByDomainTypeSubType(0, 999, 0)` / `findByDomainTypeSubType(3, 999, 0)`
+- 预期：返回 `Optional.empty()`（domain 合法但 type+subType 不匹配任何已知型号）
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(0, 999, 0)).isEmpty();
+  assertThat(DeviceModels.findByDomainTypeSubType(3, 999, 0)).isEmpty();
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldCoverAllModels_whenParameterized
+- 输入：`@MethodSource` 提供 21 组 `(domain, type, subType, expectedModel)` 覆盖
+  全部 14 个 `DroneModel` + 4 个 `RcModel` + 3 个 `DockModel`
+- 预期：每个三元组反查返回对应 `DeviceModel`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByDomainTypeSubType(domain, type, subType))
+      .contains(expected);
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnDroneModel_whenShortNameMatches
+- 输入：`findByShortName("M30")` / `findByShortName("M4TD")` / `findByShortName("  M30  ")`（前后空格）
+- 预期：返回 `Optional.of(M30.toModel())` / `Optional.of(M4TD.toModel())` / `Optional.of(M30.toModel())`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByShortName("M30")).contains(DroneModel.M30.toModel());
+  assertThat(DeviceModels.findByShortName("M4TD")).contains(DroneModel.M4TD.toModel());
+  assertThat(DeviceModels.findByShortName("  M30  ")).contains(DroneModel.M30.toModel());
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnDockModel_whenShortNameMatches
+- 输入：`findByShortName("Dock1")` / `findByShortName("Dock3")`
+- 预期：返回 `Optional.of(DOCK1.toModel())` / `Optional.of(DOCK3.toModel())`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByShortName("Dock1")).contains(DockModel.DOCK1.toModel());
+  assertThat(DeviceModels.findByShortName("Dock3")).contains(DockModel.DOCK3.toModel());
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldReturnEmpty_whenShortNameUnknown
+- 输入：`findByShortName("Unknown")` / `findByShortName("")` / `findByShortName(null)` / `findByShortName("   ")`
+- 预期：返回 `Optional.empty()`（不匹配任何型号简称、空字符串、null、纯空格）
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByShortName("Unknown")).isEmpty();
+  assertThat(DeviceModels.findByShortName("")).isEmpty();
+  assertThat(DeviceModels.findByShortName(null)).isEmpty();
+  assertThat(DeviceModels.findByShortName("   ")).isEmpty();
+  ```
+- 基准：doc:product-support.html | spec | green
+
+#### shouldCoverAllShortNames_whenParameterized
+- 输入：`@MethodSource` 提供 21 组 `(shortName, expectedModel)` 覆盖全部型号
+- 预期：每个简称反查返回对应 `DeviceModel`
+- 断言：
+  ```java
+  assertThat(DeviceModels.findByShortName(shortName)).contains(expected);
+  ```
+- 基准：doc:product-support.html | spec | green
+
 ---
 
 ## 9. flow 包
