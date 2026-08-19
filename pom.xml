@@ -94,15 +94,15 @@
         </pluginManagement>
     </build>
 
-    <!-- 云效 Maven 私服配置 -->
+    <!-- 云效 Maven 私服配置（snapshot 与 release 分离：SNAPSHOT 版本 → snapshot 仓库，正式版本 → release 仓库） -->
     <distributionManagement>
         <snapshotRepository>
             <id>2103345-snapshot-VnUPUJ</id>
             <url>https://packages.aliyun.com/609ea63cb8df5d7f444983ac/maven/2103345-snapshot-vnupuj</url>
         </snapshotRepository>
         <repository>
-            <id>2103345-snapshot-VnUPUJ</id>
-            <url>https://packages.aliyun.com/609ea63cb8df5d7f444983ac/maven/2103345-snapshot-vnupuj</url>
+            <id>2103345-release-CZspgN</id>
+            <url>https://packages.aliyun.com/609ea63cb8df5d7f444983ac/maven/2103345-release-czspgn</url>
         </repository>
     </distributionManagement>
 </project>
