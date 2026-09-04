@@ -42,6 +42,12 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 不在本枚举中重复：wireless_link、maintain_status、network_state、drc_state、
  * drone_charge_state、battery_store_mode、cover_state、putter_state、drone_in_dock、mode_code。
  *
+ * <p><b>负载属性 key 为动态枚举值，非固定字面量</b>：state 负载属性（payloads 属性 key、
+ * 热成像调色板 struct）的 key 是<b>负载索引枚举值</b>（如 M30 → {@code "52-0-0"}、
+ * M3D → {@code "80-0-0"}、M4TD → {@code "99-0-0"}），与 struct 内 {@code payload_index}
+ * 字段数值一致。DJI 文档中的 {@code type_subtype_gimbalindex} 是占位符而非字面量字段名；
+ * 平台若按该字面量反序列化负载属性将取不到值。本枚举因此不收录该占位符。
+ *
  * <p>参考：
  * <ul>
  *   <li><a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock2/properties.html">机场设备属性推送</a></li>
@@ -171,11 +177,6 @@ public enum StateField {
 
     /** PSDK 负载设备属性值（飞行器 state） */
     PSDK_WIDGET_VALUES("psdk_widget_values", "PSDK负载设备属性值"),
-
-    // ==================== 热成像（pushMode=1）====================
-
-    /** 云台热成像结构，含 thermal_supported_palette_styles（飞行器 state, M3D/M4D thermal only） */
-    TYPE_SUBTYPE_GIMBALINDEX("type_subtype_gimbalindex", "云台热成像结构"),
 
     // ==================== 相机水印（pushMode=1, rw）====================
 

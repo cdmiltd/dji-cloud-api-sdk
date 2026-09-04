@@ -35,6 +35,13 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@link #description()} — 中文描述，便于开发者理解字段含义</li>
  * </ul>
  *
+ * <p><b>负载属性 key 为动态枚举值，非固定字面量</b>：OSD 负载属性（cameras 数组元素、
+ * payloads 属性 key、云台姿态 struct）的 key 是<b>负载索引枚举值</b>（如 M30 →
+ * {@code "52-0-0"}、M3D → {@code "80-0-0"}、M4TD → {@code "99-0-0"}），与 struct 内
+ * {@code payload_index} 字段数值一致。DJI 文档中的 {@code type_subtype_gimbalindex}
+ * 是花括号占位符（形如 {@code *{type-subtype-gimbalindex}*}），并非字面量字段名；
+ * 平台若按该字面量反序列化负载属性将取不到值。本枚举因此不收录该占位符。
+ *
  * <p>参考：
  * <ul>
  *   <li><a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock2/properties.html">机场设备属性推送</a></li>
@@ -196,9 +203,6 @@ public enum OsdField {
 
     /** 遥控器电池容量百分比（0-100，Pilot to Cloud 遥控器 OSD 顶层字段） */
     CAPACITY_PERCENT("capacity_percent", "电池容量百分比"),
-
-    /** 云台姿态信息（struct：gimbal_pitch/roll/yaw + payload_index + zoom_factor，M400/M4D Pilot OSD） */
-    TYPE_SUBTYPE_GIMBALINDEX("type_subtype_gimbalindex", "云台姿态信息"),
 
     /** RID 工作状态（true=正常，飞行器 OSD） */
     RID_STATE("rid_state", "RID工作状态"),

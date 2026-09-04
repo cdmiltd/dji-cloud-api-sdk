@@ -82,7 +82,7 @@ class StateFieldTest {
     }
 
     @Test
-    @DisplayName("fromFieldName 反查电池告警/Home点/航线/PSDK/热成像/水印/Pilot 字段")
+    @DisplayName("fromFieldName 反查电池告警/Home点/航线/PSDK/水印/Pilot 字段")
     void testFromFieldNameMiscSpotCheck() {
         assertEquals(StateField.LOW_BATTERY_WARNING_THRESHOLD, StateField.fromFieldName("low_battery_warning_threshold"));
         assertEquals(StateField.SERIOUS_LOW_BATTERY_WARNING_THRESHOLD, StateField.fromFieldName("serious_low_battery_warning_threshold"));
@@ -91,7 +91,6 @@ class StateFieldTest {
         assertEquals(StateField.WPMZ_VERSION, StateField.fromFieldName("wpmz_version"));
         assertEquals(StateField.PSDK_UI_RESOURCE, StateField.fromFieldName("psdk_ui_resource"));
         assertEquals(StateField.PSDK_WIDGET_VALUES, StateField.fromFieldName("psdk_widget_values"));
-        assertEquals(StateField.TYPE_SUBTYPE_GIMBALINDEX, StateField.fromFieldName("type_subtype_gimbalindex"));
         assertEquals(StateField.CAMERA_WATERMARK_SETTINGS, StateField.fromFieldName("camera_watermark_settings"));
         assertEquals(StateField.CLOUD_CONTROL_AUTH, StateField.fromFieldName("cloud_control_auth"));
     }
@@ -111,6 +110,9 @@ class StateFieldTest {
         assertThrows(IllegalArgumentException.class, () -> StateField.fromFieldName("mode_code"));
         assertThrows(IllegalArgumentException.class, () -> StateField.fromFieldName("cover_state"));
         assertThrows(IllegalArgumentException.class, () -> StateField.fromFieldName("wireless_link"));
+        // type_subtype_gimbalindex 是 DJI 文档中的占位符（负载属性 key 实为负载索引枚举值，
+        // 如 52-0-0/99-0-0），不是合法字段名，不得收录为枚举常量
+        assertThrows(IllegalArgumentException.class, () -> StateField.fromFieldName("type_subtype_gimbalindex"));
     }
 
     // ==================== fromFieldName 边界值 ====================
@@ -154,9 +156,9 @@ class StateFieldTest {
     // ==================== 枚举值总数验证 ====================
 
     @Test
-    @DisplayName("枚举总数应为 35（固件 3 + 运行 3 + 用户配置 4 + 网络 4 + 飞行器控制 4 + 指点 4 + 电池告警 2 + 返航 3 + Home 2 + 航线 1 + PSDK 2 + 热成像 1 + 水印 1 + Pilot 1）")
+    @DisplayName("枚举总数应为 34（固件 3 + 运行 3 + 用户配置 4 + 网络 4 + 飞行器控制 4 + 指点 4 + 电池告警 2 + 返航 3 + Home 2 + 航线 1 + PSDK 2 + 水印 1 + Pilot 1；type_subtype_gimbalindex 占位符不收录）")
     void testTotalCount() {
-        assertEquals(35, StateField.values().length);
+        assertEquals(34, StateField.values().length);
     }
 
     // ==================== fieldName 唯一性验证 ====================

@@ -6,7 +6,7 @@
 
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk-examples</artifactId>
-    <version>1.16.1.2</version>
+    <version>1.16.1.3</version>
     <packaging>jar</packaging>
 
     <name>DJI Cloud API SDK — Examples</name>
@@ -21,12 +21,12 @@
         <dependency>
             <groupId>ltd.cdmi</groupId>
             <artifactId>dji-cloud-api-sdk</artifactId>
-            <version>1.16.1.2</version>
+            <version>1.16.1.3</version>
         </dependency>
         <dependency>
             <groupId>ltd.cdmi</groupId>
             <artifactId>dji-cloud-api-sdk-wayline</artifactId>
-            <version>1.16.1.2</version>
+            <version>1.16.1.3</version>
         </dependency>
     </dependencies>
 

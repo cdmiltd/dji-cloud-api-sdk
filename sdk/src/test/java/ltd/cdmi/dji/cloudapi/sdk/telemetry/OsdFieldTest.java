@@ -102,6 +102,9 @@ class OsdFieldTest {
         assertThrows(IllegalArgumentException.class, () -> OsdField.fromFieldName(" mode_code"));
         assertThrows(IllegalArgumentException.class, () -> OsdField.fromFieldName("mode_code "));
         assertThrows(IllegalArgumentException.class, () -> OsdField.fromFieldName("modecode"));
+        // type_subtype_gimbalindex 是 DJI 文档中的占位符（负载属性 key 实为负载索引枚举值，
+        // 如 52-0-0/99-0-0），不是合法字段名，不得收录为枚举常量
+        assertThrows(IllegalArgumentException.class, () -> OsdField.fromFieldName("type_subtype_gimbalindex"));
     }
 
     // ==================== fromFieldName 边界值 ====================
@@ -145,9 +148,9 @@ class OsdFieldTest {
     // ==================== 枚举值总数验证 ====================
 
     @Test
-    @DisplayName("枚举总数应为 68（机场 OSD 40 + 飞行器 OSD 28）")
+    @DisplayName("枚举总数应为 67（机场 OSD 40 + 飞行器 OSD 27；type_subtype_gimbalindex 占位符不收录）")
     void testTotalCount() {
-        assertEquals(68, OsdField.values().length);
+        assertEquals(67, OsdField.values().length);
     }
 
     // ==================== fieldName 唯一性验证 ====================

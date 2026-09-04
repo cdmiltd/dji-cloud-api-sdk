@@ -14,8 +14,6 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.service.drc;
 
-import java.util.Objects;
-
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
@@ -25,17 +23,26 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>进入 DRC（设备远程控制）模式。
  *
  * <p>Reply 使用 {@link NoOutputReply}（services_reply 仅返回 result=0，无 output 字段）。
+ *
+ * <p>字段语义（依据 DJI 官方文档 drc.md 字段表）：
+ * <ul>
+ *   <li>{@code mqtt_broker}：DRC 专用 MQTT 连接凭证。调试器等工具下发的 drc_mode_enter
+ *       可能不携带该字段（设备回退主连接），故不强制校验，接收端需自行判空
+ *       （模拟器 TC-DRC-056/072 已处理）</li>
+ *   <li>{@code hsi_frequency}：HIS 频率（Hz），可空（接收端仅作上报频率参考）</li>
+ *   <li>{@code osd_frequency}：OSD 频率（Hz，1~30），可空</li>
+ * </ul>
+ *
+ * <p>历史问题：v1.16.1.2 及之前全部字段 requireNonNull 强制必填，平台/工具下发缺省
+ * 字段的合法报文时反序列化失败，导致设备端跳过 mqtt_broker 处理。
+ *
+ * @see DrcMqttBroker
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator AuthFlowHandler 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/rc-pro/drc.html")
+@Verified(basis = "DJI 文档字段表（rc-pro/drc.md、dock2 110.drc.md）：drc_mode_enter data 含 mqtt_broker/hsi_frequency/osd_frequency")
 public record DrcModeEnterRequest(
     DrcMqttBroker mqttBroker,
     Integer hsiFrequency,
     Integer osdFrequency
 ) {
-    public DrcModeEnterRequest {
-        Objects.requireNonNull(mqttBroker, "mqttBroker 必填，DJI JSON 缺失 mqtt_broker 字段");
-        Objects.requireNonNull(hsiFrequency, "hsiFrequency 必填，DJI JSON 缺失 hsi_frequency 字段");
-        Objects.requireNonNull(osdFrequency, "osdFrequency 必填，DJI JSON 缺失 osd_frequency 字段");
-    }
 }
