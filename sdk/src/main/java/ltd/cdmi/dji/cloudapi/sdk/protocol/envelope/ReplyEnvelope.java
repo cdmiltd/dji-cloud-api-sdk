@@ -56,6 +56,36 @@ public record ReplyEnvelope(
 ) {
 
     /**
+     * 静态工厂：构造无 output 的成功回复（data={result:0, output:null}）。
+     *
+     * <p>用于 services 通道无 output 指令（如 {@code fly_to_point} / {@code cover_open} /
+     * {@code flighttask_stop}），调用方无需手动构造 {@link ReplyData}。
+     *
+     * @param tid    事务 ID，与请求一致
+     * @param bid    批次 ID，与请求一致
+     * @param method 方法名，与请求一致
+     * @return 完整信封，timestamp 取当前时间，data=ReplyData(0, null)
+     */
+    public static ReplyEnvelope ok(String tid, String bid, String method) {
+        return new ReplyEnvelope(tid, bid, System.currentTimeMillis(), method, new ReplyData(0, null));
+    }
+
+    /**
+     * 静态工厂：构造有 output 的成功回复（data={result:0, output}）。
+     *
+     * <p>用于 services 通道有 output 指令，调用方无需手动构造 {@link ReplyData}。
+     *
+     * @param tid    事务 ID，与请求一致
+     * @param bid    批次 ID，与请求一致
+     * @param method 方法名，与请求一致
+     * @param output 输出负载，具体结构由 method 决定
+     * @return 完整信封，timestamp 取当前时间，data=ReplyData(0, output)
+     */
+    public static ReplyEnvelope ok(String tid, String bid, String method, Object output) {
+        return new ReplyEnvelope(tid, bid, System.currentTimeMillis(), method, new ReplyData(0, output));
+    }
+
+    /**
      * 回复数据体。
      *
      * @param result 执行结果，{@code 0} 表示成功，非 0 见 {@link ltd.cdmi.dji.cloudapi.sdk.protocol.error.DjiErrorCode}

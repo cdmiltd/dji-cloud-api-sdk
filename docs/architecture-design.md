@@ -117,10 +117,11 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   ├── PropertySetMethod.java 18 个（property/set 通道可设置属性，Dock3 4 + M3D 9 + M3D 红外 5；含 v1.16.1 新增 remaining_power_for_return_home）
 │   │   └── package-info.java      错误处理风格说明（Optional）
 │   │
-│   ├── envelope/               ← 消息信封结构（3 类）
-│   │   ├── RequestEnvelope.java   请求信封（tid/bid/timestamp/method/data）
-│   │   ├── ReplyEnvelope.java     回复信封（data=ReplyData{result,output}）
-│   │   └── EventEnvelope.java     事件信封（结构同 RequestEnvelope）
+│   ├── envelope/               ← 消息信封结构（4 类）
+│   │   ├── RequestEnvelope.java      请求信封（services/requests/property_set，data=Object）
+│   │   ├── ReplyEnvelope.java        services_reply 信封（data=ReplyData{result,output}）
+│   │   ├── RequestReplyEnvelope.java requests_reply 信封（data=Object，直接持有 Reply record，非 ReplyData 包裹）
+│   │   └── EventEnvelope.java        事件信封（events，data=Object+needReply+gateway）
 │   │
 │   └── error/                  ← 错误码（3 类）
 │       ├── DjiErrorCode.java      233 个错误码常量 + Map 查表 + describe() 方法
@@ -636,10 +637,15 @@ sdk/
 | 类 | 用途 | data 类型 |
 |---|---|---|
 | `RequestEnvelope` | 请求消息（services/requests/property_set） | `Object`（由 method 决定） |
-| `ReplyEnvelope` | 回复消息（services_reply/requests_reply/property_set_reply） | `ReplyData{result, output}` |
+| `ReplyEnvelope` | services_reply 回复（data 固定 `{result, output}`） | `ReplyData{result, output}` |
+| `RequestReplyEnvelope` | requests_reply 回复（data 结构因指令而异，直接持有 Reply record） | `Object`（扁平或 `{result, output}`，见各 Reply record） |
 | `EventEnvelope` | 事件消息（events） | `Object`（由 method 决定） |
 
 **信封通用字段**：`tid`（事务ID）/ `bid`（批次ID）/ `timestamp`（毫秒）/ `method` / `data`。
+
+> **services_reply vs requests_reply data 结构差异**：
+> - `ReplyEnvelope`（services_reply）：`data = ReplyData{result, output}` 固定结构，空 output 用 `ReplyData(0, null)`
+> - `RequestReplyEnvelope`（requests_reply）：`data = Object`，由具体 Reply record 决定——`ConfigReply` 扁平含 `result/app_id/app_license/url/token`（非 output 包裹），`StorageConfigGetReply` 含 `{result, output:{bucket,...}}`，见各 Reply record javadoc
 
 ### 4.6 protocol.error — 错误码
 

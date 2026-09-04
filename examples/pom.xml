@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>ltd.cdmi</groupId>
+    <artifactId>dji-cloud-api-sdk-examples</artifactId>
+    <version>1.16.1.2</version>
+    <packaging>jar</packaging>
+
+    <name>DJI Cloud API SDK — Examples</name>
+    <description>独立示例模块，演示 SDK 的核心用法，不参与 SDK 构建。</description>
+
+    <properties>
+        <maven.compiler.release>21</maven.compiler.release>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>ltd.cdmi</groupId>
+            <artifactId>dji-cloud-api-sdk</artifactId>
+            <version>1.16.1.2</version>
+        </dependency>
+        <dependency>
+            <groupId>ltd.cdmi</groupId>
+            <artifactId>dji-cloud-api-sdk-wayline</artifactId>
+            <version>1.16.1.2</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>3.1.0</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

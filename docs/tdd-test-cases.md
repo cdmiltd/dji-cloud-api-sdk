@@ -1010,6 +1010,37 @@
 - 断言：`assertThat(new ReplyData(0,null).result()).isEqualTo(DjiErrorCode.SUCCESS)`
 - 基准：doc:error.html | spec | green
 
+#### shouldOkNoOutput_whenStaticFactory
+- 输入：`ReplyEnvelope.ok("t","b","fly_to_point")`
+- 预期：`data.result()`=0，`data.output()`=null，`method()`="fly_to_point"，`tid()`="t"
+- 断言：
+  ```java
+  ReplyEnvelope env = ReplyEnvelope.ok("t", "b", "fly_to_point");
+  assertThat(env.tid()).isEqualTo("t");
+  assertThat(env.method()).isEqualTo("fly_to_point");
+  assertThat(env.data().result()).isEqualTo(0);
+  assertThat(env.data().output()).isNull();
+  assertThat(env.timestamp()).isPositive();
+  ```
+- 基准：char | spec | green
+
+#### shouldOkWithOutput_whenStaticFactory
+- 输入：`ReplyEnvelope.ok("t","b","config", Map.of("k","v"))`
+- 预期：`data.result()`=0，`data.output()`=非 null Map
+- 断言：
+  ```java
+  ReplyEnvelope env = ReplyEnvelope.ok("t", "b", "config", Map.of("k","v"));
+  assertThat(env.data().result()).isEqualTo(0);
+  assertThat(env.data().output()).isEqualTo(Map.of("k","v"));
+  ```
+- 基准：char | spec | green
+
+#### shouldOkSerialize_whenStaticFactory
+- 输入：`MessageCodec.toJson(ReplyEnvelope.ok("t","b","fly_to_point"))`
+- 预期：JSON 含 `data.result`=0，不含 `output`（NON_NULL）
+- 断言：`assertThat(json).contains("\"result\":0"); assertThat(json).doesNotContain("\"output\"")`
+- 基准：char | spec | green
+
 ### 5.3 EventEnvelopeTest (`@Tag("spec")`)
 
 #### shouldHave5Components_whenRecord
@@ -1034,6 +1065,114 @@
 - 预期：JSON 含各字段
 - 断言：`assertThat(json).contains("\"method\":\"file_upload_progress\"", "\"progress\":50")`
 - 基准：doc:dock3/events.html | spec | green
+
+### 5.4 RequestReplyEnvelopeTest (`@Tag("spec")`)
+
+#### shouldHave5Components_whenRecord
+- 输入：`RequestReplyEnvelope.class.getRecordComponents()`
+- 预期：组件名 `tid, bid, timestamp, method, data`，`timestamp` 类型 `long`，`data` 类型 `Object`（非 `ReplyData`）
+- 断言：
+  ```java
+  List<String> names = stream(components).map(RecordComponent::getName).toList();
+  assertThat(names).containsExactly("tid", "bid", "timestamp", "method", "data");
+  assertThat(componentType("timestamp")).isEqualTo(long.class);
+  assertThat(componentType("data")).isEqualTo(Object.class);
+  ```
+- 基准：doc:connection.html | spec | green
+
+#### shouldAccessComponents_whenInstance
+- 输入：`new RequestReplyEnvelope("t1","b1",1L,"config",null)`
+- 预期：各访问器返回对应值
+- 断言：
+  ```java
+  RequestReplyEnvelope e = new RequestReplyEnvelope("t1","b1",1L,"config",null);
+  assertThat(e.tid()).isEqualTo("t1");
+  assertThat(e.bid()).isEqualTo("b1");
+  assertThat(e.timestamp()).isEqualTo(1L);
+  assertThat(e.method()).isEqualTo("config");
+  assertThat(e.data()).isNull();
+  ```
+- 基准：char | spec | green
+
+#### shouldRoundTrip_whenJsonFlatData
+- 输入：`"{\"tid\":\"t1\",\"bid\":\"b1\",\"timestamp\":1700000000000,\"method\":\"config\",\"data\":{\"result\":0,\"app_id\":\"app-001\",\"app_license\":\"lic\",\"url\":\"mqtt-host\",\"token\":\"tk\"}}"` → `fromJson` → `toJson`
+- 预期：往返后 tid/method/timestamp 一致；data 为 Map（Object 类型反序列化为 LinkedHashMap）
+- 断言：
+  ```java
+  RequestReplyEnvelope env = MessageCodec.fromJson(json, RequestReplyEnvelope.class);
+  assertThat(env.tid()).isEqualTo("t1");
+  assertThat(env.method()).isEqualTo("config");
+  assertThat(env.timestamp()).isEqualTo(1700000000000L);
+  assertThat(env.data()).isNotNull();
+  assertThat(((Map<?,?>) env.data()).get("app_id")).isEqualTo("app-001");
+  ```
+- 基准：doc:connection.html | spec | green
+
+#### shouldSerialize_whenFlatReplyData
+- 输入：`new RequestReplyEnvelope("t","b",1L,"config",new ConfigReply(0,"app-001","lic","mqtt-host","tk"))` → `toJson`
+- 预期：JSON 含 tid/bid/method + data 扁平含 result/app_id/app_license/url/token（非 `{result, output}` 包裹）
+- 断言：
+  ```java
+  assertThat(json).contains("\"tid\":\"t\"", "\"method\":\"config\"",
+      "\"result\":0", "\"app_id\":\"app-001\"", "\"app_license\":\"lic\"");
+  assertThat(json).doesNotContain("\"output\"");
+  ```
+- 基准：doc:connection.html | spec | green
+
+#### shouldSerialize_whenNestedOutputReplyData
+- 输入：`new RequestReplyEnvelope("t","b",1L,"storage_config_get",new StorageConfigGetReply(0,new StorageConfigGetReply.Output("bucket","endpoint","region","aliyun","prefix/",null)))` → `toJson`
+- 预期：JSON data 含 `{result, output:{bucket, endpoint, ...}}`（自带 result + output 结构）
+- 断言：
+  ```java
+  assertThat(json).contains("\"result\":0", "\"output\":{",
+      "\"bucket\":\"bucket\"", "\"endpoint\":\"endpoint\"");
+  ```
+- 基准：doc:connection.html | spec | green
+
+#### shouldDifferFromReplyEnvelope_whenDataIsObject
+- 输入：`RequestReplyEnvelope.class` vs `ReplyEnvelope.class` 的 data 组件类型
+- 预期：`RequestReplyEnvelope.data` 为 `Object`（扁平或嵌套），`ReplyEnvelope.data` 为 `ReplyData`（固定 `{result, output}`）
+- 断言：
+  ```java
+  Class<?> reqReplyData = RequestReplyEnvelope.class.getRecordComponents()[4].getType();
+  Class<?> replyData = ReplyEnvelope.class.getRecordComponents()[4].getType();
+  assertThat(reqReplyData).isEqualTo(Object.class);
+  assertThat(replyData).isEqualTo(ReplyEnvelope.ReplyData.class);
+  ```
+- 基准：char | spec | green
+
+#### shouldTolerateUnknownProps_whenDeserialize
+- 输入：JSON 含额外字段 `"extra":"x"`
+- 预期：不抛异常（FAIL_ON_UNKNOWN=false）
+- 断言：`assertThatCode(() -> MessageCodec.fromJson(jsonWithExtra, RequestReplyEnvelope.class)).doesNotThrowAnyException()`
+- 基准：char | spec | green
+
+#### shouldOf_whenStaticFactory
+- 输入：`RequestReplyEnvelope.of("t","b","config", new ConfigReply(0,"app","lic","url","token"))`
+- 预期：`data()` 为 ConfigReply 实例，`method()`="config"，`tid()`="t"
+- 断言：
+  ```java
+  ConfigReply reply = new ConfigReply(0, "app", "lic", "url", "token");
+  RequestReplyEnvelope env = RequestReplyEnvelope.of("t", "b", "config", reply);
+  assertThat(env.tid()).isEqualTo("t");
+  assertThat(env.method()).isEqualTo("config");
+  assertThat(env.data()).isSameAs(reply);
+  assertThat(env.timestamp()).isPositive();
+  ```
+- 基准：char | spec | green
+
+#### shouldOfSerialize_whenStaticFactory
+- 输入：`MessageCodec.toJson(RequestReplyEnvelope.of("t","b","config", new ConfigReply(0,"app","lic","url","token")))`
+- 预期：JSON 含 `data.result`=0，`data.app_id`="app"，不含 `output`（扁平结构）
+- 断言：
+  ```java
+  String json = MessageCodec.toJson(RequestReplyEnvelope.of("t", "b", "config",
+      new ConfigReply(0, "app", "lic", "url", "token")));
+  assertThat(json).contains("\"tid\":\"t\"", "\"method\":\"config\"",
+      "\"result\":0", "\"app_id\":\"app\"");
+  assertThat(json).doesNotContain("\"output\"");
+  ```
+- 基准：char | spec | green
 
 ---
 
@@ -2452,16 +2591,23 @@
 - 断言：`assertThat(v.basis()).contains("FlightCommandSimulator")`
 - 基准：meta | spec | green
 
+#### shouldBeAnnotatedWithInferred_whenFlightSafetyAdvanceCheckField
+- 输入：`TakeoffToPointRequest.class.getRecordComponent("flightSafetyAdvanceCheck").getAnnotation(Inferred.class)`
+- 预期：字段级 `@Inferred` 存在，`reason()` 含「布尔开关」，`verifyPoint()` 含「真机」
+- 断言：`assertThat(inferred.reason()).contains("布尔开关"); assertThat(inferred.verifyPoint()).contains("真机")`
+- 基准：meta | spec | green
+- 说明：`flight_safety_advance_check` 字段类型（`Boolean`）为推断定义，DJI 官方文档未明确该字段类型；类级 `@Verified` 覆盖其余字段，此字段独立标注 `@Inferred`，待真机验证后升级为 `@Verified`
+
 #### shouldThrowWhenRequiredFieldMissing_whenFlightIdNull
 - 输入：`{"max_speed":10,"target_latitude":22.0,"target_longitude":113.0,"target_height":50.0}`（缺 flight_id）
-- 预期：反序列化抛 `NullPointerException`，message 含「flightId 必填」
-- 断言：`assertThatThrownBy(() -> MessageCodec.fromJson(json, TakeoffToPointRequest.class)).isInstanceOf(NullPointerException.class).hasMessageContaining("flightId 必填")`
+- 预期：反序列化抛 `IllegalStateException`（MessageCodec 包装 Jackson `ValueInstantiationException`，根因为 compact constructor 的 `NullPointerException`），message 含「flightId 必填」
+- 断言：`assertThrows(IllegalStateException.class, () -> MessageCodec.fromJson(json, TakeoffToPointRequest.class)); assertThat(ex.getMessage()).contains("flightId 必填")`
 - 基准：char | spec | green
 
 #### shouldThrowWhenRequiredFieldMissing_whenTargetLatitudeNull
 - 输入：`{"flight_id":"f1","target_longitude":113.0,"target_height":50.0}`（缺 target_latitude）
-- 预期：反序列化抛 `NullPointerException`，message 含「targetLatitude 必填」
-- 断言：`assertThatThrownBy(() -> MessageCodec.fromJson(json, TakeoffToPointRequest.class)).isInstanceOf(NullPointerException.class).hasMessageContaining("targetLatitude 必填")`
+- 预期：反序列化抛 `IllegalStateException`（同上包装链），message 含「targetLatitude 必填」
+- 断言：`assertThrows(IllegalStateException.class, () -> MessageCodec.fromJson(json, TakeoffToPointRequest.class)); assertThat(ex.getMessage()).contains("targetLatitude 必填")`
 - 基准：char | spec | green
 
 ### 11.10 TakeoffToPointReplyTest (`@Tag("spec")`)（空 Reply）

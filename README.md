@@ -91,10 +91,81 @@ switch (method) {
     case "fly_to_point" -> {
         var msg = DjiMessage.parse(payload, FlyToPointRequest.class);
         msg.data().flyToId();          // 编译期类型安全，无需 cast
-        String reply = MessageCodec.toJson(new NoOutputReply());
-        sendReply(msg.tid(), reply);   // 发到 thing/product/{sn}/services_reply
+        sendReply(msg.tid(), msg.bid(), method);  // 完整信封回复，见下方实现
     }
     default -> log.warn("未处理: {}", method);
+}
+```
+
+`sendReply` 封装 services_reply 完整信封构造（method/tid/bid 回显 + data.result=0），下方场景正文均以最简形式调用：
+
+```java
+/** services 通道无 output 指令（如 fly_to_point / cover_open / flighttask_stop） */
+static void sendReply(String tid, String bid, String method) {
+    String reply = MessageCodec.toJson(ReplyEnvelope.ok(tid, bid, method));
+    publish("thing/product/{sn}/services_reply", reply);
+}
+
+/** services 通道有 output 指令 */
+static void sendReply(String tid, String bid, String method, Object output) {
+    String reply = MessageCodec.toJson(ReplyEnvelope.ok(tid, bid, method, output));
+    publish("thing/product/{sn}/services_reply", reply);
+}
+```
+
+`sendRequestReply` 用于 requests 通道——data 结构因指令而异（扁平或 `{result, output}`，见各 Reply record javadoc），不统一走 `ReplyData`：
+
+```java
+/** requests 通道（如 config / airport_bind_status / storage_config_get / flight_areas_get） */
+static void sendRequestReply(String tid, String bid, String method, Object replyData) {
+    String reply = MessageCodec.toJson(RequestReplyEnvelope.of(tid, bid, method, replyData));
+    publish("thing/product/{sn}/requests_reply", reply);
+}
+```
+
+> **services_reply vs requests_reply data 结构差异**：
+> - services_reply：`data = {result, output}`（`ReplyEnvelope.ReplyData`），空记录用 `sendReply(tid, bid, method)`
+> - requests_reply：`data` 结构因指令而异——`ConfigReply` 扁平含 `result/app_id/app_license/url/token`（非 output 包裹），`StorageConfigGetReply` 含 `{result, output:{bucket,...}}`，见各 Reply record javadoc
+>
+> 回复必须是完整信封。不要用 `MessageCodec.toJson(new NoOutputReply())` 当回复——空记录序列化为 `{}`，缺少 `result` 字段与 method/tid/bid 回显。`NoOutputReply`/`NoParameterRequest` 这类空记录用于**解析侧**承接无字段的 data。
+
+**`RequestReplyEnvelope` 使用示例**——展示扁平 data 与嵌套 output 两种形态的构造与序列化：
+
+```java
+// 形态 1：扁平 data（config 回复，data 直接含 result/app_id/app_license/url/token，非 output 包裹）
+var configReply = new ConfigReply(0, "app-001", "app-license", "mqtt-host", "token");
+String configReplyJson = MessageCodec.toJson(
+        RequestReplyEnvelope.of("t1", "b1", "config", configReply));
+// → {"tid":"t1","bid":"b1","timestamp":...,"method":"config",
+//    "data":{"result":0,"app_id":"app-001","app_license":"app-license","url":"mqtt-host","token":"token"}}
+
+// 形态 2：嵌套 output（storage_config_get 回复，data 含 {result, output:{bucket, endpoint, ...}}）
+var output = new StorageConfigGetReply.Output(
+        "dji-bucket", "oss-cn-hangzhou.aliyuncs.com", "cn-hangzhou", "aliyun", "ws-001/", null);
+var storageReply = new StorageConfigGetReply(0, output);
+String storageReplyJson = MessageCodec.toJson(
+        RequestReplyEnvelope.of("t2", "b2", "storage_config_get", storageReply));
+// → {"tid":"t2","bid":"b2","timestamp":...,"method":"storage_config_get",
+//    "data":{"result":0,"output":{"bucket":"dji-bucket","endpoint":"oss-cn-hangzhou.aliyuncs.com",...}}}
+
+// 反序列化：从 requests_reply JSON 提取 data（Object 类型，按 method 决定具体 Reply record 解析）
+String replyPayload = /* 收到的 requests_reply JSON */ "";
+var envelope = MessageCodec.fromJson(replyPayload, RequestReplyEnvelope.class);
+switch (envelope.method()) {
+    case "config" -> {
+        // data 为 Object（反序列化为 LinkedHashMap），用具体 Reply record 二次解析
+        var reply = MessageCodec.fromJson(
+                MessageCodec.toJson(envelope.data()), ConfigReply.class);
+        reply.appId();         // 类型安全访问
+        reply.appLicense();
+    }
+    case "storage_config_get" -> {
+        var reply = MessageCodec.fromJson(
+                MessageCodec.toJson(envelope.data()), StorageConfigGetReply.class);
+        reply.output().bucket();
+        reply.output().endpoint();
+    }
+    default -> log.warn("未处理的 requests_reply: {}", envelope.method());
 }
 ```
 
@@ -116,23 +187,27 @@ sendEventReply(msg.tid(), 0);           // tid 与原始 event 一致
 
 ```java
 // 注册流程：config → airport_bind_status → airport_organization_get → airport_organization_bind
+// 通道：requests（data 结构因指令而异，见各 Reply record 定义）
 case "config" -> {
     var msg = DjiMessage.parse(payload, ConfigRequest.class);
     msg.data().appId();
-    var reply = new ConfigReply(0, msg.data().appId(), "mqtt-host", 2, ...);
-    sendReply(msg.tid(), MessageCodec.toJson(reply));
+    // requests_reply：data 扁平含 result/app_id/app_license/url/token（非 output 包裹，见 ConfigReply javadoc）
+    sendRequestReply(msg.tid(), msg.bid(), method, new ConfigReply(0, msg.data().appId(), "app-license", "mqtt-host", "token"));
 }
 case "airport_bind_status" -> {
     var msg = DjiMessage.parse(payload, AirportBindStatusRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new AirportBindStatusReply(0, 1)));
+    // requests_reply：data={result}（0=未绑定, 1=已绑定）
+    sendRequestReply(msg.tid(), msg.bid(), method, new AirportBindStatusReply(0));
 }
 case "airport_organization_get" -> {
     var msg = DjiMessage.parse(payload, AirportOrganizationGetRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new AirportOrganizationGetReply(0, ...)));
+    // requests_reply：data={result}（output.airports 待真机验证，SDK 暂未实现）
+    sendRequestReply(msg.tid(), msg.bid(), method, new AirportOrganizationGetReply(0));
 }
 case "airport_organization_bind" -> {
     var msg = DjiMessage.parse(payload, AirportOrganizationBindRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new AirportOrganizationBindReply(0)));
+    // requests_reply：data={result, output:{err_infos:[...]}}（result=0 但 err_infos 非空表示设备级失败）
+    sendRequestReply(msg.tid(), msg.bid(), method, new AirportOrganizationBindReply(0, new AirportOrganizationBindReply.Output(List.of())));
 }
 
 // 上线拓扑：设备主动上报 update_topo（status 通道）
@@ -151,19 +226,19 @@ case "flighttask_prepare" -> {
     var msg = DjiMessage.parse(payload, FlighttaskPrepareRequest.class);
     msg.data().flightId();              // 航线 ID
     msg.data().executableConditions();   // 执行条件
-    sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskPrepareReply(0, "output-url")));
+    sendReply(msg.tid(), msg.bid(), method);  // 无 output，进度走 flighttask_progress 事件
 }
 case "flighttask_execute" -> {
     var msg = DjiMessage.parse(payload, FlighttaskExecuteRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskExecuteReply(0)));
+    sendReply(msg.tid(), msg.bid(), method);  // 无 output，进度走 flighttask_progress 事件
 }
 case "flighttask_stop" -> {
     var msg = DjiMessage.parse(payload, FlighttaskStopRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "flighttask_undo" -> {
     var msg = DjiMessage.parse(payload, FlighttaskUndoRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 
 // 航线进度事件（events 通道）
@@ -181,7 +256,8 @@ case "flighttask_ready" -> {
 // 查询进度（requests 通道）
 case "flighttask_progress_get" -> {
     var msg = DjiMessage.parse(payload, FlighttaskProgressGetRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new FlighttaskProgressGetReply(0, ...)));
+    // requests_reply：data={result, output}（output @Inferred 结构待真机验证，暂传 null）
+    sendRequestReply(msg.tid(), msg.bid(), method, new FlighttaskProgressGetReply(0, null));
 }
 ```
 
@@ -197,24 +273,24 @@ case "fly_to_point" -> {
     msg.data().flyToId();
     msg.data().points().get(0).height();   // DJI 协议用 points 数组
     msg.data().maxSpeed();
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
     // 异步：延迟发 fly_to_point_progress 事件
 }
 case "fly_to_point_update" -> {
     var msg = DjiMessage.parse(payload, FlyToPointUpdateRequest.class);
     msg.data().maxSpeed();              // 更新最大速度
     msg.data().points().get(0).latitude();  // 更新目标点纬度
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "takeoff_to_point" -> {
     var msg = DjiMessage.parse(payload, TakeoffToPointRequest.class);
     // services_reply 仅含 result=0，无 output 字段
     // track_id 是设备内部状态（simulator 生成），不下发回平台
-    sendReply(msg.tid(), MessageCodec.toJson(new TakeoffToPointReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "flight_authority_grab" -> {
     var msg = DjiMessage.parse(payload, PayloadAuthorityGrabRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 
 // 飞行进度事件
@@ -243,7 +319,7 @@ case "drc_mode_enter" -> {
     // DJI 协议：mqtt_broker 是平台下发给设备的 DRC 专用连接信息（Request 字段）
     // services_reply output 仅含 result=0，无 output 字段
     // 设备解析 Request 中的 mqtt_broker 后建立专用连接，不通过 Reply 回传 broker
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 
 // DRC 通道消息（topic: thing/product/{sn}/drc/up）
@@ -278,28 +354,28 @@ case "drc_force_landing" -> {
 case "camera_photo_take" -> {
     var msg = DjiMessage.parse(payload, CameraPhotoTakeRequest.class);
     msg.data().payloadIndex();          // 负载索引
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "camera_aim" -> {
     var msg = DjiMessage.parse(payload, CameraAimRequest.class);
     msg.data().pitch();                // 云台俯仰角
     msg.data().yaw();                  // 云台偏航角
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "camera_focal_length_set" -> {
     var msg = DjiMessage.parse(payload, CameraFocalLengthSetRequest.class);
     msg.data().focalLength();
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "camera_exposure_mode_set" -> {
     var msg = DjiMessage.parse(payload, CameraExposureModeSetRequest.class);
     msg.data().exposureMode();
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 // cover_open / cover_close / putter_open / putter_close 等无参数方法：
 case "cover_open" -> {
     var msg = DjiMessage.parse(payload, NoParameterRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 ```
 
@@ -314,25 +390,25 @@ case "live_start_push" -> {
     var msg = DjiMessage.parse(payload, LiveStartPushRequest.class);
     msg.data().url();                  // RTMP/RTSP 推流地址
     msg.data().videoIndex();           // 视频流索引
-    sendReply(msg.tid(), MessageCodec.toJson(new LiveStartPushReply(0)));
+    sendReply(msg.tid(), msg.bid(), method);  // 无 output，LiveStartPushReply 为空记录
 }
 case "live_stop_push" -> {
     var msg = DjiMessage.parse(payload, LiveStopPushRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "live_set_quality" -> {
     var msg = DjiMessage.parse(payload, LiveSetQualityRequest.class);
     msg.data().quality();              // 0=smooth, 1=SD, 2=HD, 3=superHD
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "live_lens_change" -> {
     var msg = DjiMessage.parse(payload, LiveLensChangeRequest.class);
     msg.data().lens();                 // 镜头类型
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 case "live_camera_change" -> {
     var msg = DjiMessage.parse(payload, LiveCameraChangeRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 ```
 
@@ -347,14 +423,16 @@ case "live_camera_change" -> {
 case "upload_flighttask_media_prioritize" -> {
     var msg = DjiMessage.parse(payload, UploadFlighttaskMediaPrioritizeRequest.class);
     msg.data().flightId();             // 优先上传的飞行任务 ID
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 
 // 获取 STS 临时凭证（requests 通道）
 case "storage_config_get" -> {
     var msg = DjiMessage.parse(payload, StorageConfigGetRequest.class);
-    var reply = new StorageConfigGetReply(0, "bucket", "endpoint", "object-key-prefix/", credentials);
-    sendReply(msg.tid(), MessageCodec.toJson(reply));
+    // requests_reply：data={result, output:{bucket, endpoint, region, provider, object_key_prefix, credentials:{access_key_id, access_key_secret, security_token, expire_time}}}
+    var credentials = new StorageConfigGetReply.Credentials("AK-ID", "SK-SECRET", "ST-TOKEN", System.currentTimeMillis() + 3600_000L);
+    var output = new StorageConfigGetReply.Output("dji-bucket", "oss-cn-hangzhou.aliyuncs.com", "cn-hangzhou", "aliyun", "wayline/", credentials);
+    sendRequestReply(msg.tid(), msg.bid(), method, new StorageConfigGetReply(0, output));
 }
 
 // 媒体上传回调（events 通道）
@@ -379,7 +457,10 @@ case "highest_priority_upload_flighttask_media" -> {
 ```java
 case "flight_areas_get" -> {
     var msg = DjiMessage.parse(payload, FlightAreasGetRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new FlightAreasGetReply(0, List.of())));
+    // requests_reply：data={result, output:{file:{name, checksum}}}
+    var file = new FlightAreasGetReply.SyncFile("flight_areas.json", "sha256-abc123");
+    var output = new FlightAreasGetReply.Output(file);
+    sendRequestReply(msg.tid(), msg.bid(), method, new FlightAreasGetReply(0, output));
 }
 case "flight_areas_drone_location" -> {
     var msg = DjiMessage.parse(payload, FlightAreasDroneLocationData.class);
@@ -459,7 +540,7 @@ case "fileupload_progress" -> {
 }
 case "ota_create" -> {
     var msg = DjiMessage.parse(payload, NoParameterRequest.class);
-    sendReply(msg.tid(), MessageCodec.toJson(new NoOutputReply()));
+    sendReply(msg.tid(), msg.bid(), method);
 }
 ```
 
@@ -1014,6 +1095,54 @@ if (envelope.code() != 0) {
     // envelope.data() 此时为 null（DJI 信封 code≠0 时不携带 data）
 }
 ```
+
+## 示例程序
+
+`examples/` 目录提供 8 个完整可编译的 Java 示例程序，每个程序含 `main()` 方法，使用硬编码 JSON 模拟真实 DJI 消息，无需 MQTT broker 或真机即可运行。
+
+### 运行方式
+
+```bash
+# 先安装 SDK 到本地仓库（仅首次）
+mvn install -pl sdk,sdk-wayline -DskipTests
+
+# 编译示例模块
+cd examples && mvn compile
+
+# 运行指定示例（bash / cmd）
+mvn exec:java -Dexec.mainClass=ltd.cdmi.dji.cloudapi.sdk.examples.MqttServiceExample
+# PowerShell 下需用引号包裹 -D 参数：
+mvn exec:java "-Dexec.mainClass=ltd.cdmi.dji.cloudapi.sdk.examples.MqttServiceExample"
+```
+
+也可不依赖 `exec-maven-plugin`，直接用 `java -cp` 运行：
+
+```bash
+cd examples
+# 生成 classpath 到 cp.txt
+mvn dependency:build-classpath "-Dmdep.outputFile=cp.txt" -q
+# 运行（替换类名即可切换示例）
+java -cp "target/classes;$(cat cp.txt)" ltd.cdmi.dji.cloudapi.sdk.examples.MqttServiceExample
+# Linux/macOS 用冒号分隔 classpath
+java -cp "target/classes:$(cat cp.txt)" ltd.cdmi.dji.cloudapi.sdk.examples.MqttServiceExample
+```
+
+> Windows 控制台中文乱码时，先执行 `chcp 65001`（或给 java 加 `-Dstdout.encoding=UTF-8`）再运行。
+
+### 示例清单
+
+| 示例 | 类名 | 覆盖的 SDK API | 说明 |
+|---|---|---|---|
+| MQTT services | `MqttServiceExample` | `DjiMessage.extractMethod` + `parse` + `ReplyEnvelope` | 模拟 fly_to_point / takeoff_to_point / cover_open 三条指令的 parse→完整信封回复（含 NoParameterRequest 空记录承接） |
+| MQTT events | `MqttEventExample` | `DjiMessage.parse` (events) | 模拟 flighttask_progress（output.progress/ext 嵌套）/ takeoff_to_point_progress（need_reply）事件解析 |
+| WebSocket 推送 | `WebSocketPushExample` | `WsPushMessage.extractBizCode` + `parse` | 模拟 device_osd / map_element_create / device_online 三类推送解析 |
+| HTTP API | `HttpApiExample` | `HttpApiPath` + `HttpResponseEnvelope.parse` | 路径占位符拼接 + STS 凭证解析（含 credentials Object 字段）+ 错误响应处理 |
+| 设备型号 | `DeviceModelExample` | `DeviceModels` + `DeviceCompatibility.isCompatible` | 三元组反查 + 简称反查 + 未知三元组优雅降级 + 兼容性校验 |
+| 航线模板 | `WaylineTemplateExample` | `WaypointTemplate.builder` + `WpmlCodec.fromKmz` | 同一 Builder 派生 template.kml / waylines.wpml / KMZ 三种产物 + 解包验证 |
+| 消息采集 | `CaptureRecorderExample` | `CaptureRecorder.enable` + `registerDevice` + `capture` | 自定义 CaptureConfig + 设备注册 + 按方向采集（inbound/outbound）+ 异步落盘说明 |
+| 诊断工具 | `DiagnosticsExample` | `DjiErrorCode.describe` + `TopicResolver.resolve` + 注解反射 | 错误码查表（含未知码降级）+ Topic 路由解析 + @Verified/@Inferred 扫描 |
+
+> 示例模块独立于 SDK 构建，未加入 parent pom 的 `<modules>`，不影响 SDK 编译与发布。
 
 ## 模块概览
 

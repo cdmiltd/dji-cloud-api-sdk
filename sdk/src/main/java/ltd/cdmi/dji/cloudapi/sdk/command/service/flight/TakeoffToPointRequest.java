@@ -17,6 +17,7 @@ package ltd.cdmi.dji.cloudapi.sdk.command.service.flight;
 import java.util.Objects;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 import ltd.cdmi.dji.cloudapi.sdk.command.service.SimulateMission;
 
@@ -54,7 +55,9 @@ public record TakeoffToPointRequest(
     Integer commanderModeLostAction,
     Integer commanderFlightMode,
     Double commanderFlightHeight,
-    Integer flightSafetyAdvanceCheck,
+    @Inferred(reason = "DJI 官方文档未明确 flight_safety_advance_check 字段类型，从字段名语义推断为布尔开关（是否启用安全前置检查）而非整数码值",
+              verifyPoint = "真机下发 true/false 确认 Dock 接受布尔值而非整数 0/1")
+    Boolean flightSafetyAdvanceCheck,
     SimulateMission simulateMission
 ) {
     public TakeoffToPointRequest {
