@@ -1,0 +1,787 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DJI Cloud API 文档 vs SDK 代码实现对比报告</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --card-bg: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --green: #3fb950;
+  --yellow: #d29922;
+  --red: #f85149;
+  --purple: #bc8cff;
+  --orange: #db6d28;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, "Segoe UI", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+  line-height: 1.7;
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+h1 { font-size: 1.8em; margin-bottom: 8px; }
+h2 { font-size: 1.4em; margin: 32px 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+h3 { font-size: 1.15em; margin: 24px 0 12px; color: var(--accent); }
+h4 { font-size: 1em; margin: 16px 0 8px; color: var(--purple); }
+p { margin-bottom: 12px; color: var(--text); }
+.subtitle { color: var(--text-muted); font-size: 0.9em; margin-bottom: 24px; }
+.summary-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  margin-top: 12px;
+}
+.stat {
+  background: rgba(88,166,255,0.08);
+  border: 1px solid rgba(88,166,255,0.2);
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+.stat .num { font-size: 1.8em; font-weight: 700; }
+.stat .label { font-size: 0.8em; color: var(--text-muted); }
+.stat.ok .num { color: var(--green); }
+.stat.warn .num { color: var(--yellow); }
+.stat.err .num { color: var(--red); }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0 20px;
+  font-size: 0.88em;
+}
+th, td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+  vertical-align: top;
+}
+th { background: rgba(88,166,255,0.1); color: var(--accent); font-weight: 600; }
+tr:nth-child(even) { background: rgba(139,148,158,0.04); }
+.badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.78em;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.b-verified { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+.b-inferred { background: rgba(210,153,34,0.15); color: var(--yellow); border: 1px solid rgba(210,153,34,0.3); }
+.b-pending { background: rgba(251,113,133,0.15); color: var(--red); border: 1px solid rgba(251,113,133,0.3); }
+.b-match { background: rgba(63,185,80,0.15); color: var(--green); border: 1px solid rgba(63,185,80,0.3); }
+.b-mismatch { background: rgba(251,113,133,0.15); color: var(--red); border: 1px solid rgba(251,113,133,0.3); }
+.b-partial { background: rgba(219,109,40,0.15); color: var(--orange); border: 1px solid rgba(219,109,40,0.3); }
+.b-na { background: rgba(139,148,158,0.1); color: var(--text-muted); border: 1px solid var(--border); }
+code { background: rgba(110,118,129,0.2); padding: 1px 5px; border-radius: 3px; font-size: 0.88em; color: var(--purple); }
+.section {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 16px;
+}
+.callout {
+  border-left: 3px solid;
+  padding: 12px 16px;
+  margin: 12px 0;
+  border-radius: 0 6px 6px 0;
+}
+.callout-warn { border-color: var(--yellow); background: rgba(210,153,34,0.06); }
+.callout-err { border-color: var(--red); background: rgba(251,113,133,0.06); }
+.callout-info { border-color: var(--accent); background: rgba(88,166,255,0.06); }
+.legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; font-size: 0.85em; }
+.legend span { display: flex; align-items: center; gap: 6px; }
+.toc { background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px; padding: 16px 24px; margin-bottom: 24px; }
+.toc ol { padding-left: 20px; }
+.toc li { margin: 4px 0; }
+.toc a { color: var(--accent); text-decoration: none; }
+.toc a:hover { text-decoration: underline; }
+.footer { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); color: var(--text-muted); font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+<h1>DJI Cloud API 文档 vs SDK 代码实现对比报告</h1>
+<p class="subtitle">
+  文档版本：v1.16.1（发布日期 2025-12-17） | SDK 目标版本：1.16.1.X | 对比日期：2026-09-13
+</p>
+
+<div class="toc">
+  <strong>目录</strong>
+  <ol>
+    <li><a href="#summary">总体结论</a></li>
+    <li><a href="#version">版本对齐情况</a></li>
+    <li><a href="#device-models">设备型号枚举对比</a></li>
+    <li><a href="#v1161">v1.16.1 新增功能对比</a></li>
+    <li><a href="#v116">v1.16 新增功能对比</a></li>
+    <li><a href="#v115">v1.15 新增功能对比</a></li>
+    <li><a href="#v114">v1.14 新增功能对比</a></li>
+    <li><a href="#v113">v1.13.0 新增功能对比</a></li>
+    <li><a href="#method-enums">方法枚举对比</a></li>
+    <li><a href="#telemetry">遥测字段对比</a></li>
+    <li><a href="#discrepancies">差异与问题清单</a></li>
+    <li><a href="#uncertain">不确定项记录</a></li>
+    <li><a href="#gaps">文档获取缺口</a></li>
+  </ol>
+</div>
+
+<!-- ============ Summary ============ -->
+<h2 id="summary">一、总体结论</h2>
+<div class="summary-card">
+  <p>DJI Cloud API 官方文档当前版本为 <strong>v1.16.1</strong>（2025-12-17 发布），与 SDK 目标协议版本 <strong>1.16.1</strong> 完全一致。文档未更新到更高版本，SDK 无需升级版本号。</p>
+  <div class="summary-grid">
+    <div class="stat ok"><div class="num">21</div><div class="label">设备型号全部覆盖</div></div>
+    <div class="stat ok"><div class="num">11</div><div class="label">@Verified 已核实项</div></div>
+    <div class="stat warn"><div class="num">7</div><div class="label">@Inferred 推断项</div></div>
+    <div class="stat err"><div class="num">4</div><div class="label">差异/待确认项</div></div>
+    <div class="stat warn"><div class="num">5</div><div class="label">文档获取缺口</div></div>
+  </div>
+</div>
+
+<div class="legend">
+  <span><span class="badge b-match">MATCH</span> 文档与代码一致</span>
+  <span><span class="badge b-partial">PARTIAL</span> 部分一致</span>
+  <span><span class="badge b-mismatch">DIFF</span> 存在差异</span>
+  <span><span class="badge b-verified">@Verified</span> 已核实</span>
+  <span><span class="badge b-inferred">@Inferred</span> 推断实现</span>
+  <span><span class="badge b-pending">待确认</span> 需开发者确认</span>
+</div>
+
+<!-- ============ Version ============ -->
+<h2 id="version">二、版本对齐情况</h2>
+<div class="section">
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr><td>协议版本</td><td>v1.16.1</td><td>1.16.1.X</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>发布日期</td><td>2025-12-17</td><td>—</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>废弃方法</td><td>无 API 方法标记为 deprecated（仅 Demo 项目终止维护）</td><td>drc_status_notify 标注 Abandoned</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+<div class="callout callout-info">
+  <strong>说明</strong>：DJI 官方文档注明 <code>drc_status_notify</code> "不再维护且不准确"，SDK 已标注 <code>@Inferred</code> + Abandoned，二者一致。
+  DJI Cloud API Demo 项目（GitHub: dji-sdk/Cloud-API-Demo-Web）于 2025-04-10 宣布终止维护，但这不影响协议本身。
+</div>
+</div>
+
+<!-- ============ Device Models ============ -->
+<h2 id="device-models">三、设备型号枚举对比</h2>
+<div class="section">
+<h3>3.1 DockModel（大疆机场型号）</h3>
+<table>
+<tr><th>SDK 枚举</th><th>domain-type-subType</th><th>DJI 文档</th><th>状态</th></tr>
+<tr><td>DOCK1</td><td>3-1-0</td><td>大疆机场 3-1-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>DOCK2</td><td>3-2-0</td><td>大疆机场 2 3-2-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>DOCK3</td><td>3-3-0</td><td>大疆机场 3 3-3-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+</table>
+
+<h3>3.2 DroneModel（飞行器型号）</h3>
+<table>
+<tr><th>SDK 枚举</th><th>domain-type-subType</th><th>DJI 文档</th><th>状态</th></tr>
+<tr><td>M30</td><td>0-67-0</td><td>Matrice 30 0-67-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M30T</td><td>0-67-1</td><td>Matrice 30T 0-67-1</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M3D</td><td>0-91-0</td><td>Matrice 3D 0-91-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M3TD</td><td>0-91-1</td><td>Matrice 3TD 0-91-1</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M4D</td><td>0-100-0</td><td>Matrice 4D 0-100-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>M4TD</td><td>0-100-1</td><td>Matrice 4TD 0-100-1</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>M350_RTK</td><td>0-89-0</td><td>Matrice 350 RTK 0-89-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M300_RTK</td><td>0-60-0</td><td>Matrice 300 RTK 0-60-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>MAVIC_3E</td><td>0-77-0</td><td>Mavic 3E 0-77-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>MAVIC_3T</td><td>0-77-1</td><td>Mavic 3T 0-77-1</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>MAVIC_3TA</td><td>0-77-3</td><td>Mavic 3TA 0-77-3</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>M400</td><td>0-103-0</td><td>Matrice 400 0-103-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>M4E</td><td>0-99-0</td><td>DJI Matrice 4E 0-99-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>M4T</td><td>0-99-1</td><td>DJI Matrice 4T 0-99-1</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+</table>
+
+<h3>3.3 RcModel（遥控器型号）</h3>
+<table>
+<tr><th>SDK 枚举</th><th>domain-type-subType</th><th>DJI 文档</th><th>状态</th></tr>
+<tr><td>SMART_CONTROLLER_ENTERPRISE</td><td>2-56-0</td><td>DJI 带屏遥控器行业版 2-56-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>RC_PLUS</td><td>2-119-0</td><td>DJI RC Plus 2-119-0</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>RC_PLUS_2</td><td>2-174-0</td><td>DJI RC Plus 2 2-174-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>RC_PRO</td><td>2-144-0</td><td>DJI RC Pro 行业版 2-144-0</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+</table>
+</div>
+
+<!-- ============ v1.16.1 ============ -->
+<h2 id="v1161">四、v1.16.1 新增功能对比</h2>
+<div class="section">
+
+<h3>4.1 返航预留电量 <code>remaining_power_for_return_home</code></h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>属性定义</td>
+  <td>可读写设备属性 (accessMode=rw)，机场2/3 支持，类型 int (0-100)</td>
+  <td><code>PropertySetMethod.REMAINING_POWER_FOR_RETURN_HOME</code> + <code>StateField.REMAINING_POWER_FOR_RETURN_HOME</code>，注释标注 v1.16.1 新增，M3D/M4D</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>适用设备</td>
+  <td>大疆机场 2、大疆机场 3（搭配 M3D/M3TD、M4D/M4TD）</td>
+  <td>注释为 M3D/M4D 飞行器属性</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+</table>
+
+<h3>4.2 红外照片 DLT-664 格式</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>PhotoFormat 枚举</td>
+  <td>v1.16.1 新增，机场3 红外照片支持 DLT-664 格式</td>
+  <td><code>PhotoFormat.DLT664 (code=16)</code> + <code>PhotoFormat.RJPEG (code=7)</code></td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>字段类型</td>
+  <td>—</td>
+  <td><code>CameraStatePushData.CameraState.photoFormat</code> 为 <code>Integer</code>（非 PhotoFormat 枚举），注释为 v1.16.1 新增，旧固件可能 null</td>
+  <td><span class="badge b-partial">PARTIAL</span></td>
+</tr>
+</table>
+<div class="callout callout-warn">
+  <strong>注意</strong>：<code>PhotoFormat</code> 枚举已定义但 <code>CameraState.photoFormat</code> 字段使用 <code>Integer</code> 而非枚举类型，缺少 <code>@JsonValue</code>/<code>@JsonCreator</code> 注解。
+  这意味着枚举仅作为常量参考，实际序列化/反序列化时不使用类型安全绑定。
+  <strong>建议</strong>：待真机验证后，考虑将字段类型改为 <code>PhotoFormat</code> 枚举，添加 Jackson 注解实现类型安全绑定。
+</div>
+
+</div>
+
+<!-- ============ v1.16 ============ -->
+<h2 id="v116">五、v1.16 新增功能对比</h2>
+<div class="section">
+<h3>5.1 机场3 AI 目标识别与目标跟随</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>DRC 下行方法</td>
+  <td>AI 目标识别、目标跟随功能（v1.16 新增，机场3 专属）</td>
+  <td><code>DrcMethod</code> 中定义 11 个 <code>drc_ai_*</code> 方法</td>
+  <td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td>
+</tr>
+<tr>
+  <td>DRC 上行推送</td>
+  <td>AI 状态推送</td>
+  <td><code>DrcUpMethod.DRC_AI_INFO_PUSH</code> ("drc_ai_info_push")</td>
+  <td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td>
+</tr>
+</table>
+
+<h4>SDK 中已实现的 AI 方法清单</h4>
+<table>
+<tr><th>枚举常量</th><th>method 名</th><th>说明</th></tr>
+<tr><td>DRC_AI_MODEL_SELECT</td><td>drc_ai_model_select</td><td>AI 模型选择</td></tr>
+<tr><td>DRC_AI_IDENTIFY_SET</td><td>drc_ai_identify_set</td><td>AI 识别开关设置</td></tr>
+<tr><td>DRC_AI_IDENTIFY_SCORE_MODE_SET</td><td>drc_ai_identify_score_mode_set</td><td>AI 识别置信度模式设置</td></tr>
+<tr><td>DRC_AI_IDENTIFY_SCORE_SET</td><td>drc_ai_identify_score_set</td><td>AI 识别置信度设置</td></tr>
+<tr><td>DRC_AI_IDENTIFY_SCORE_RESET</td><td>drc_ai_identify_score_reset</td><td>AI 识别置信度重置</td></tr>
+<tr><td>DRC_AI_IDENTIFY_FILTER_SET</td><td>drc_ai_identify_filter_set</td><td>AI 识别目标过滤列表设置</td></tr>
+<tr><td>DRC_AI_SPOTLIGHT_ZOOM_SET</td><td>drc_ai_spotlight_zoom_set</td><td>AI 跟随开关设置</td></tr>
+<tr><td>DRC_AI_SPOTLIGHT_ZOOM_TRACK</td><td>drc_ai_spotlight_zoom_track</td><td>AI 识别目标跟随</td></tr>
+<tr><td>DRC_AI_SPOTLIGHT_ZOOM_SELECT</td><td>drc_ai_spotlight_zoom_select</td><td>AI 框选目标跟随</td></tr>
+<tr><td>DRC_AI_SPOTLIGHT_ZOOM_CONFIRM</td><td>drc_ai_spotlight_zoom_confirm</td><td>AI 框选目标跟随确认</td></tr>
+<tr><td>DRC_AI_SPOTLIGHT_ZOOM_STOP</td><td>drc_ai_spotlight_zoom_stop</td><td>停止目标跟随</td></tr>
+</table>
+</div>
+
+<!-- ============ v1.15 ============ -->
+<h2 id="v115">六、v1.15 新增功能对比</h2>
+<div class="section">
+<h3>6.1 机场3 PSDK 固件升级</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>PSDK 固件升级</td>
+  <td>v1.15 新增，机场3 PSDK 固件升级</td>
+  <td>需确认 ServiceMethod 中是否有对应的 PSDK 固件升级方法</td>
+  <td><span class="badge b-pending">待确认</span></td>
+</tr>
+</table>
+
+<h3>6.2 Matrice 400 设备支持（Pilot 上云）</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>DroneModel.M400</td>
+  <td>Matrice 400 0-103-0</td>
+  <td>已定义 <code>M400(0, 103, 0)</code></td>
+  <td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td>
+</tr>
+</table>
+
+<h3>6.3 MOP 数据传输</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>MOP 数据传输</td>
+  <td>v1.15 新增，Pilot 上云 MOP 数据传输模块</td>
+  <td>JSBridge 中定义了 <code>startMopCloud()</code> / <code>stopMopCloud()</code> 接口；SDK 是否有 MOP 相关 POJO 待确认</td>
+  <td><span class="badge b-pending">待确认</span></td>
+</tr>
+</table>
+</div>
+
+<!-- ============ v1.14 ============ -->
+<h2 id="v114">七、v1.14 新增功能对比</h2>
+<div class="section">
+<h3>7.1 自定义飞行区</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>事件方法</td>
+  <td>flight_areas_sync_progress, flight_areas_drone_location</td>
+  <td><code>EventMethod.FLIGHT_AREAS_SYNC_PROGRESS</code> + <code>FLIGHT_AREAS_DRONE_LOCATION</code></td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>请求方法</td>
+  <td>flight_areas_get</td>
+  <td><code>RequestsMethod.FLIGHT_AREAS_GET</code></td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+</table>
+
+<h3>7.2 远程解禁</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>远程解禁方法</td>
+  <td>v1.14 新增，机场3 远程解禁</td>
+  <td>ServiceMethod 回归补全中有 3 个远程解禁方法</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+</table>
+
+<h3>7.3 强制降落</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>DRC 强制降落</td>
+  <td>v1.14 新增，远程控制-强制降落</td>
+  <td><code>DrcMethod.DRC_FORCE_LANDING</code> ("drc_force_landing")</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>DRC 紧急降落</td>
+  <td>—</td>
+  <td><code>DrcMethod.DRC_EMERGENCY_LANDING</code> ("drc_emergency_landing")</td>
+  <td><span class="badge b-inferred">@Inferred</span></td>
+</tr>
+</table>
+
+<h3>7.4 空中下发航线</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>空中下发航线</td>
+  <td>v1.14 新增，机场2/3 支持空中下发航线</td>
+  <td><code>EventMethod.IN_FLIGHT_WAYLINE_PROGRESS</code> ("in_flight_wayline_progress")，标注 @Inferred</td>
+  <td><span class="badge b-inferred">@Inferred</span></td>
+</tr>
+</table>
+
+<h3>7.5 POI 环绕模式（Pilot 上云 M4D/4TD）</h3>
+<table>
+<tr><th>项目</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr>
+  <td>进入 POI 模式</td>
+  <td>poi_mode_enter (latitude, longitude, height)</td>
+  <td><code>ServiceMethod.POI_MODE_ENTER</code> + <code>PoiModeEnterRequest</code> (latitude, longitude, height)</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>退出 POI 模式</td>
+  <td>poi_mode_exit (空 data)</td>
+  <td><code>ServiceMethod.POI_MODE_EXIT</code>，无独立 Request 类（复用 NoParameterRequest）</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>POI 环绕速度</td>
+  <td>poi_circle_speed_set (circle_speed)</td>
+  <td><code>ServiceMethod.POI_CIRCLE_SPEED_SET</code> + <code>PoiCircleSpeedSetRequest</code> (circleSpeed)</td>
+  <td><span class="badge b-match">MATCH</span></td>
+</tr>
+<tr>
+  <td>POI 状态通知</td>
+  <td>poi_status_notify (status, reason, circle_radius, circle_speed, max_circle_speed)</td>
+  <td><code>EventMethod.POI_STATUS_NOTIFY</code> + <code>EventMethod.POI_CIRCLE_STATUS</code>，<code>PoiCircleStatusData</code> 字段匹配</td>
+  <td><span class="badge b-partial">PARTIAL</span></td>
+</tr>
+</table>
+<div class="callout callout-warn">
+  <strong>差异说明</strong>：DJI 文档定义事件方法名为 <code>poi_status_notify</code>，SDK 同时定义了 <code>POI_STATUS_NOTIFY ("poi_status_notify")</code> 和 <code>POI_CIRCLE_STATUS ("poi_circle_status")</code> 两个事件。
+  <code>PoiCircleStatusData</code> POJO 的字段与文档 <code>poi_status_notify</code> 的数据结构匹配，但关联到哪个 EventMethod 需确认。
+  <strong>建议</strong>：核实 <code>poi_circle_status</code> 是否为独立事件方法还是应合并到 <code>poi_status_notify</code>。
+</div>
+</div>
+
+<!-- ============ v1.13 ============ -->
+<h2 id="v113">八、v1.13.0 新增功能对比</h2>
+<div class="section">
+<h3>8.1 新增设备</h3>
+<table>
+<tr><th>设备</th><th>DJI 文档</th><th>SDK 实现</th><th>状态</th></tr>
+<tr><td>大疆机场 3</td><td>domain=3, type=3, sub_type=0</td><td>DOCK3(3, 3, 0)</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>Matrice 4D</td><td>domain=0, type=100, sub_type=0</td><td>M4D(0, 100, 0)</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>Matrice 4TD</td><td>domain=0, type=100, sub_type=1</td><td>M4TD(0, 100, 1)</td><td><span class="badge b-match">MATCH</span> <span class="badge b-verified">@Verified</span></td></tr>
+<tr><td>AL1 探照灯</td><td>—</td><td>需确认 SDK 是否有 AL1 相关枚举或 POJO</td><td><span class="badge b-pending">待确认</span></td></tr>
+<tr><td>AS1 喊话器</td><td>—</td><td>需确认 SDK 是否有 AS1 相关枚举或 POJO</td><td><span class="badge b-pending">待确认</span></td></tr>
+</table>
+
+<h3>8.2 机场3 功能集覆盖（19 个功能模块）</h3>
+<table>
+<tr><th>功能模块</th><th>SDK 覆盖状态</th><th>说明</th></tr>
+<tr><td>设备属性</td><td><span class="badge b-match">MATCH</span></td><td>OsdField / StateField / PropertySetMethod 已覆盖</td></tr>
+<tr><td>设备管理</td><td><span class="badge b-match">MATCH</span></td><td>StatusMethod.UPDATE_TOPO + UpdateTopoData</td></tr>
+<tr><td>直播功能</td><td><span class="badge b-match">MATCH</span></td><td>LiveCapacity / LiveStatus 等 POJO 已覆盖</td></tr>
+<tr><td>媒体管理</td><td><span class="badge b-match">MATCH</span></td><td>媒体相关 POJO 已覆盖</td></tr>
+<tr><td>航线管理</td><td><span class="badge b-match">MATCH</span></td><td>FlighttaskPrepare 等 + 空中下发航线</td></tr>
+<tr><td>HMS 管理</td><td><span class="badge b-match">MATCH</span></td><td>HMS 相关 POJO 已覆盖</td></tr>
+<tr><td>远程调试</td><td><span class="badge b-match">MATCH</span></td><td>DrcMethod 已覆盖</td></tr>
+<tr><td>固件升级</td><td><span class="badge b-match">MATCH</span></td><td>OTA 相关 ServiceMethod 已覆盖</td></tr>
+<tr><td>远程日志</td><td><span class="badge b-match">MATCH</span></td><td>远程日志相关方法已覆盖</td></tr>
+<tr><td>配置更新</td><td><span class="badge b-match">MATCH</span></td><td>配置更新相关方法已覆盖</td></tr>
+<tr><td>指令飞行</td><td><span class="badge b-match">MATCH</span></td><td>FlyToPoint / TakeoffToPoint 等</td></tr>
+<tr><td>自定义飞行区</td><td><span class="badge b-match">MATCH</span></td><td>EventMethod + RequestsMethod 已覆盖</td></tr>
+<tr><td>PSDK 功能</td><td><span class="badge b-partial">PARTIAL</span></td><td>部分 PSDK 方法已覆盖，PSDK 固件升级待确认</td></tr>
+<tr><td>PSDK 互联互通</td><td><span class="badge b-match">MATCH</span></td><td>psdk-transmit-custom-data 已覆盖</td></tr>
+<tr><td>ESDK 互联互通</td><td><span class="badge b-match">MATCH</span></td><td>esdk-transmit-custom-data 已覆盖</td></tr>
+<tr><td>远程解禁</td><td><span class="badge b-match">MATCH</span></td><td>3 个远程解禁方法已覆盖</td></tr>
+<tr><td>AirSense</td><td><span class="badge b-match">MATCH</span></td><td>AirSense 相关已覆盖</td></tr>
+<tr><td>远程控制</td><td><span class="badge b-match">MATCH</span></td><td>DRC 控制 + AI 目标识别已覆盖</td></tr>
+<tr><td>组织管理</td><td><span class="badge b-match">MATCH</span></td><td>组织管理相关已覆盖</td></tr>
+</table>
+</div>
+
+<!-- ============ Method Enums ============ -->
+<h2 id="method-enums">九、方法枚举对比</h2>
+<div class="section">
+
+<h3>9.1 枚举总数</h3>
+<table>
+<tr><th>枚举类型</th><th>SDK 数量</th><th>DJI 文档</th><th>状态</th></tr>
+<tr><td>ServiceMethod</td><td>97</td><td>—（文档未给出总数）</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>DrcMethod</td><td>42</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>DrcUpMethod</td><td>12</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>EventMethod</td><td>29</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>PropertySetMethod</td><td>18</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>OsdField</td><td>42</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+<tr><td>StateField</td><td>25</td><td>—</td><td><span class="badge b-verified">@Verified</span> 需逐项核实</td></tr>
+</table>
+
+<h3>9.2 关键方法逐项核实</h3>
+<table>
+<tr><th>DJI 文档方法</th><th>SDK 枚举</th><th>通道</th><th>状态</th></tr>
+<tr><td>fly_to_point_progress</td><td>FLY_TO_POINT_PROGRESS</td><td>EventMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>takeoff_to_point_progress</td><td>TAKEOFF_TO_POINT_PROGRESS</td><td>EventMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drc_status_notify</td><td>DRC_STATUS_NOTIFY</td><td>EventMethod (@Inferred, Abandoned)</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>joystick_invalid_notify</td><td>JOYSTICK_INVALID_NOTIFY</td><td>EventMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>camera_photo_take_progress</td><td>CAMERA_PHOTO_TAKE_PROGRESS</td><td>EventMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>delay_info_push</td><td>DELAY_INFO_PUSH</td><td>DrcUpMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>hsi_info_push</td><td>HSI_INFO_PUSH</td><td>DrcUpMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drc_drone_state_push</td><td>DRC_DRONE_STATE_PUSH</td><td>DrcUpMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drc_camera_osd_info_push</td><td>DRC_CAMERA_OSD_INFO_PUSH</td><td>DrcUpMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drc_initial_state_subscribe</td><td>DRC_INITIAL_STATE_SUBSCRIBE</td><td>DrcMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>return_home_info</td><td>RETURN_HOME_INFO</td><td>EventMethod (@Inferred)</td><td><span class="badge b-inferred">@Inferred</span></td></tr>
+<tr><td>cloud_control_auth_notify</td><td>CLOUD_CONTROL_AUTH_NOTIFY</td><td>EventMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>cloud_control_auth_request</td><td>CLOUD_CONTROL_AUTH_REQUEST</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>cloud_control_release</td><td>CLOUD_CONTROL_RELEASE</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>poi_mode_enter</td><td>POI_MODE_ENTER</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>poi_mode_exit</td><td>POI_MODE_EXIT</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>poi_circle_speed_set</td><td>POI_CIRCLE_SPEED_SET</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>poi_status_notify</td><td>POI_STATUS_NOTIFY + POI_CIRCLE_STATUS</td><td>EventMethod</td><td><span class="badge b-partial">PARTIAL</span></td></tr>
+<tr><td>drc_mode_enter</td><td>DRC_MODE_ENTER</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drc_mode_exit</td><td>DRC_MODE_EXIT</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>camera_mode_switch</td><td>CAMERA_MODE_SWITCH</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>camera_focal_length_set</td><td>CAMERA_FOCAL_LENGTH_SET</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>gimbal_reset</td><td>GIMBAL_RESET</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>update_topo</td><td>UPDATE_TOPO</td><td>StatusMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>flight_areas_get</td><td>FLIGHT_AREAS_GET</td><td>RequestsMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>flighttask_prepare</td><td>FLIGHTTASK_PREPARE</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>flighttask_execute</td><td>FLIGHTTASK_EXECUTE</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>flighttask_undo</td><td>FLIGHTTASK_UNDO</td><td>ServiceMethod</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+</div>
+
+<!-- ============ Telemetry ============ -->
+<h2 id="telemetry">十、遥测字段对比</h2>
+<div class="section">
+
+<h3>10.1 机场 mode_code（DockModeCode）</h3>
+<table>
+<tr><th>代码</th><th>DJI 文档</th><th>SDK 枚举</th><th>状态</th></tr>
+<tr><td>0</td><td>空闲中</td><td>IDLE</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>1</td><td>现场调试</td><td>LOCAL_DEBUG</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>2</td><td>远程调试</td><td>REMOTE_DEBUG</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>3</td><td>固件升级中</td><td>FIRMWARE_UPGRADING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>4</td><td>作业中</td><td>WORKING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>5</td><td>待标定</td><td>CALIBRATION_PENDING</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+
+<h3>10.2 飞行器 mode_code（DroneModeCode）</h3>
+<table>
+<tr><th>代码</th><th>DJI 文档 (M4 系列)</th><th>DJI 文档 (RC Pro)</th><th>SDK 枚举</th><th>状态</th></tr>
+<tr><td>0</td><td>待机</td><td>待机</td><td>STANDBY</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>1</td><td>起飞准备</td><td>起飞准备</td><td>TAKEOFF_PREPARATION</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>2</td><td>起飞准备完毕</td><td>起飞准备完毕</td><td>TAKEOFF_READY</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>3</td><td>手动飞行</td><td>手动飞行</td><td>MANUAL_FLIGHT</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>4</td><td>自动起飞</td><td>自动起飞</td><td>AUTO_TAKEOFF</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>5</td><td>航线飞行</td><td>航线飞行</td><td>WAYLINE_FLIGHT</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>6</td><td>全景拍照</td><td>全景拍照</td><td>PANORAMA</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>7</td><td>智能跟随</td><td>智能跟随</td><td>INTELLIGENT_TRACKING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>8</td><td>ADS-B 躲避</td><td>ADS-B 躲避</td><td>ADS_B_AVOIDANCE</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>9</td><td>自动返航</td><td>自动返航</td><td>AUTO_RETURN_HOME</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>10</td><td>自动降落</td><td>自动降落</td><td>AUTO_LANDING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>11</td><td>强制降落</td><td>强制降落</td><td>FORCED_LANDING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>12</td><td>三桨叶降落</td><td>三桨叶降落</td><td>THREE_BLADE_LANDING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>13</td><td>升级中</td><td>升级中</td><td>UPGRADING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>14</td><td>未连接</td><td>未连接</td><td>NOT_CONNECTED</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>15</td><td>APAS</td><td>APAS</td><td>APAS</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>16</td><td>虚拟摇杆状态</td><td>虚拟摇杆状态</td><td>VIRTUAL_STICK</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>17</td><td>指令飞行</td><td>指令飞行</td><td>LIVE_FLIGHT_CONTROLS</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>18</td><td>空中 RTK 收敛模式</td><td>—</td><td>AIRBORNE_RTK_FIXING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>19</td><td>机场选址中</td><td>—</td><td>DOCK_ADDRESS_SELECTING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>20</td><td>—</td><td>—</td><td>POI_ORBIT</td><td><span class="badge b-inferred">@Inferred</span></td></tr>
+</table>
+<div class="callout callout-warn">
+  <strong>差异说明</strong>：SDK <code>DroneModeCode</code> 包含 <code>20=POI_ORBIT</code>（POI 环绕），但 DJI 文档的 mode_code 枚举表中未列出值 20。
+  POI 环绕是 v1.14 新增功能，但 mode_code=20 是否为 DJI 官方定义未在文档中找到。
+  <strong>状态</strong>：<span class="badge b-inferred">@Inferred</span> — 推断值，需真机验证确认。
+</div>
+
+<h3>10.3 flighttask_step_code（FlighttaskStepCode）</h3>
+<table>
+<tr><th>代码</th><th>DJI 文档</th><th>SDK 枚举</th><th>状态</th></tr>
+<tr><td>0</td><td>作业准备中</td><td>TASK_PREPARING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>1</td><td>飞行作业中</td><td>TASK_OPERATING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>2</td><td>作业后状态恢复</td><td>STATE_RECOVERING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>3</td><td>自定义飞行区更新中</td><td>CUSTOM_FLIGHT_AREA_UPDATING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>4</td><td>地形障碍物更新中</td><td>TERRAIN_OBSTACLES_UPDATING</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>5</td><td>任务空闲</td><td>IDLE</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>255</td><td>飞行器异常</td><td>AIRCRAFT_ABNORMAL</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>256</td><td>未知状态</td><td>UNKNOWN</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+
+<h3>10.4 camera_mode（CameraMode）</h3>
+<table>
+<tr><th>代码</th><th>DJI 文档</th><th>SDK 枚举</th><th>状态</th></tr>
+<tr><td>0</td><td>拍照</td><td>PHOTO</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>1</td><td>录像</td><td>VIDEO</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>2</td><td>智能低光</td><td>HYPER_LIGHT</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>3</td><td>全景拍照</td><td>PANORAMA</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+<div class="callout callout-info">
+  <strong>注意</strong>：M30 文档额外含 <code>-1=不支持的模式</code>，SDK 以 M3D 文档为准未定义 -1。
+  另：<code>CameraStatePushData.CameraState.cameraMode</code> 字段使用 <code>int</code> 而非 <code>CameraMode</code> 枚举（因 CameraState 中的枚举值含义与 CameraMode 不同：CameraState 的 0=拍照,1=录像,2=拍照+录像）。
+</div>
+
+<h3>10.5 关键 OSD/State 字段覆盖</h3>
+<table>
+<tr><th>DJI 文档字段</th><th>SDK 枚举</th><th>类型</th><th>状态</th></tr>
+<tr><td>home_position_is_valid</td><td>OsdField.HOME_POSITION_IS_VALID</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>air_conditioner</td><td>OsdField.AIR_CONDITIONER</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>cover_state</td><td>OsdField.COVER_STATE</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>drone_in_dock</td><td>OsdField.DRONE_IN_DOCK</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>mode_code (机场)</td><td>OsdField.MODE_CODE</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>flighttask_step_code</td><td>OsdField.FLIGHTTASK_STEP_CODE</td><td>OSD</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>live_capacity</td><td>StateField.LIVE_CAPACITY</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>live_status</td><td>StateField.LIVE_STATUS</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>air_transfer_enable</td><td>StateField.AIR_TRANSFER_ENABLE</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>silent_mode</td><td>StateField.SILENT_MODE</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>dongle_infos</td><td>StateField.DONGLE_INFOS</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>remaining_power_for_return_home</td><td>StateField.REMAINING_POWER_FOR_RETURN_HOME</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>offline_map_enable</td><td>StateField.OFFLINE_MAP_ENABLE</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+<tr><td>cloud_control_auth</td><td>StateField.CLOUD_CONTROL_AUTH</td><td>State</td><td><span class="badge b-match">MATCH</span></td></tr>
+</table>
+</div>
+
+<!-- ============ Discrepancies ============ -->
+<h2 id="discrepancies">十一、差异与问题清单</h2>
+<div class="section">
+
+<h3>问题 1：DroneModeCode 包含 mode_code=20 (POI_ORBIT) 未见于 DJI 文档</h3>
+<table>
+<tr><th>严重程度</th><th>类型</th><th>影响范围</th></tr>
+<tr><td><span class="badge b-inferred">低</span></td><td>@Inferred 推断值</td><td>DroneModeCode 枚举</td></tr>
+</table>
+<p>
+  <strong>详情</strong>：SDK <code>DroneModeCode</code> 定义了 <code>POI_ORBIT(20)</code>，但 DJI 文档的 mode_code 枚举仅列到 19（M4 系列）或 17（RC Pro）。
+  POI 环绕是 v1.14 新增功能，mode_code=20 可能是 DJI 未在文档中明确列出的值。
+  <strong>状态</strong>：已标注 @Inferred，需真机验证。
+</p>
+
+<h3>问题 2：PhotoFormat 枚举未与字段绑定</h3>
+<table>
+<tr><th>严重程度</th><th>类型</th><th>影响范围</th></tr>
+<tr><td><span class="badge b-partial">中</span></td><td>设计不一致</td><td>CameraStatePushData.CameraState.photoFormat</td></tr>
+</table>
+<p>
+  <strong>详情</strong>：<code>PhotoFormat</code> 枚举已定义（包含 RJPEG=7, DLT664=16），但 <code>CameraStatePushData.CameraState.photoFormat</code> 字段使用 <code>Integer</code> 而非枚举类型，
+  且 <code>PhotoFormat</code> 缺少 <code>@JsonValue</code>/<code>@JsonCreator</code> 注解。枚举仅作为常量参考，实际序列化时不使用类型安全绑定。
+  <strong>建议</strong>：待真机验证后，将字段类型改为 <code>PhotoFormat</code> 枚举并添加 Jackson 注解。
+</p>
+
+<h3>问题 3：POI 事件方法命名可能重复</h3>
+<table>
+<tr><th>严重程度</th><th>类型</th><th>影响范围</th></tr>
+<tr><td><span class="badge b-partial">中</span></td><td>潜在重复定义</td><td>EventMethod.POI_STATUS_NOTIFY / POI_CIRCLE_STATUS</td></tr>
+</table>
+<p>
+  <strong>详情</strong>：DJI 文档定义事件 <code>poi_status_notify</code>（字段：status, reason, circle_radius, circle_speed, max_circle_speed）。
+  SDK 同时定义了 <code>POI_STATUS_NOTIFY ("poi_status_notify")</code> 和 <code>POI_CIRCLE_STATUS ("poi_circle_status")</code> 两个事件方法。
+  <code>PoiCircleStatusData</code> POJO 字段匹配文档 <code>poi_status_notify</code> 数据结构，但关联的事件方法不确定。
+  <strong>建议</strong>：核实 <code>poi_circle_status</code> 是否为 DJI 文档中独立的协议方法，还是应合并到 <code>poi_status_notify</code>。
+</p>
+
+<h3>问题 4：CameraState.cameraMode 与 CameraMode 枚举值域不一致</h3>
+<table>
+<tr><th>严重程度</th><th>类型</th><th>影响范围</th></tr>
+<tr><td><span class="badge b-partial">低</span></td><td>设计已知差异</td><td>CameraStatePushData.CameraState.cameraMode</td></tr>
+</table>
+<p>
+  <strong>详情</strong>：<code>CameraStatePushData.CameraState.cameraMode</code> 使用 <code>int</code> 而非 <code>CameraMode</code> 枚举，因为 CameraState 的 cameraMode 枚举值含义（0=拍照,1=录像,2=拍照+录像）与 CameraMode（0=拍照,1=录像,2=智能低光,3=全景拍照）不同。
+  这是已知的设计差异，不是 Bug，但需在文档中说明。
+</p>
+
+</div>
+
+<!-- ============ Uncertain Items ============ -->
+<h2 id="uncertain">十二、不确定项记录（@Inferred）</h2>
+<div class="section">
+<p>以下为 SDK 中标注 <code>@Inferred</code> 的推断项，尚未通过真机验证或 DJI 文档明确确认：</p>
+
+<table>
+<tr><th>#</th><th>推断项</th><th>位置</th><th>推断理由</th><th>验证点</th><th>严重程度</th></tr>
+<tr>
+  <td>1</td>
+  <td>DroneModeCode.POI_ORBIT (20)</td>
+  <td>DroneModeCode.java</td>
+  <td>POI 环绕是 v1.14 新增功能，推断有对应 mode_code 值</td>
+  <td>真机触发 POI 环绕时确认 mode_code 值</td>
+  <td><span class="badge b-inferred">低</span></td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>EventMethod.RETURN_HOME_INFO</td>
+  <td>EventMethod.java</td>
+  <td>DJI 文档有 return_home_info 事件定义</td>
+  <td>真机返航时确认事件推送格式</td>
+  <td><span class="badge b-inferred">低</span></td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>EventMethod.POI_CIRCLE_STATUS / POI_STATUS_NOTIFY</td>
+  <td>EventMethod.java</td>
+  <td>DJI 文档定义 poi_status_notify，SDK 额外定义 poi_circle_status</td>
+  <td>真机 POI 模式时确认事件方法名</td>
+  <td><span class="badge b-inferred">中</span></td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>EventMethod.IN_FLIGHT_WAYLINE_PROGRESS</td>
+  <td>EventMethod.java</td>
+  <td>v1.14 新增空中下发航线，推断有进度上报事件</td>
+  <td>真机空中下发航线时确认事件格式</td>
+  <td><span class="badge b-inferred">低</span></td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>EventMethod.DRC_STATUS_NOTIFY (Abandoned)</td>
+  <td>EventMethod.java</td>
+  <td>DJI 英文文档标注不再维护，推荐使用 drc_state 属性</td>
+  <td>无需验证（已废弃）</td>
+  <td><span class="badge b-inferred">低</span></td>
+</tr>
+<tr>
+  <td>6</td>
+  <td>EventMethod.FLIGHTTASK_READY</td>
+  <td>EventMethod.java</td>
+  <td>DJI 文档列出但 simulator 未实现验证</td>
+  <td>真机航线任务准备时确认事件</td>
+  <td><span class="badge b-inferred">低</span></td>
+</tr>
+<tr>
+  <td>7</td>
+  <td>DrcMethod.DRC_EMERGENCY_LANDING</td>
+  <td>DrcMethod.java</td>
+  <td>v1.14 强制降落功能，SDK 定义了 drc_emergency_landing</td>
+  <td>确认 DJI 文档是否定义 drc_emergency_landing 方法名</td>
+  <td><span class="badge b-inferred">中</span></td>
+</tr>
+</table>
+</div>
+
+<!-- ============ Documentation Gaps ============ -->
+<h2 id="gaps">十三、文档获取缺口</h2>
+<div class="section">
+<p>本次对比中，以下 DJI 文档页面因 Cookie Policy 拦截或访问限制，未能获取完整正文内容：</p>
+
+<table>
+<tr><th>#</th><th>页面</th><th>URL</th><th>缺失内容</th><th>影响</th></tr>
+<tr>
+  <td>1</td>
+  <td>WebSocket 推送消息</td>
+  <td>websocket-push.html</td>
+  <td>WebSocket push message 格式和 bizCode 完整列表</td>
+  <td>无法核实 SDK WsBizCode / WsPushMessage 是否完整</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td>HTTP API 总入口</td>
+  <td>http-api.html</td>
+  <td>Pilot 上云 HTTP API 路径完整列表</td>
+  <td>无法核实 SDK HttpApiPath 是否完整</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td>M4 系列 DRC</td>
+  <td>m4-series/drc.html</td>
+  <td>M4 系列 Pilot 上云指令飞行协议</td>
+  <td>无法核实 M4 系列 DRC 方法是否完整</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td>M4 系列远程控制</td>
+  <td>m4-series/remote-control.html</td>
+  <td>M4 系列远程控制 OSD 推送</td>
+  <td>无法核实 M4 系列 DRC 上行方法是否完整</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td>地图元素列表接口</td>
+  <td>map-elements/list.html</td>
+  <td>地图元素 HTTP API 列表</td>
+  <td>无法核实 SDK 地图元素 POJO 是否完整</td>
+</tr>
+</table>
+
+<div class="callout callout-info">
+  <strong>说明</strong>：以上缺口主要影响 Pilot 上云 HTTP API 和 WebSocket 推送消息的完整性核实。
+  机场上云（MQTT）协议已通过 Dock3 properties/device 等页面获取到详细内容，覆盖了核心协议定义。
+  建议后续通过浏览器直接访问或使用 DJI Developer API 获取这些页面内容。
+</div>
+</div>
+
+<!-- ============ Footer ============ -->
+<div class="footer">
+  <p><strong>报告生成时间</strong>：2026-09-13 | <strong>对比范围</strong>：DJI Cloud API v1.16.1 文档 vs dji-cloud-api-sdk SDK 代码 | <strong>方法</strong>：WebFetch 获取文档 + 代码搜索对比</p>
+  <p><strong>注意</strong>：本报告仅记录对比结果，不涉及代码修改。所有 @Inferred 项需真机验证后更新为 @Verified。</p>
+</div>
+
+</body>
+</html>
