@@ -27,12 +27,12 @@ import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.FirmwareUpgradeType;
  * 并启动异步进度模拟（download_firmware 50% → upgrade_firmware 100% → ok）。
  * 进度通过 events 通道 {@code ota_progress} 异步上报。
  *
- * <p>字段集依据 DJI Dock3 文档 + simulator
+ * <p>字段集依据 DJI O4 地面站 firmware 文档 + simulator
  * <a href="file:///d:/99.Code/hivemind-simulator/src/main/java/ltd/cdmi/hivemind/simulator/handler/OtaSimulator.java#L112-L159">
  * OtaSimulator.handleOtaCreate</a> 已对接 hivemind 验证。
  *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/firmware.html">
- * DJI Dock3 固件升级 services</a>
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/firmware.html">
+ * DJI O4 地面站固件升级 services</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/firmware.html")
 @Verified(basis = "DJI O4 地面站 firmware.html ota_create Data 表（devices[] 结构）+ simulator OtaSimulator.handleOtaCreate 已对接 hivemind 验证")

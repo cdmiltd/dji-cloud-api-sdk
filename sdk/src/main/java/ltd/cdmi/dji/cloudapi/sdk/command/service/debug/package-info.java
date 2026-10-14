@@ -24,11 +24,11 @@
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryMaintenanceSwitchRequest BatteryMaintenanceSwitchRequest}
  *       — battery_maintenance_switch 电池保养开关（action）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryStoreModeSwitchRequest BatteryStoreModeSwitchRequest}
- *       — battery_store_mode_switch 电池存储模式切换（@Inferred）</li>
+ *       — battery_store_mode_switch 电池存储模式切换（@Verified）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.AlarmStateSwitchRequest AlarmStateSwitchRequest}
  *       — alarm_state_switch 报警状态切换（@Inferred）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.AirConditionerModeSwitchRequest AirConditionerModeSwitchRequest}
- *       — air_conditioner_mode_switch 空调模式切换（@Inferred）</li>
+ *       — air_conditioner_mode_switch 空调模式切换（@Verified）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.SdrWorkmodeSwitchRequest SdrWorkmodeSwitchRequest}
  *       — sdr_workmode_switch SDR 工作模式切换（@Inferred）</li>
  * </ul>

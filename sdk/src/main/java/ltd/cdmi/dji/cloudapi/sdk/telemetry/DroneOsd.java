@@ -93,7 +93,7 @@ public record DroneOsd(
         /** 垂直速度（m/s） */
         Double verticalSpeed,
 
-        /** 风速（0.1 m/s，上报值需除以 10 得到实际 m/s） */
+        /** 风速（文档口径为 float，单位 m/s） */
         Double windSpeed,
 
         /** 风向（枚举 1-8，正北到西北） */
@@ -225,7 +225,7 @@ public record DroneOsd(
      * DroneOsd 的可变构造器，支持字段级合并。
      *
      * <p>设计动机：record 不可变，调用方在 OSD 合并场景（如无人机自报 OSD 覆盖式合并、
-     * DRC 高频字段合并）需要字段级更新，全参数 record 重建（33 字段）繁琐易错。
+     * DRC 高频字段合并）需要字段级更新，全参数 record 重建（39 字段）繁琐易错。
      * Builder 提供便捷的字段设置与合并辅助。
      *
      * <p><b>合并语义</b>：{@link #mergeNonNullFrom(DroneOsd)} 仅覆盖 source 中非 null 字段，

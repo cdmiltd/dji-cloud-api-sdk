@@ -801,12 +801,12 @@ String wpml = content.waylinesWpml();
 
 // 3. 解析：XML 字符串 → POJO（支持 16 种动作的多态反序列化）
 Kml<Folder> template = WpmlCodec.parseTemplateKml(kml);
-Kml<ExecuteFolder> waylines = WpmlCodec.parseWaylinesWpml(wpml);
+WaylinesWpml waylines = WpmlCodec.parseWaylinesWpml(wpml);
 
 // 4. 一站式：KMZ 字节流 → POJO 容器（ParsedKmz record）
 ParsedKmz parsed = WpmlCodec.parseKmz(kmz);
 Kml<Folder> t = parsed.template();
-Kml<ExecuteFolder> w = parsed.waylines();
+WaylinesWpml w = parsed.waylines();
 ```
 
 > POJO 均为 `record`（不可变）。编辑策略：读取字段值 → 新建 Builder 重建对象，不提供 `toBuilder()`。
@@ -1175,7 +1175,6 @@ java -cp "target/classes:$(cat cp.txt)" ltd.cdmi.dji.cloudapi.sdk.examples.MqttS
 
 **POJO 字段级推断（17+ 处，散落于各 record）**：
 - `StsCredentials` — credentials 子结构字段名未在 DJI 文档直接核实
-- `UpdateTopoReplyData` — sub_type 字段推断
 - `DrcMethod`（类级）+ `EventMethod`（5 个 method）+ `ServiceMethod`（类级）— 部分方法枚举值归类待文档核实
 - `DjiErrorCode`（类级）— 514xxx/4xxxx/6xxxx 错误码未完整收录
 - `NoOutputReply` — drone_open output 结构推断

@@ -18,7 +18,6 @@ import java.util.List;
 
 import ltd.cdmi.dji.cloudapi.sdk.codec.MessageCodec;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.CameraMode;
-import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.PhotoFormat;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -94,7 +93,7 @@ class DrcCameraRequestTest {
                 "payload_index", "camera_mode");
         roundTrip(new DrcCameraPhotoStopRequest("1-0-0"), DrcCameraPhotoStopRequest.class, "payload_index");
         roundTrip(new DrcCameraPhotoTakeRequest("1-0-0"), DrcCameraPhotoTakeRequest.class, "payload_index");
-        roundTrip(new DrcCameraPhotoFormatSetRequest("1-0-0", PhotoFormat.RJPEG), DrcCameraPhotoFormatSetRequest.class,
+        roundTrip(new DrcCameraPhotoFormatSetRequest("1-0-0", 7), DrcCameraPhotoFormatSetRequest.class,
                 "payload_index", "photo_format");
         roundTrip(new DrcCameraPointFocusActionRequest("1-0-0", "wide", 0.5, 0.5), DrcCameraPointFocusActionRequest.class,
                 "payload_index", "camera_type", "x", "y");

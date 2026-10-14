@@ -17,14 +17,15 @@
  *
  * <p>本包含机场上云注册四步流程的 Request/Reply record：
  * <ul>
- *   <li>{@link ConfigRequest}/{@link ConfigReply} — config（@Verified；Reply data 结构 @Inferred 待真机验证）</li>
+ *   <li>{@link ConfigRequest}/{@link ConfigReply} — config（@Verified）</li>
  *   <li>{@link AirportBindStatusRequest}/{@link AirportBindStatusReply} — airport_bind_status（@Verified；Reply 含 output.bind_status[]）</li>
  *   <li>{@link AirportOrganizationGetRequest}/{@link AirportOrganizationGetReply} — airport_organization_get（@Verified；Reply 含 output.organization_name）</li>
  *   <li>{@link AirportOrganizationBindRequest}/{@link AirportOrganizationBindReply} — airport_organization_bind（@Verified）</li>
  * </ul>
  *
- * <p>注意：{@link ConfigReply} 的 data 直接含 {@code app_id}/{@code app_license}
- * （非 output 包裹），与 services_reply 的 {@code {result, output}} 结构不同。
+ * <p>注意：{@link ConfigReply} 的 data 直接含 {@code app_id}/{@code app_key}/{@code app_license}/
+ * {@code ntp_server_host}/{@code ntp_server_port}（非 output 包裹），
+ * 与 services_reply 的 {@code {result, output}} 结构不同。
  *
  * <p>DJI 文档：https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html
  */

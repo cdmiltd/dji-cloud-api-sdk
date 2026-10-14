@@ -36,7 +36,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html">DJI 产品支持</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html")
-@Verified(basis = "DJI Cloud API 官方文档设备型号三元组定义，反查分发到 DroneModel/RcModel/DockModel 的 fromType")
+@Verified(basis = "DJI Cloud API 官方文档设备型号三元组定义，反查分发到 DroneModel/RcModel/DockModel/GroundStationModel 的 fromType")
 public final class DeviceModels {
 
     private DeviceModels() {
@@ -84,7 +84,7 @@ public final class DeviceModels {
     /**
      * 按设备简称（如 {@code "M30"}、{@code "Dock1"}）跨枚举反查设备型号。
      *
-     * <p>遍历 {@link DroneModel}、{@link RcModel}、{@link DockModel} 三个枚举，返回首个
+     * <p>遍历 {@link DroneModel}、{@link RcModel}、{@link DockModel}、{@link GroundStationModel} 四个枚举，返回首个
      * {@link DeviceModelProvider#shortName()} 与输入匹配的型号。SDK 未提供跨枚举的简称反查入口，
      * 本方法补充该能力。
      *

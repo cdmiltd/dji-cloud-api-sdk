@@ -210,7 +210,7 @@ public record DockOsd(
      * DockOsd 的可变构造器，支持字段级合并。
      *
      * <p>设计动机：机场 OSD 分多条推送，调用方需合并多源 partial OSD，
-     * 全参数 record 重建（35 字段）繁琐易错。Builder 提供便捷的字段设置与合并辅助。
+     * 全参数 record 重建（40 字段）繁琐易错。Builder 提供便捷的字段设置与合并辅助。
      *
      * <p><b>合并语义</b>：{@link #mergeNonNullFrom(DockOsd)} 仅覆盖 source 中非 null 字段。
      */

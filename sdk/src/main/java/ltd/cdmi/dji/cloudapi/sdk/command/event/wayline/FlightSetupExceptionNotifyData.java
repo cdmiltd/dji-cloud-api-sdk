@@ -23,13 +23,15 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>结构：{@code {sn, timeout_time, timestamp, flight_type}}；
  * {@code flight_type} 为 enum_int（1=航线任务, 2=指令飞行）。
  *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html">
- * DJI Dock3 航线管理 events</a>
+ * <p>注：文档 example 含 {@code flight_id}，字段表未列，故未建模。
+ *
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/wayline.html">
+ * DJI Dock1 航线管理 events</a>
  *
  * @see ltd.cdmi.dji.cloudapi.sdk.protocol.method.EventMethod#FLIGHT_SETUP_EXCEPTION_NOTIFY
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "DJI Dock 航线管理 events flight_setup_exception_notify data = {sn, timeout_time, timestamp, flight_type(enum_int 1/2)}")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/wayline.html")
+@Verified(basis = "DJI Dock1 航线管理 events flight_setup_exception_notify data = {sn, timeout_time, timestamp, flight_type(enum_int 1/2)}")
 public record FlightSetupExceptionNotifyData(
         /** 设备 SN */
         String sn,

@@ -28,7 +28,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 每个枚举值通过 {@link #needReply()} 暴露其 {@code need_reply} 取值，
  * 调用方无需查阅 DJI 文档即可正确构造 {@link ltd.cdmi.dji.cloudapi.sdk.protocol.envelope.EventEnvelope}。
  *
- * <p>本枚举覆盖 29 个 events 专属 method（不含与 services 同名的进度上报 method）：
+ * <p>本枚举覆盖 31 个 events 专属 method（不含与 services 同名的进度上报 method）：
  * <ul>
  *   <li><b>simulator 已对接验证 23 个（@Verified）</b>：航线/飞行/相机/升级/日志/媒体/飞行区/授权/AirSense/HMS/喇叭/PSDK/ESDK 等</li>
  *   <li><b>DJI 文档列出待验证 4 个（@Inferred）</b>：return_home_info/flighttask_ready/in_flight_wayline_progress/poi_circle_status</li>

@@ -157,7 +157,7 @@ public enum OsdField {
     /** 声光报警状态（0=关闭，1=开启） */
     ALARM_STATE("alarm_state", "声光报警状态"),
 
-    /** 推杆状态（0=收回，1=展开） */
+    /** 推杆状态（0=关闭，1=打开，2=半开，3=推杆状态异常） */
     PUTTER_STATE("putter_state", "推杆状态"),
 
     /** 飞行器控制权状态（struct：control_source/locked，Dock1 OSD 专属） */

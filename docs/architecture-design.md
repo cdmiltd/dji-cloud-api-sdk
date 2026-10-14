@@ -298,7 +298,7 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   │   └── JoystickInvalidNotifyData     reason（0-4 枚举，三 Dock 共有）
 │   │   ├── system/               ← 系统/升级/日志事件（4 类 + 1 package-info）
 │   │   │   ├── OtaProgressData               result, output{status, progress{percent, currentStep}}
-│   │   │   ├── FileUploadProgressData         result, output{status, ext{files[]}}（4 层嵌套：FileItem/FileProgress）
+│   │   │   ├── FileUploadProgressData         result, output{status, ext{files[]}}（4 层嵌套：FileItem/Progress）
 │   │   │   ├── RtkCalibrationData            RTK 标定进度（v1.18 新增）
 │   │   │   └── ServiceProgressData           通用服务进度（v1.18 新增）
 │   │   ├── media/                ← 媒体管理事件（2 类 + 1 package-info）

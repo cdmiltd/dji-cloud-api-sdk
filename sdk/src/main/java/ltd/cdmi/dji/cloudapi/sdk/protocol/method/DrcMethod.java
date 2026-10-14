@@ -26,7 +26,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>DRC 通道用于云对设备的实时控制指令（{@code drc/down} 云→设备）与状态推送
  * （{@code drc/up} 设备→云），主要在 DRC 模式下使用。
  *
- * <p>本枚举当前覆盖 simulator {@code dji-method-catalog.json} 已盘点的 19 个 method + v1.16 新增 11 个 AI 方法：
+ * <p>本枚举当前覆盖 DRC 通道 68 个 method（wire 名逐字对齐官方文档）：
  * <ul>
  *   <li><b>三 Dock 共有（4 个）</b>：{@link #DRONE_EMERGENCY_STOP} /
  *       {@link #STICK_CONTROL} / {@link #DRONE_CONTROL} / {@link #HEART_BEAT}</li>
@@ -45,6 +45,18 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *       {@link #DRC_AI_IDENTIFY_FILTER_SET} / {@link #DRC_AI_SPOTLIGHT_ZOOM_SET} /
  *       {@link #DRC_AI_SPOTLIGHT_ZOOM_TRACK} / {@link #DRC_AI_SPOTLIGHT_ZOOM_SELECT} /
  *       {@link #DRC_AI_SPOTLIGHT_ZOOM_CONFIRM} / {@link #DRC_AI_SPOTLIGHT_ZOOM_STOP}</li>
+ *   <li><b>Pilot-to-Cloud DRC 专属（1 个）</b>：{@link #DRC_LIVE_LENS_CHANGE}</li>
+ *   <li><b>DRC 状态与相机参数控制（11 个）</b>：{@link #DRC_INITIAL_STATE_SUBSCRIBE} /
+ *       {@link #DRC_STEALTH_STATE_SET} / {@link #DRC_NIGHT_LIGHTS_STATE_SET} /
+ *       {@link #DRC_CAMERA_DEWARPING_SET} / {@link #DRC_CAMERA_MECHANICAL_SHUTTER_SET} /
+ *       {@link #DRC_CAMERA_ISO_SET} / {@link #DRC_CAMERA_SHUTTER_SET} /
+ *       {@link #DRC_CAMERA_APERTURE_VALUE_SET} / {@link #DRC_INTERVAL_PHOTO_SET} /
+ *       {@link #DRC_VIDEO_RESOLUTION_SET} / {@link #DRC_LINKAGE_ZOOM_SET}</li>
+ *   <li><b>DRC 相机/云台/PSDK 指令（26 个，v1.18 新增，逐字对齐官方文档，带 {@code drc_} 前缀）</b>：{@link #DRC_CAMERA_PHOTO_SIZE_SET} /
+ *       {@link #DRC_PSDK_INPUT_BOX_TEXT_SET} / {@link #DRC_PSDK_WIDGET_VALUE_SET} /
+ *       {@link #DRC_VIDEO_STORAGE_SET} / {@link #DRC_CAMERA_AIM} / {@link #DRC_GIMBAL_RESET} /
+ *       {@link #DRC_CAMERA_PHOTO_FORMAT_SET} / {@link #DRC_CAMERA_PHOTO_TAKE} /
+ *       {@link #DRC_CAMERA_MODE_SWITCH} / {@link #DRC_IR_METERING_MODE_SET} 等}</li>
  * </ul>
  *
  * <p>命名口径（方案 A，2026-10-14 裁决）：DRC 通道常量 wire <b>逐字对齐官方文档</b>——DRC 相机/云台类方法带

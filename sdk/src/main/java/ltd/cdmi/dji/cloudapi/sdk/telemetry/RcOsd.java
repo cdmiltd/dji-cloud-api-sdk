@@ -45,7 +45,7 @@ public record RcOsd(
 
         /**
          * 遥控器剩余电量百分比（0-100），文档 wire key 为 {@code capacity_percent}。
-         * <p>兼容旧 wire key {@code battery}（{@link JsonAlias}），真机核对后移除兼容。
+         * <p>{@code battery} 非 DJI wire key，仅为兼容旧版 SDK 字段名的反序列化别名（{@link JsonAlias}）。
          */
         @JsonAlias("battery")
         Integer capacityPercent,

@@ -44,7 +44,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p><b>Jackson 绑定</b>：本枚举是 SDK 中首个用作 POJO 字段类型的遥测枚举。通过
  * {@link JsonValue}（序列化：枚举 → int code）与 {@link JsonCreator}（反序列化：
  * int code → 枚举）实现 DJI 协议 int 值与枚举类型的双向绑定，可作为 record 字段
- * 类型直接使用，如 {@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryStoreModeSwitchRequest#mode()}。
+ * 类型直接使用，如 {@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryStoreModeSwitchRequest#action()}。
  * 其他 enumtype 枚举（如 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.DroneModeCode}）
  * 仅作为 Javadoc 引用，未做 Jackson 绑定，因 DJI OSD record 中对应字段仍用 {@code Integer}
  * 以兼容不同机型字段集差异；而本枚举对应字段为枚举值固定的 services 请求参数，可直接类型化。

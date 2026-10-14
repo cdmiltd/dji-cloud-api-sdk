@@ -43,7 +43,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/live.html">
  * DJI Dock3 直播 services</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/live.html")
 @Verified(basis = "simulator LiveStreamSimulator.handleStartPush 已对接 hivemind 验证")
 public record LiveStartPushRequest(
     String videoId,

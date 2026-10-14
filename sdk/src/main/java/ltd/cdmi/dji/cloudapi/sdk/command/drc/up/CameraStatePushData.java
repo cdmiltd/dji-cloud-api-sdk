@@ -48,7 +48,7 @@ public record CameraStatePushData(
     /**
      * 相机状态子结构。
      *
-     * @param cameraMode             相机模式（枚举值：0=拍照, 1=录像, 2=拍照+录像, ...）
+     * @param cameraMode             相机模式（0=拍照, 1=录像, 2=智能低光, 3=全景拍照, 4=定时拍照）
      * @param intervalPhotoInterval  间隔拍照间隔（秒；文档 Type 列标注 int 但示例为 2.5，按 {@code Double} 承载以兼容小数，§5-27）
      * @param videoResolution        视频分辨率（枚举值）
      * @param linkageZoomState       联动变焦状态（{@code int} 承载，值域 {@code {0:关闭, 1:开启}}；文档 Type 标 bool 与示例 {@code 0} 冲突，以数字示例为准，§5-35）

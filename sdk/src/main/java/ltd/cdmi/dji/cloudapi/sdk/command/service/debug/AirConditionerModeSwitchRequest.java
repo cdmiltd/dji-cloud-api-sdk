@@ -35,5 +35,5 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 @Verified(basis = "DJI Dock1 远程调试（cmd）页 air_conditioner_mode_switch services 请求 data：字段名 action（enum_int {0:空闲,1:制冷,2:制热,3:除湿}）")
 public record AirConditionerModeSwitchRequest(
     /** 空调模式动作（enum_int，0=空闲, 1=制冷, 2=制热, 3=除湿） */
-    int action
+    Integer action
 ) {}

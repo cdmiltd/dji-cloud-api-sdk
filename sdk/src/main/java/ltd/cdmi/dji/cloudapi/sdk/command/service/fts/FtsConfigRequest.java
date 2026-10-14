@@ -33,7 +33,7 @@ import ltd.cdmi.dji.cloudapi.sdk.command.service.NoOutputReply;
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/fts.html")
 @Verified(basis = "DJI Dock3 FTS services 文档 fts_config Data 表 {fts_server_type(enum_int 0/1), mqtt_broker}")
 public record FtsConfigRequest(
-        /** FTS 服务端类型：0=DJI FTS, 1=自定义 */
+        /** FTS 服务端类型：值域见 {@link ltd.cdmi.dji.cloudapi.sdk.command.service.fts.FtsServerType}（0=DJI FTS 服务器, 1=自定义 FTS 服务器） */
         Integer ftsServerType,
         /** MQTT Broker 配置（条件必填：fts_server_type=1 时必填，允许 null） */
         MqttBroker mqttBroker

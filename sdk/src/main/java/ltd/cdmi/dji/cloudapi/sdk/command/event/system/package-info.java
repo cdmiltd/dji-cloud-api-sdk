@@ -20,16 +20,18 @@
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.OtaProgressData OtaProgressData}
  *       — ota_progress 固件升级进度上报（@Verified，含嵌套 Output/Progress）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.FileUploadProgressData FileUploadProgressData}
- *       — fileupload_progress 日志文件上传进度（@Verified，含嵌套 Output/Ext/FileItem/FileProgress，
+ *       — fileupload_progress 日志文件上传进度（@Verified，含嵌套 Output/Ext/FileItem/Progress，
  *       4 层嵌套保留在类体内以保持高内聚）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.RtkCalibrationData RtkCalibrationData}
  *       — rtk_calibration 一键标定进度/结果（@Verified，O4 cmd 页 ext.devices[] + version 结构）</li>
  * </ul>
  *
  * <p>参考：
- * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/config.html">
- * DJI Dock3 配置类 events（ota_progress）</a>、
- * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/log-upload.html">
- * DJI Dock3 日志上传 events（fileupload_progress）</a>
+ * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/firmware.html">
+ * DJI O4 地面站固件升级 events（ota_progress）</a>、
+ * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/log.html">
+ * DJI O4 地面站远程日志 events（fileupload_progress）</a>、
+ * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/cmd.html">
+ * DJI O4 地面站远程调试 events（rtk_calibration）</a>
  */
 package ltd.cdmi.dji.cloudapi.sdk.command.event.system;

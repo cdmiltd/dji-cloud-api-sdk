@@ -29,7 +29,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 与 services 通道不同：不使用 method 字段，直接在 data 中放置属性名→值的映射。
  * property/set_reply 返回每个属性的设置结果（code: 0=成功）。
  *
- * <p>本枚举列出 DJI Dock3 + M3D/M3TD 文档中 accessMode=rw 的 18 个属性：
+ * <p>本枚举列出 DJI Dock3 + M3D/M3TD 文档中 accessMode=rw 的 20 个属性：
  *
  * <table>
  * <caption>可设置属性</caption>
@@ -52,6 +52,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <tr><td>THERMAL_ISOTHERM_STATE</td><td>thermal_isotherm_state</td><td>enum_int(0-1)</td><td>M3D thermal</td></tr>
  * <tr><td>THERMAL_ISOTHERM_UPPER_LIMIT</td><td>thermal_isotherm_upper_limit</td><td>int(°C)</td><td>M3D thermal</td></tr>
  * <tr><td>THERMAL_ISOTHERM_LOWER_LIMIT</td><td>thermal_isotherm_lower_limit</td><td>int(°C)</td><td>M3D thermal</td></tr>
+ * <tr><td>COMMANDER_FLIGHT_HEIGHT</td><td>commander_flight_height</td><td>int</td><td>M4D/M4TD（v1.18 新增）</td></tr>
+ * <tr><td>COMMANDER_MODE_LOST_ACTION</td><td>commander_mode_lost_action</td><td>enum_int</td><td>M4D/M4TD（v1.18 新增）</td></tr>
  * </table>
  *
  * <p>参考：
@@ -61,7 +63,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * DJI M3D 设备属性</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/properties.html")
-@Verified(basis = "DJI Dock3 + M3D properties.html accessMode=rw 属性列表（18 个，含 v1.16.1 新增 remaining_power_for_return_home）")
+@Verified(basis = "DJI Dock3 + M3D properties.html accessMode=rw 属性列表（20 个，含 v1.16.1 新增 remaining_power_for_return_home）")
 public enum PropertySetMethod {
 
     // --- Dock3 机场属性 ---

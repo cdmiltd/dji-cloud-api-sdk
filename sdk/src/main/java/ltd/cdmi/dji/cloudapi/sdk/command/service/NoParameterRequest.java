@@ -23,13 +23,13 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 的请求 data 为空对象 {@code {}}，不携带任何业务字段。本 record 作为这些指令的通用 Request，
  * 避免为每个无参数指令创建空 record 文件。
  *
- * <p><b>适用指令清单（28 个，含 1 个 Pilot + 1 个 requests 通道 @Verified）</b>：
+ * <p><b>适用指令清单（27 个，含 1 个 Pilot + 1 个 requests 通道 @Verified）</b>：
  * <ul>
  *   <li><b>机场硬件控制 — Job（12 个，异步含进度，@Verified）</b>：cover_open/cover_close/cover_force_close/
  *       drone_open/drone_close/charge_open/charge_close/device_reboot/device_format/drone_format/
  *       putter_open/putter_close</li>
- *   <li><b>机场硬件控制 — Cmd（5 个，同步，@Verified）</b>：debug_mode_open/debug_mode_close/
- *       supplement_light_open/supplement_light_close/battery_maintenance_switch</li>
+ *   <li><b>机场硬件控制 — Cmd（4 个，同步，@Verified）</b>：debug_mode_open/debug_mode_close/
+ *       supplement_light_open/supplement_light_close</li>
  *   <li><b>飞行控制（2 个，@Verified）</b>：fly_to_point_stop/flight_authority_grab</li>
  *   <li><b>航线任务（6 个，@Verified）</b>：flighttask_pause/flighttask_recovery/return_home/
  *       return_home_cancel/flight_setup_abort/in_flight_wayline_cancel</li>
@@ -38,14 +38,14 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li><b>请求（requests）通道（1 个，@Verified）</b>：flight_areas_get（自定义飞行区配置获取，data=null）</li>
  * </ul>
  *
- * <p><b>不适用（已有专用 POJO，8 个）</b>：esim_activate/esim_operator_switch/sim_slot_switch/
+ * <p><b>不适用（已有专用 POJO，9 个）</b>：esim_activate/esim_operator_switch/sim_slot_switch/
  *       rtk_calibration/battery_store_mode_switch/alarm_state_switch/
- *       air_conditioner_mode_switch/sdr_workmode_switch
+ *       air_conditioner_mode_switch/sdr_workmode_switch/battery_maintenance_switch
  *
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html">
  * DJI Dock 上云 services 通道</a>、
  * <a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/dji-rc-plus-2/drc.html">
  * DJI Pilot2 指令飞行 services</a>
  */
-@Verified(basis = "simulator RemoteDebugSimulator/FlightCommandSimulator/WaylineTaskSimulator/AuthFlowHandler 已对接 hivemind 验证 26 个无参数指令 + DJI 文档验证 poi_mode_exit Data=null")
+@Verified(basis = "simulator RemoteDebugSimulator/FlightCommandSimulator/WaylineTaskSimulator/AuthFlowHandler 已对接 hivemind 验证 25 个无参数指令 + DJI 文档验证 poi_mode_exit Data=null")
 public record NoParameterRequest() {}
