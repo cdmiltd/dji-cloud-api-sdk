@@ -26,8 +26,9 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * @see WirelessLinkTopo#centerNode()
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "DJI Dock3 wayline.html wireless_link_topo.center_node 字段表：sdr_id/sn")
+@Verified(basis = "DJI Dock3/Dock2 wayline.html wireless_link_topo.center_node 字段表：sdr_id(int)/sn(text)")
 public record CenterNode(
-    String sdrId,
+    /** 扰码信息（int，示例 933765657） */
+    Integer sdrId,
     String sn
 ) {}

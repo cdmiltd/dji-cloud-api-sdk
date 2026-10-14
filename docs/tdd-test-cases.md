@@ -3198,18 +3198,19 @@
 - 基准：spec | 报告 §4 L368（§5-55） | green
 
 #### shouldSerializeCenterNodeSdrId_whenToJson
-- 预期：`{"sdr_id":"sdr-1","sn":"SN"}`
-- 基准：spec | 报告 §4 L368 | green
+- 输入：`new CenterNode(933765657,"SN")`
+- 预期：`{"sdr_id":933765657,"sn":"SN"}`（`sdr_id` 为 **int**，非字符串）
+- 基准：spec | 报告 §4 L368 + Dock3/Dock2 wayline 页 `center_node{sdr_id int, sn text}` 字段表及示例（`"sdr_id":933765657`） | green
 
 #### shouldPopulateLeafNode_whenToJson
-- 输入：`new LeafNode("sdr-2","SN2",1)`
-- 预期：空 record → `{sdr_id, sn, control_source_index}`
-- 基准：spec | 报告 §4 L368 | green
+- 输入：`new LeafNode(920128532,"SN2",1)`
+- 预期：`{sdr_id(int), sn(text), control_source_index(int)}`
+- 基准：spec | 报告 §4 L368 + Dock3/Dock2 wayline 页 `leaf_nodes[]{sdr_id int, sn text, control_source_index int}` | green
 
 #### shouldSerializeRtcmInfo_whenToJson
-- 输入：`new RtcmInfo("MP",8080,"host",1,0)`
-- 预期：含 `mount_point`/`port`/`host`/`rtcm_device_type`/`source_type`
-- 基准：spec | 报告 §4 L368 | green
+- 输入：`new RtcmInfo("MP","8080","host",1,0)`
+- 预期：含 `mount_point`(text)/`port`(**text**，示例 `"8002"`)/`host`(text)/`rtcm_device_type`(int)/`source_type`(int)
+- 基准：spec | 报告 §4 L368 + Dock3 wayline 页 `rtcm_info.port text`（示例 `"8002"`） | green
 
 - 对应测试类：`WaylineV118Test`
 
@@ -3237,10 +3238,10 @@
 #### 23.1.3 GroundStationState（`telemetry`）
 - `shouldParseTopLevel_whenDeserialize`：`electric_supply_mode`/`is_beidou_version`
 - `shouldParsePeripherals_whenDeserialize`：`peripherals_info[]`（`device_sn/ip_addr/need_auth/main_device`）、`peripheral_list[]`（`rid/adsb/dock_control` 能力）
-- `shouldParseSubDeviceAndRtcm_whenDeserialize`：`sub_device{device_sn,device_model_key,device_online_status,device_paired}`、`rtcm_info{mount_point,port,host,rtcm_device_type,source_type}`
-- `shouldParseWirelessLinkTopo_whenDeserialize`：`center_node{...}`/`leaf_nodes[]{...}`/`secret_code[]`
+- `shouldParseSubDeviceAndRtcm_whenDeserialize`：`sub_device{device_sn,device_model_key,device_online_status,device_paired}`、`rtcm_info{mount_point, port(**text**), host, rtcm_device_type, source_type}`
+- `shouldParseWirelessLinkTopo_whenDeserialize`：`secret_code[]`、`center_node{sdr_id(int), sn(text), model(**int**), device_type(int)}`、`leaf_nodes[]{sdr_id(int), sn(text), control_source_index(int), model(**int**), device_type(int)}`
 - `shouldNullHeading_whenAbsent`：未推送 `heading`=null
-- 基准：spec | 报告 §4 L386 | green
+- 基准：spec | 报告 §4 L386 + O4 地面站设备属性页（`sdr_id/model/device_type` 均为 `int`，`rtcm_info.port` 为 `text`） | green
 - 对应测试类：`GroundStationStateTest`
 
 ### 23.2 DRC 相机集（31 个 `DrcCamera*Request` + 15 枚举，A16/A17/A18）

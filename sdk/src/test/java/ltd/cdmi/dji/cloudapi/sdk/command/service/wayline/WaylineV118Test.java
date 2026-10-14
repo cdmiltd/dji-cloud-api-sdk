@@ -31,32 +31,33 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WaylineV118Test {
 
     @Test
-    @DisplayName("RtcmInfo：mount_point/rtcm_device_type/source_type wire key")
+    @DisplayName("RtcmInfo：mount_point(text)/port(text)/rtcm_device_type/source_type wire key")
     void testRtcmInfo() {
-        RtcmInfo info = new RtcmInfo("MP", 8080, "host", 1, 0);
+        RtcmInfo info = new RtcmInfo("MP", "8080", "host", 1, 0);
         String json = MessageCodec.toJson(info);
         assertTrue(json.contains("\"mount_point\":\"MP\""), json);
+        assertTrue(json.contains("\"port\":\"8080\""), json);
         assertTrue(json.contains("\"rtcm_device_type\":1"), json);
         assertTrue(json.contains("\"source_type\":0"), json);
         assertEquals(info, MessageCodec.fromJson(json, RtcmInfo.class));
     }
 
     @Test
-    @DisplayName("CenterNode：sdr_id + sn")
+    @DisplayName("CenterNode：sdr_id(int) + sn")
     void testCenterNode() {
-        CenterNode node = new CenterNode("sdr-1", "SN");
+        CenterNode node = new CenterNode(933765657, "SN");
         String json = MessageCodec.toJson(node);
-        assertTrue(json.contains("\"sdr_id\":\"sdr-1\""), json);
+        assertTrue(json.contains("\"sdr_id\":933765657"), json);
         assertTrue(json.contains("\"sn\":\"SN\""), json);
         assertEquals(node, MessageCodec.fromJson(json, CenterNode.class));
     }
 
     @Test
-    @DisplayName("LeafNode：sdr_id + sn + control_source_index")
+    @DisplayName("LeafNode：sdr_id(int) + sn + control_source_index")
     void testLeafNode() {
-        LeafNode node = new LeafNode("sdr-2", "SN2", 1);
+        LeafNode node = new LeafNode(920128532, "SN2", 1);
         String json = MessageCodec.toJson(node);
-        assertTrue(json.contains("\"sdr_id\":\"sdr-2\""), json);
+        assertTrue(json.contains("\"sdr_id\":920128532"), json);
         assertTrue(json.contains("\"control_source_index\":1"), json);
         assertEquals(node, MessageCodec.fromJson(json, LeafNode.class));
     }
@@ -65,7 +66,7 @@ class WaylineV118Test {
     @DisplayName("DockInfo：补 heading/home_position_is_valid/rtcm_info/alternate_land_point")
     void testDockInfo() {
         DockInfo info = new DockInfo("SN", "dock3", 0, 90.0, 1, 30.0, 120.0, 50.0,
-                new RtcmInfo("MP", 8080, "host", 1, 0),
+                new RtcmInfo("MP", "8080", "host", 1, 0),
                 new AlternateLandPoint(120.1, 30.1, 40.0, 1, 50.0));
         String json = MessageCodec.toJson(info);
         assertTrue(json.contains("\"heading\":90.0"), json);

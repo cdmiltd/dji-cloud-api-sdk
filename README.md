@@ -1184,7 +1184,6 @@ java -cp "target/classes:$(cat cp.txt)" ltd.cdmi.dji.cloudapi.sdk.examples.MqttS
 - `SimulateMission` — altitude 字段单位语义
 - `DrcSpeakerTtsSetRequest` — text 字段是否必填待确认
 - `FlighttaskPrepareRequest`（类级 + 字段级 wayline_precision_type）— 部分字段待文档核实
-- `LeafNode`、`WirelessLinkTopo` — 拓扑子结构推断
 - `HeartBeatRequest`/`HeartBeatReply` — DRC 心跳字段结构推断
 - `DroneControlRequest` — 已废弃指令，字段约束放宽
 - `FlighttaskProgressGetReply` — output 结构待文档验证

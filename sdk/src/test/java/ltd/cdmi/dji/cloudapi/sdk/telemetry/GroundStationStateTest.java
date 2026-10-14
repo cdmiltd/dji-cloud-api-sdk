@@ -39,12 +39,12 @@ class GroundStationStateTest {
             + "\"dock_control\":{\"supported\":1,\"version\":\"2.0\"}}],"
             + "\"sub_device\":{\"device_sn\":\"sub\",\"device_model_key\":\"3-3-0\","
             + "\"device_online_status\":1,\"device_paired\":1},"
-            + "\"rtcm_info\":{\"mount_point\":\"mp\",\"port\":8080,\"host\":\"host\","
+            + "\"rtcm_info\":{\"mount_point\":\"mp\",\"port\":\"8080\",\"host\":\"host\","
             + "\"rtcm_device_type\":1,\"source_type\":3},"
             + "\"wireless_link_topo\":{\"secret_code\":[1,2,3],"
-            + "\"center_node\":{\"sdr_id\":1,\"sn\":\"c\",\"model\":\"M4D\",\"device_type\":1},"
+            + "\"center_node\":{\"sdr_id\":1,\"sn\":\"c\",\"model\":47,\"device_type\":1},"
             + "\"leaf_nodes\":[{\"sdr_id\":2,\"sn\":\"l\",\"control_source_index\":1,"
-            + "\"model\":\"Dock3\",\"device_type\":2}]}}";
+            + "\"model\":5,\"device_type\":2}]}}";
 
     @Test
     @DisplayName("解析顶层字段")
@@ -78,7 +78,7 @@ class GroundStationStateTest {
 
         assertEquals("sub", state.subDevice().deviceSn());
         assertEquals("mp", state.rtcmInfo().mountPoint());
-        assertEquals(8080, state.rtcmInfo().port());
+        assertEquals("8080", state.rtcmInfo().port());
         assertEquals(1, state.rtcmInfo().rtcmDeviceType());
         assertEquals(3, state.rtcmInfo().sourceType());
     }
@@ -89,10 +89,10 @@ class GroundStationStateTest {
         GroundStationState state = MessageCodec.fromJson(SAMPLE, GroundStationState.class);
 
         assertEquals(3, state.wirelessLinkTopo().secretCode().size());
-        assertEquals("M4D", state.wirelessLinkTopo().centerNode().model());
+        assertEquals(47, state.wirelessLinkTopo().centerNode().model());
         assertEquals(1, state.wirelessLinkTopo().leafNodes().size());
         assertEquals(1, state.wirelessLinkTopo().leafNodes().get(0).controlSourceIndex());
-        assertEquals("Dock3", state.wirelessLinkTopo().leafNodes().get(0).model());
+        assertEquals(5, state.wirelessLinkTopo().leafNodes().get(0).model());
     }
 
     @Test

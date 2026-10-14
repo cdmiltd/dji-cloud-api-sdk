@@ -26,12 +26,12 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * DJI Dock3 航线管理 services</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "DJI Dock3 wayline.html rtcm_info = {mount_point, port, host, rtcm_device_type, source_type}")
+@Verified(basis = "DJI Dock3 wayline.html rtcm_info = {mount_point(text), port(text), host(text), rtcm_device_type(int), source_type(int)}")
 public record RtcmInfo(
         /** 挂载点 */
         String mountPoint,
-        /** 端口 */
-        Integer port,
+        /** 端口（文档 Type=text，示例 "8002"） */
+        String port,
         /** 主机地址 */
         String host,
         /** RTCM 设备类型 */

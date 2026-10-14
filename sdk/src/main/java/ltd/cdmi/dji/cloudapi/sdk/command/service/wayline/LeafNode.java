@@ -26,9 +26,10 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * @see WirelessLinkTopo#leafNodes()
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "DJI Dock3 wayline.html wireless_link_topo.leaf_nodes[] 字段表：sdr_id/sn/control_source_index(1=A 槽,2=B 槽)")
+@Verified(basis = "DJI Dock3/Dock2 wayline.html wireless_link_topo.leaf_nodes[] 字段表：sdr_id(int)/sn(text)/control_source_index(int, 1=A 槽,2=B 槽)")
 public record LeafNode(
-    String sdrId,
+    /** 扰码信息（int，示例 920128532） */
+    Integer sdrId,
     String sn,
     /** 控制源索引（enum_int {1=A 槽, 2=B 槽}） */
     Integer controlSourceIndex

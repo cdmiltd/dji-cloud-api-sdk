@@ -17,7 +17,6 @@ package ltd.cdmi.dji.cloudapi.sdk.telemetry;
 import java.util.List;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 import ltd.cdmi.dji.cloudapi.sdk.command.peripheral.PeripheralCapability;
 import ltd.cdmi.dji.cloudapi.sdk.command.peripheral.PeripheralInfo;
@@ -77,13 +76,13 @@ public record GroundStationState(
      * {@code rtcm_device_type}（见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.RtcmDeviceType}）/
      * {@code source_type}（见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.RtcmSourceType}）。
      */
-    @Verified(basis = "DJI O4 地面站设备属性页 rtcm_info struct（mount_point/port/host/rtcm_device_type/source_type）")
+    @Verified(basis = "DJI O4 地面站设备属性页 rtcm_info struct（mount_point(text)/port(text)/host(text)/rtcm_device_type(int)/source_type(int)）")
     public record RtcmInfo(
             /** 挂载点 */
             String mountPoint,
 
-            /** 端口 */
-            Integer port,
+            /** 端口（文档 Type=text，示例 "1024"） */
+            String port,
 
             /** 主机地址 */
             String host,
@@ -115,12 +114,10 @@ public record GroundStationState(
         /**
          * 中心节点（wireless_link_topo.center_node）。
          *
-         * <p>{@code @Inferred}：model / device_type 的精确类型未逐项标注，按语义推断为 String / Integer。
+         * <p>DJI 文档字段：{@code sdr_id}(int) / {@code sn}(text) / {@code model}(int，图传拓扑内部机型编码) /
+         * {@code device_type}(int，图传拓扑内部设备类型标识)。
          */
-        @Inferred(
-                reason = "DJI O4 页 center_node.model/device_type 类型未逐项标注",
-                verifyPoint = "待 O4 页原文核实 center_node.model/device_type 的精确类型"
-        )
+        @Verified(basis = "DJI O4 地面站设备属性页 wireless_link_topo.center_node：sdr_id/model/device_type 均为 int，sn 为 text")
         public record CenterNode(
                 /** 扰码信息 */
                 Integer sdrId,
@@ -128,10 +125,10 @@ public record GroundStationState(
                 /** 设备 SN */
                 String sn,
 
-                /** 设备型号 */
-                String model,
+                /** 机型编码（图传拓扑内部编码，int） */
+                Integer model,
 
-                /** 设备类型 */
+                /** 设备类型（图传拓扑内部编码，int） */
                 Integer deviceType
         ) {
         }
@@ -139,12 +136,10 @@ public record GroundStationState(
         /**
          * 叶节点（wireless_link_topo.leaf_nodes 元素）。
          *
-         * <p>{@code @Inferred}：model / device_type 的精确类型未逐项标注，按语义推断为 String / Integer。
+         * <p>DJI 文档字段：{@code sdr_id}(int) / {@code sn}(text) / {@code control_source_index}(int，1=A 槽/2=B 槽) /
+         * {@code model}(int，图传拓扑内部机型编码) / {@code device_type}(int，图传拓扑内部设备类型标识)。
          */
-        @Inferred(
-                reason = "DJI O4 页 leaf_nodes.model/device_type 类型未逐项标注",
-                verifyPoint = "待 O4 页原文核实 leaf_nodes.model/device_type 的精确类型"
-        )
+        @Verified(basis = "DJI O4 地面站设备属性页 wireless_link_topo.leaf_nodes[]：sdr_id/model/device_type 均为 int，sn 为 text，control_source_index 为 int")
         public record LeafNode(
                 /** 扰码信息 */
                 Integer sdrId,
@@ -155,10 +150,10 @@ public record GroundStationState(
                 /** 控制源序号（1=A, 2=B） */
                 Integer controlSourceIndex,
 
-                /** 设备型号 */
-                String model,
+                /** 机型编码（图传拓扑内部编码，int） */
+                Integer model,
 
-                /** 设备类型 */
+                /** 设备类型（图传拓扑内部编码，int） */
                 Integer deviceType
         ) {
         }
