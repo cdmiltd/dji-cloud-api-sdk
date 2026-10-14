@@ -1,0 +1,11 @@
+# Git 属性 —— 控制 git archive 打包行为（GitHub / Gitee Release 源码包）
+#
+# 内部文件（仅 Codeup 保留，不进公开镜像源码包），与 .codeup/flow.yml 的排除清单保持一致：
+#   - .codeup/ 与 AGENTS.md：由 flow.yml 的 git rm 清单排除（不进镜像 git 历史；
+#     且 create_gitee_release 的 git archive 路径规格本就未包含它们）
+#   - docs/wechat-article/：由下方 export-ignore 排除（不进源码 zip/tar.gz）
+#
+# export-ignore：git archive 打包时跳过匹配路径。Gitee 源码包
+# （flow.yml create_gitee_release 用 git archive 在未过滤工作树打包）依赖此规则排除内部文档。
+docs/wechat-article export-ignore
+docs/wechat-article/** export-ignore
