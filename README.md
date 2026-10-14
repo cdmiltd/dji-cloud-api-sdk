@@ -43,7 +43,7 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk</artifactId>
-    <version>1.18.0.1</version>
+    <version>1.18.0.2</version>
 </dependency>
 ```
 
@@ -53,12 +53,12 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk</artifactId>
-    <version>1.18.0.1</version>
+    <version>1.18.0.2</version>
 </dependency>
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk-wayline</artifactId>
-    <version>1.18.0.1</version>
+    <version>1.18.0.2</version>
 </dependency>
 ```
 
