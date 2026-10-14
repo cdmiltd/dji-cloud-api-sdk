@@ -2,12 +2,12 @@
 
 ## 简介
 
-DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两个独立场景：机场上云（Dock ↔ 平台，MQTT 5 通道 services/drc/events/requests/status）与 Pilot 上云（Pilot ↔ 平台，HTTP + WebSocket），共 188 个方法、250 个 POJO。
+DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两个独立场景：机场上云（Dock ↔ 平台，MQTT 5 通道 services/drc/events/requests/status）与 Pilot 上云（Pilot ↔ 平台，HTTP + WebSocket），共 222 个方法、466 个公开类型（340 record + 110 枚举 + 16 工具类/接口）。
 
 **为什么用这个 SDK？**
 
 - **编译期类型安全**——DJI JSON 字段名映射为 Java record 字段，拼写错误编译即报，不再运行时静默失败
-- **协议知识在 JAR 不在人脑**——188 个方法全部编码为类型安全的 record，IDE 自动补全即可发现全部能力，无需逐字阅读 DJI 文档
+- **协议知识在 JAR 不在人脑**——222 个方法全部编码为类型安全的 record，IDE 自动补全即可发现全部能力，无需逐字阅读 DJI 文档
 - **专人跟踪协议变更**——DJI 更新协议时由 SDK 维护者同步更新，消费方升级 JAR 即获取最新定义，无需自己盯文档
 - **100% 接口覆盖不随人员流动退化**——核心成员离职不会导致代码无人敢改、平台兼容性永久降级；协议知识固化在代码中，团队能力不依赖个人记忆
 - **协议权威解释，持续验证完善**——字段必填/选填、类型、回复结构等歧义由 SDK 一锤定音，消除团队内解读争议；当前已通过 simulator 对接 hivemind 平台验证（`@Verified` 标注），剩余推断项（`@Inferred`）标注待真机抓包确认，详见下方「验证状态说明」
@@ -16,16 +16,16 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 
 ## 版本说明
 
-本 SDK 跟随大疆官网 Cloud API 协议版本，当前最新协议版本为 **1.16.1**。
+本 SDK 跟随大疆官网 Cloud API 协议版本，当前最新协议版本为 **1.18.0**。
 
-版本号格式：`1.16.1.X`
+版本号格式：`1.18.0.X`
 
-- 前三段（`1.16.1`）对齐 DJI Cloud API 协议版本，协议升级时同步递增
+- 前三段（`1.18.0`）对齐 DJI Cloud API 协议版本，协议升级时同步递增
 - 末段（`X`）为 SDK 问题修复版本号，协议不变情况下随 SDK 缺陷修复递增
 
 ## 特性
 
-- **全通道覆盖**：services(69) / drc(19) / events(20) / requests(7) / status(1) = 116 个 method POJO
+- **全通道覆盖**：services(102) / drc(68) / drc_up(12) / events(31) / requests(8) / status(1) = 222 个 method
 - **类型安全**：每个 method 有对应的 Request/Reply/Data record，字段 camelCase 自动映射 DJI snake_case JSON
 - **文档追踪**：`@DocUrl` 标注 DJI 文档链接，`@Verified`/`@Inferred` 标注验证状态
 - **零 MQTT 耦合**：纯 POJO 定义层，不依赖 MQTT 客户端
@@ -43,7 +43,7 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk</artifactId>
-    <version>1.16.1.0</version>
+    <version>1.18.0.0</version>
 </dependency>
 ```
 
@@ -53,12 +53,12 @@ DJI Cloud API SDK 是 DJI 上云协议的 Java 类型安全 POJO 库，覆盖两
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk</artifactId>
-    <version>1.16.1.0</version>
+    <version>1.18.0.0</version>
 </dependency>
 <dependency>
     <groupId>ltd.cdmi</groupId>
     <artifactId>dji-cloud-api-sdk-wayline</artifactId>
-    <version>1.16.1.0</version>
+    <version>1.18.0.0</version>
 </dependency>
 ```
 
@@ -456,10 +456,10 @@ case "highest_priority_upload_flighttask_media" -> {
 
 ```java
 case "flight_areas_get" -> {
-    var msg = DjiMessage.parse(payload, FlightAreasGetRequest.class);
-    // requests_reply：data={result, output:{file:{name, checksum}}}
-    var file = new FlightAreasGetReply.SyncFile("flight_areas.json", "sha256-abc123");
-    var output = new FlightAreasGetReply.Output(file);
+    var msg = DjiMessage.parse(payload, NoParameterRequest.class);
+    // requests_reply：data={result, output:{files:[{name, url, checksum, size}]}}
+    var file = new FlightAreasGetReply.File("flight_areas.json", "https://s3.com/xxx.json", "sha256-abc123", 1024);
+    var output = new FlightAreasGetReply.Output(java.util.List.of(file));
     sendRequestReply(msg.tid(), msg.bid(), method, new FlightAreasGetReply(0, output));
 }
 case "flight_areas_drone_location" -> {
@@ -474,7 +474,7 @@ case "flight_areas_sync_progress" -> {
 }
 ```
 
-**涉及 SDK 类**：`FlightAreasGetRequest/Reply`、`FlightAreasDroneLocationData`、`FlightAreasSyncProgressData`
+**涉及 SDK 类**：`NoParameterRequest`（请求复用）、`FlightAreasGetReply`、`FlightAreasDroneLocationData`、`FlightAreasSyncProgressData`
 
 ### 9. 设备状态与遥测
 
@@ -1149,7 +1149,7 @@ java -cp "target/classes:$(cat cp.txt)" ltd.cdmi.dji.cloudapi.sdk.examples.MqttS
 | 模块 | 职责 | 核心类 |
 |---|---|---|
 | `protocol/` | 协议层：envelope/topic/method/error | `RequestEnvelope`/`ReplyEnvelope`/`EventEnvelope`, `TopicBuilder`, `TopicResolver`, `ServiceMethod`/`EventMethod`/`DrcMethod`, `DjiErrorCode` |
-| `command/` | 指令 POJO：5 通道 116 方法 | `service/`(69), `drc/`(19), `event/`(20), `request/`(7), `status/`(1) |
+| `command/` | 指令 POJO：5 通道 222 方法 | `service/`(102), `drc/`(68), `drc/up/`(12), `event/`(31), `request/`(8), `status/`(1) |
 | `codec/` | JSON 编解码 + 类型安全信封解析 | `MessageCodec`, `DjiMessage` |
 | `model/` | 设备型号/兼容性 | `DeviceModel`, `RcModel`, `DeviceCompatibility` |
 | `telemetry/` | OSD/State 遥测 | `DockOsd`, `DroneOsd`, `State` |

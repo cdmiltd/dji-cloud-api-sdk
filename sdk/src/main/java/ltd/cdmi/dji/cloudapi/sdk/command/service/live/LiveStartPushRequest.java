@@ -29,7 +29,19 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *
  * <p>字段依据：simulator {@code LiveStreamSimulator.handleStartPush} 已对接 hivemind 验证。
  *
- * <p>{@code url_type} 取值：{@code 1=RTMP}、{@code 4=WebRTC} 等。
+ * <p>{@code url_type} 取值：{@code 0=声网}、{@code 1=RTMP}、{@code 3=GB28181}、{@code 4=WebRTC}
+ * （注意：<b>无 2</b>）。
+ *
+ * <p>{@code url} 格式随 {@code url_type} 变化：
+ * <ul>
+ *   <li>{@code 0}（声网）：声网频道参数（如 {@code channelId} 相关地址）</li>
+ *   <li>{@code 1}（RTMP）：{@code rtmp://{host}:{port}/{app}/{stream}}</li>
+ *   <li>{@code 3}（GB28181）：GB28181 推流地址</li>
+ *   <li>{@code 4}（WebRTC）：WebRTC 接入地址</li>
+ * </ul>
+ *
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/live.html">
+ * DJI Dock3 直播 services</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
 @Verified(basis = "simulator LiveStreamSimulator.handleStartPush 已对接 hivemind 验证")

@@ -106,7 +106,14 @@ public enum PropertySetMethod {
     /** 测温区间上限（°C） */
     THERMAL_ISOTHERM_UPPER_LIMIT("thermal_isotherm_upper_limit"),
     /** 测温区间下限（°C） */
-    THERMAL_ISOTHERM_LOWER_LIMIT("thermal_isotherm_lower_limit");
+    THERMAL_ISOTHERM_LOWER_LIMIT("thermal_isotherm_lower_limit"),
+
+    // --- M4D/M4TD 飞行器属性（v1.18 新增，accessMode=rw） ---
+
+    /** 指点飞行高度（M4D/M4TD 飞行器属性） */
+    COMMANDER_FLIGHT_HEIGHT("commander_flight_height"),
+    /** 指点飞行失控动作（M4D/M4TD 飞行器属性） */
+    COMMANDER_MODE_LOST_ACTION("commander_mode_lost_action");
 
     private final String propertyName;
 

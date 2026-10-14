@@ -34,7 +34,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 @Verified(basis = "simulator DockOnlineService/PilotRegistrationFlow 已对接 hivemind 验证")
 public enum StatusMethod {
 
-    /** 设备拓扑上下线通知（设备→云，data 含 sub_type 区分上线 0/下线 1） */
+    /** 设备拓扑上下线通知（设备→云，上线/下线由 {@code sub_devices} 是否为空区分；
+     * {@code sub_type} 为网关子设备的产品子类型，参考产品支持） */
     UPDATE_TOPO("update_topo", "设备拓扑上下线通知");
 
     private final String methodName;

@@ -52,6 +52,10 @@ public record FileUploadStartRequest(
         String endpoint,
         /** 云厂商枚举值（enum_string：ali=阿里云, aws=亚马逊云, minio=minio） */
         String provider,
+        /** 文件存储目录 */
+        String fileStoreDir,
+        /** 文件类型 */
+        Integer fileType,
         /** 上传参数（含 files 列表） */
         FileUploadParams params
 ) {
@@ -73,7 +77,7 @@ public record FileUploadStartRequest(
     /**
      * 上传参数子结构。
      *
-     * @param files 文件列表（每个文件含 module + object_key + list）
+     * @param files 文件列表（每个文件含 module + device_sn + result + object_key + list）
      */
     public record FileUploadParams(
             List<FileUploadFile> files
@@ -83,21 +87,31 @@ public record FileUploadStartRequest(
      * 单个文件上传项。
      *
      * @param module    模块标识（"0"=飞行器, "3"=机场, ...）
+     * @param deviceSn  设备 SN
+     * @param result    该项处理结果（0=成功，非 0=失败；可选）
      * @param objectKey 对象存储 key 前缀
-     * @param list      待上传文件 boot_index 列表
+     * @param list      待上传文件列表
      */
     public record FileUploadFile(
             String module,
+            String deviceSn,
+            Integer result,
             String objectKey,
             List<FileUploadBoot> list
     ) {
         /**
-         * 单个 boot_index 项。
+         * 单个待上传文件项。
          *
          * @param bootIndex 启动序号
+         * @param startTime 文件起始时间
+         * @param endTime   文件结束时间
+         * @param size      文件大小
          */
         public record FileUploadBoot(
-                int bootIndex
+                int bootIndex,
+                Long startTime,
+                Long endTime,
+                Long size
         ) {}
     }
 }

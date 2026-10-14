@@ -15,10 +15,14 @@
 /**
  * services 通道设备控制类请求 POJO（远程调试 Cmd 指令）。
  *
- * <p>本包含 5 个设备硬件控制服务的 data record（三 Dock 共有，rtk_calibration 仅 Dock3）：
+ * <p>本包含设备硬件控制服务的 Request/Reply record：
  * <ul>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.RtkCalibrationRequest RtkCalibrationRequest}
- *       — rtk_calibration 一键标定（@Inferred，仅 Dock3）</li>
+ *       — rtk_calibration 一键标定（@Verified，O4 cmd 页 devices[] 结构）</li>
+ *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.LowPowerSwitchRequest LowPowerSwitchRequest}/{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.LowPowerSwitchReply LowPowerSwitchReply}
+ *       — low_power_switch 低电量模式开关（@Verified，O4 cmd 页 action + {result, output{status}}）</li>
+ *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryMaintenanceSwitchRequest BatteryMaintenanceSwitchRequest}
+ *       — battery_maintenance_switch 电池保养开关（action）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.BatteryStoreModeSwitchRequest BatteryStoreModeSwitchRequest}
  *       — battery_store_mode_switch 电池存储模式切换（@Inferred）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.debug.AlarmStateSwitchRequest AlarmStateSwitchRequest}

@@ -18,6 +18,9 @@
  * <p>四个指令均携带 {@code payload_index}（相机枚举），回复均使用
  * {@link ltd.cdmi.dji.cloudapi.sdk.command.drc.DrcResultReply}（{@code {result: 0}}）。
  *
+ * <p>例外：{@code drc_camera_photo_take} 的 DRC 回包比 services 多 {@code status}（enum_string），
+ * 不能复用 {@code DrcResultReply}，使用专用 {@link DrcCameraPhotoTakeReply}。
+ *
  * <h3>指令清单（4 个，Dock3 专属，全部 @Verified）</h3>
  * <ul>
  *   <li><b>drc_camera_night_mode_set</b> — 夜景模式设置

@@ -21,6 +21,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.ActionGroup;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.WpmlNamespaces;
 
 /**
@@ -43,6 +44,8 @@ public record ExecuteFolder(
     Integer waylineId,
     @JacksonXmlProperty(localName = "autoFlightSpeed", namespace = WpmlNamespaces.WPML)
     Double autoFlightSpeed,
+    @JacksonXmlProperty(localName = "startActionGroup", namespace = WpmlNamespaces.WPML)
+    ActionGroup startActionGroup,
     @JacksonXmlElementWrapper(useWrapping = false)
     @JacksonXmlProperty(localName = "Placemark", namespace = WpmlNamespaces.KML)
     List<ExecutePlacemark> placemarks

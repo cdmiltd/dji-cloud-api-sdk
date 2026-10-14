@@ -17,31 +17,33 @@ package ltd.cdmi.dji.cloudapi.sdk.command.request.registration;
 import java.util.Objects;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
  * airport_organization_get 指令回复 data。
  *
  * <p>对应 DJI Cloud API {@code airport_organization_get} 指令（requests 通道）的回复 data。
- * {@code result=0} 表示绑定码与组织 ID 校验通过。
+ * {@code result=0} 表示绑定码与组织 ID 校验通过，绑定到的组织名称见 {@code output.organization_name}。
  *
- * <p>字段依据：simulator {@code DockOnlineService.checkOrgGetResult} L308 读取 data.result
- * 已对接 hivemind 验证。
- *
- * <p>注意：simulator 仅读取 {@code data.result}，未解析 {@code output.airports}（机场列表），
- * {@code output} 结构待真机验证。
+ * <p>字段依据：DJI Cloud API 组织与机场绑定页 requests_reply data——
+ * {@code {result, output{organization_name}}}（A4/A52）。
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator DockOnlineService.checkOrgGetResult L308 读取 data.result 已对接 hivemind 验证")
-@Inferred(
-    reason = "simulator 仅读取 data.result，未解析 output.airports（机场列表），output 结构待真机验证",
-    verifyPoint = "真机验证 airport_organization_get 回复 output 字段"
-)
+@Verified(basis = "DJI Cloud API 组织与机场绑定（airport_organization_get）requests_reply：result + output{organization_name}（A4/A52）")
 public record AirportOrganizationGetReply(
-    Integer result
+    Integer result,
+    Output output
 ) {
     public AirportOrganizationGetReply {
         Objects.requireNonNull(result, "result 必填，DJI JSON 缺失 result 字段");
     }
+
+    /**
+     * output 字段。
+     *
+     * @param organizationName 组织名称
+     */
+    public record Output(
+        String organizationName
+    ) {}
 }

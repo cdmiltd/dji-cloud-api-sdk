@@ -18,6 +18,7 @@ import java.util.List;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
+import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.FirmwareUpgradeType;
 
 /**
  * {@code ota_create} 指令请求 data：发起固件升级任务。
@@ -33,8 +34,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/firmware.html">
  * DJI Dock3 固件升级 services</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/firmware.html")
-@Verified(basis = "DJI Dock3 firmware.html ota_create Data 表 + simulator OtaSimulator.handleOtaCreate 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/firmware.html")
+@Verified(basis = "DJI O4 地面站 firmware.html ota_create Data 表（devices[] 结构）+ simulator OtaSimulator.handleOtaCreate 已对接 hivemind 验证")
 public record OtaCreateRequest(
         /** 待升级设备列表 */
         List<OtaDevice> devices
@@ -44,19 +45,20 @@ public record OtaCreateRequest(
      *
      * @param sn                   设备序列号
      * @param productVersion       目标固件版本
-     * @param firmwareUpgradeType  固件升级类型（enum_int：2=一致性升级, 3=普通升级, 4=PSDK升级）
+     * @param firmwareUpgradeType  固件升级类型（类型化枚举 {@link FirmwareUpgradeType}，
+     *                             序列化为 enum_int：2=一致性升级, 3=普通升级, 4=PSDK升级）
      * @param fileUrl              固件文件 URL（可选，simulator 检测 has 后写入）
      * @param md5                  固件文件 MD5（可选）
-     * @param fileSize             固件文件大小（字节，可选）
+     * @param fileSize             固件文件大小（字节，Integer，可选）
      * @param fileName             固件文件名（可选）
      */
     public record OtaDevice(
             String sn,
             String productVersion,
-            int firmwareUpgradeType,
+            FirmwareUpgradeType firmwareUpgradeType,
             String fileUrl,
             String md5,
-            Long fileSize,
+            Integer fileSize,
             String fileName
     ) {}
 }

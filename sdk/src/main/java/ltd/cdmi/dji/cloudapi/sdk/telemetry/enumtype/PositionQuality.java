@@ -25,14 +25,20 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 /**
  * DJI 搜星档位（position_state.quality）。
  *
- * <p>position_state.quality 表示机场 RTK 搜星质量档位，出现在机场 OSD 的 position_state 结构体中。
+ * <p>position_state.quality 表示搜星质量档位，同时适用于机场 OSD 与飞行器 OSD
+ * （M4D/M4TD 飞行器 position_state 页亦定义 1-5 与 10=RTK fixed）的 position_state 结构体。
  * 注意值域不连续：1-5 为正常档位，10 为 RTK fixed（收敛成功）。
  *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/properties.html">
- * DJI Dock3 设备属性 position_state.quality 枚举定义</a>
+ * <p>参考：
+ * <ul>
+ *   <li><a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/properties.html">
+ *   DJI Dock3 设备属性 position_state.quality 枚举定义</a></li>
+ *   <li><a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/aircraft/properties.html">
+ *   DJI 飞行器设备属性 position_state.quality（飞行器适用性）</a></li>
+ * </ul>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/properties.html")
-@Verified(basis = "DJI Dock3 properties.html position_state.quality 枚举定义（1-5, 10）")
+@Verified(basis = "DJI Dock3/飞行器 properties.html position_state.quality 枚举定义（1-5, 10=RTK fixed）")
 public enum PositionQuality {
 
     LEVEL_1(1, "1档"),

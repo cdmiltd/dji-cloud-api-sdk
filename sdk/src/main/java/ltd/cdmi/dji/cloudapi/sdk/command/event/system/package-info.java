@@ -15,13 +15,15 @@
 /**
  * events 通道系统类事件 POJO。
  *
- * <p>本包含 2 个系统相关事件的 data record：
+ * <p>本包含 3 个系统相关事件的 data record：
  * <ul>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.OtaProgressData OtaProgressData}
  *       — ota_progress 固件升级进度上报（@Verified，含嵌套 Output/Progress）</li>
  *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.FileUploadProgressData FileUploadProgressData}
  *       — fileupload_progress 日志文件上传进度（@Verified，含嵌套 Output/Ext/FileItem/FileProgress，
  *       4 层嵌套保留在类体内以保持高内聚）</li>
+ *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.RtkCalibrationData RtkCalibrationData}
+ *       — rtk_calibration 一键标定进度/结果（@Verified，O4 cmd 页 ext.devices[] + version 结构）</li>
  * </ul>
  *
  * <p>参考：

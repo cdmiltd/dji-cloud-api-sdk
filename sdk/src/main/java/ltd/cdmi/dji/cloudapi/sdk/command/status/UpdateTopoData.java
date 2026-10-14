@@ -40,7 +40,9 @@ public record UpdateTopoData(
     String deviceSecret,
     String nonce,
     List<SubDevice> subDevices,
-    String thingVersion
+    String thingVersion,
+    /** 基础信息（O4 地面站专属，可选；旧设备缺席时为 null）。{@code country_code} 经 AES-128-ECB+Base64 加密。 */
+    BaseInfo baseInfo
 ) {
     public UpdateTopoData {
         Objects.requireNonNull(domain, "domain 必填，DJI JSON 缺失 domain 字段");
@@ -80,5 +82,20 @@ public record UpdateTopoData(
             Objects.requireNonNull(thingVersion, "thingVersion 必填，DJI JSON 缺失 thing_version 字段");
             // domain/index 允许 null：RC Plus 2 子设备不上报这两个字段（PilotRegistrationFlow.UPDATE_TOPO @Inferred）
         }
+    }
+
+    /**
+     * base_info 基础信息（O4 地面站专属）。
+     *
+     * <p>{@code country_code} 为设备所在国家/地区代码，经 AES-128-ECB + Base64 加密后上报。
+     * 该字段为 O4 地面站 {@code update_topo} 专属（§5-91 已确认），旧固件/机场不上报时为 null。
+     *
+     * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/device.html">
+     * DJI O4 地面站子设备上报</a>
+     */
+    public record BaseInfo(
+            /** 国家/地区代码（AES-128-ECB+Base64 加密） */
+            String countryCode
+    ) {
     }
 }

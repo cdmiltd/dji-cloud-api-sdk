@@ -34,6 +34,7 @@ import ltd.cdmi.dji.cloudapi.sdk.command.service.wayline.InFlightWaylineStopRequ
 import ltd.cdmi.dji.cloudapi.sdk.codec.DjiMessage;
 
 import ltd.cdmi.dji.cloudapi.sdk.protocol.method.ServiceMethod;
+import ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.FirmwareUpgradeType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -70,10 +71,11 @@ class ServiceSupplementParseTest {
         OtaCreateRequest.OtaDevice d = msg.data().devices().get(0);
         assertEquals("SN001", d.sn());
         assertEquals("1.2.3", d.productVersion());
-        assertEquals(2, d.firmwareUpgradeType());
+        assertEquals(FirmwareUpgradeType.CONSISTENCY, d.firmwareUpgradeType());
+        assertEquals(2, d.firmwareUpgradeType().code());
         assertEquals("https://...", d.fileUrl());
         assertEquals("abc", d.md5());
-        assertEquals(123456789L, d.fileSize());
+        assertEquals(123456789, d.fileSize());
         assertEquals("fw.bin", d.fileName());
     }
 
@@ -370,8 +372,8 @@ class ServiceSupplementParseTest {
     }
 
     @Test
-    @DisplayName("ServiceMethod 枚举总数应为 97（71 原有 + 18 补全 + 8 回归补全）")
+    @DisplayName("ServiceMethod 枚举总数应为 102（97 + v1.18 新增 low_power_switch/fts_config/drone_propeller_stop_v1/flight_areas_update/flighttask_create）")
     void testTotalCount() {
-        assertEquals(97, ServiceMethod.values().length);
+        assertEquals(102, ServiceMethod.values().length);
     }
 }

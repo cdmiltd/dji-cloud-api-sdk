@@ -31,7 +31,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html">DJI 产品支持与 domain 定义</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html")
-@Verified(basis = "DJI Cloud API 官方文档产品支持：domain=0 飞行器，domain=2 遥控器，domain=3 机场")
+@Verified(basis = "DJI Cloud API 官方文档产品支持：domain=0 飞行器，domain=2 遥控器，domain=3 机场，domain=8 地面站（O4 漫游基站）")
 public enum DeviceDomain {
 
     /** 飞行器（domain=0） */
@@ -41,7 +41,10 @@ public enum DeviceDomain {
     CONTROLLER(2, "遥控器"),
 
     /** 机场（domain=3，Dock to Cloud 网关设备） */
-    DOCK(3, "机场");
+    DOCK(3, "机场"),
+
+    /** 地面站（domain=8，O4 漫游基站） */
+    GROUND_STATION(8, "地面站");
 
     private final int value;
     private final String description;
@@ -69,7 +72,7 @@ public enum DeviceDomain {
     /**
      * 按 domain 数值反查枚举。
      *
-     * @param value domain 数值（0=飞行器, 2=遥控器, 3=机场）
+     * @param value domain 数值（0=飞行器, 2=遥控器, 3=机场, 8=地面站）
      * @return 匹配的枚举常量
      * @throws IllegalArgumentException value 不匹配任何已知 domain
      */

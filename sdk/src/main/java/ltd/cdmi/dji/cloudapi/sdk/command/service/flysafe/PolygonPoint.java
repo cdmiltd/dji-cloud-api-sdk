@@ -12,19 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea;
+package ltd.cdmi.dji.cloudapi.sdk.command.service.flysafe;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
- * flight_areas_get 指令请求 data。
+ * 多边形顶点（{@code licenses[].polygon_unlock.points[]}）。
  *
- * <p>对应 DJI Cloud API {@code flight_areas_get} 指令（requests 通道）的请求 data。
- * 用于获取限飞区配置文件。本指令无请求参数（空 data）。
- *
- * <p>字段依据：simulator {@code FlightAreaSimulator.requestFlightAreas} 已对接 hivemind 验证。
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/flysafe.html">
+ * DJI Dock3 远程解禁 services</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator FlightAreaSimulator.requestFlightAreas 已对接 hivemind 验证")
-public record FlightAreasGetRequest() {}
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/flysafe.html")
+@Verified(basis = "DJI Dock3 flysafe.html polygon_unlock.points[] = {latitude, longitude}")
+public record PolygonPoint(
+        /** 顶点纬度 */
+        Double latitude,
+        /** 顶点经度 */
+        Double longitude
+) {}

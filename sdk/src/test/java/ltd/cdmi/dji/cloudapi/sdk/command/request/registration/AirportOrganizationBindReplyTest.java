@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AirportOrganizationBindReplyTest {
 
     private static final String SAMPLE_JSON =
-            "{\"result\":0,\"output\":{\"err_infos\":[{\"err_code\":514001,\"err_sn\":\"SN001\"}]}}";
+            "{\"result\":0,\"output\":{\"err_infos\":[{\"err_code\":514001,\"sn\":\"SN001\"}]}}";
 
     @Test
     @DisplayName("反序列化：完整 JSON → 嵌套 Output + ErrorInfo 列表")
@@ -49,7 +49,7 @@ class AirportOrganizationBindReplyTest {
         List<ErrorInfo> errs = reply.output().errInfos();
         assertEquals(1, errs.size());
         assertEquals(514001, errs.get(0).errCode());
-        assertEquals("SN001", errs.get(0).errSn());
+        assertEquals("SN001", errs.get(0).sn());
     }
 
     @Test
@@ -62,7 +62,7 @@ class AirportOrganizationBindReplyTest {
         assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
         assertTrue(json.contains("\"err_infos\":"), "JSON 应含 err_infos，实际: " + json);
         assertTrue(json.contains("\"err_code\":514001"), "JSON 应含 err_code，实际: " + json);
-        assertTrue(json.contains("\"err_sn\":\"SN001\""), "JSON 应含 err_sn，实际: " + json);
+        assertTrue(json.contains("\"sn\":\"SN001\""), "JSON 应含 sn，实际: " + json);
     }
 
     @Test
@@ -75,7 +75,7 @@ class AirportOrganizationBindReplyTest {
         assertEquals(0, back.result());
         assertEquals(1, back.output().errInfos().size());
         assertEquals(514001, back.output().errInfos().get(0).errCode());
-        assertEquals("SN001", back.output().errInfos().get(0).errSn());
+        assertEquals("SN001", back.output().errInfos().get(0).sn());
     }
 
     @Test

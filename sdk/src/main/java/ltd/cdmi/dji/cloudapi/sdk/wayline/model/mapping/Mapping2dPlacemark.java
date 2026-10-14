@@ -65,5 +65,9 @@ public record Mapping2dPlacemark(
     @JacksonXmlProperty(localName = "gimbalPitchMode", namespace = WpmlNamespaces.WPML)
     String gimbalPitchMode,
     @JacksonXmlProperty(localName = "gimbalPitchAngle", namespace = WpmlNamespaces.WPML)
-    Integer gimbalPitchAngle
+    Integer gimbalPitchAngle,
+    @JacksonXmlProperty(localName = "quickOrthoMappingEnable", namespace = WpmlNamespaces.WPML)
+    Integer quickOrthoMappingEnable,
+    @JacksonXmlProperty(localName = "quickOrthoMappingPitch", namespace = WpmlNamespaces.WPML)
+    Integer quickOrthoMappingPitch
 ) {}

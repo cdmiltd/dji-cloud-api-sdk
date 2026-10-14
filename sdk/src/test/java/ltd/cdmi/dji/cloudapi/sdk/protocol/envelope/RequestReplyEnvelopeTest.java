@@ -69,8 +69,8 @@ class RequestReplyEnvelopeTest {
     @DisplayName("shouldRoundTrip_whenJsonFlatData：扁平 data（config 回复）往返")
     void testRoundTripFlatData() {
         String json = "{\"tid\":\"t1\",\"bid\":\"b1\",\"timestamp\":1700000000000,"
-                + "\"method\":\"config\",\"data\":{\"result\":0,\"app_id\":\"app-001\","
-                + "\"app_license\":\"lic\",\"url\":\"mqtt-host\",\"token\":\"tk\"}}";
+                + "\"method\":\"config\",\"data\":{\"app_id\":\"app-001\",\"app_key\":\"key-001\","
+                + "\"app_license\":\"lic\",\"ntp_server_host\":\"mqtt-host\",\"ntp_server_port\":123}}";
         RequestReplyEnvelope env = MessageCodec.fromJson(json, RequestReplyEnvelope.class);
         assertEquals("t1", env.tid());
         assertEquals("config", env.method());
@@ -84,13 +84,14 @@ class RequestReplyEnvelopeTest {
     @DisplayName("shouldSerialize_whenFlatReplyData：ConfigReply 序列化非 output 包裹")
     void testSerializeFlatReply() {
         RequestReplyEnvelope env = new RequestReplyEnvelope("t", "b", 1L, "config",
-                new ConfigReply(0, "app-001", "lic", "mqtt-host", "tk"));
+                new ConfigReply("app-001", "key-001", "lic", "mqtt-host", 123));
         String json = MessageCodec.toJson(env);
         assertTrue(json.contains("\"tid\":\"t\""));
         assertTrue(json.contains("\"method\":\"config\""));
-        assertTrue(json.contains("\"result\":0"));
         assertTrue(json.contains("\"app_id\":\"app-001\""));
+        assertTrue(json.contains("\"app_key\":\"key-001\""));
         assertTrue(json.contains("\"app_license\":\"lic\""));
+        assertTrue(json.contains("\"ntp_server_port\":123"));
         assertFalse(json.contains("\"output\""));
     }
 
@@ -128,7 +129,7 @@ class RequestReplyEnvelopeTest {
     @Test
     @DisplayName("shouldOf_whenStaticFactory：of 构造 data 直接持有 Reply record")
     void testOfStaticFactory() {
-        ConfigReply reply = new ConfigReply(0, "app", "lic", "url", "token");
+        ConfigReply reply = new ConfigReply("app", "key", "lic", "url", 123);
         RequestReplyEnvelope env = RequestReplyEnvelope.of("t", "b", "config", reply);
         assertEquals("t", env.tid());
         assertEquals("config", env.method());
@@ -140,11 +141,11 @@ class RequestReplyEnvelopeTest {
     @DisplayName("shouldOfSerialize_whenStaticFactory：of 序列化扁平 data 非 output 包裹")
     void testOfSerializeStaticFactory() {
         String json = MessageCodec.toJson(RequestReplyEnvelope.of("t", "b", "config",
-                new ConfigReply(0, "app", "lic", "url", "token")));
+                new ConfigReply("app", "key", "lic", "url", 123)));
         assertTrue(json.contains("\"tid\":\"t\""));
         assertTrue(json.contains("\"method\":\"config\""));
-        assertTrue(json.contains("\"result\":0"));
         assertTrue(json.contains("\"app_id\":\"app\""));
+        assertTrue(json.contains("\"app_key\":\"key\""));
         assertFalse(json.contains("\"output\""));
     }
 }

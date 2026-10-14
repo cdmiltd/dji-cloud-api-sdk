@@ -47,6 +47,6 @@ public record AirportOrganizationBindReply(
     /** output.err_infos 数组元素，单个设备绑定错误。 */
     public record ErrorInfo(
         Integer errCode,
-        String errSn
+        String sn
     ) {}
 }

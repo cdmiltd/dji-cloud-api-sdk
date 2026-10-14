@@ -841,6 +841,7 @@ public final class MappingStripTemplate {
             executeHeightMode.code(),
             0,
             autoFlightSpeed,
+            null,
             List.of()
         );
 

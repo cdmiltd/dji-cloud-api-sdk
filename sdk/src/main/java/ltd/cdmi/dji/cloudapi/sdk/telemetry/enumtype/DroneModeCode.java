@@ -37,10 +37,9 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * @see DockModeCode
  * @see ltd.cdmi.dji.cloudapi.sdk.telemetry.OsdField#MODE_CODE
  * @see ltd.cdmi.dji.cloudapi.sdk.telemetry.DroneOsd#modeCode()
- * @see ltd.cdmi.dji.cloudapi.sdk.telemetry.RcOsd#modeCode()
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/aircraft/properties.html")
-@Verified(basis = "DJI Cloud API 官方文档飞行器 mode_code 枚举定义（0-20，机场上云 M30 文档完整定义）")
+@Verified(basis = "DJI Cloud API 官方文档飞行器 mode_code 枚举定义（0-21，M4D/M4TD 页含 21=进离场航线飞行过程中；机场上云 M30 文档 0-20）")
 public enum DroneModeCode {
 
     /** 待机 */
@@ -104,7 +103,10 @@ public enum DroneModeCode {
     DOCK_ADDRESS_SELECTING(19, "机场选址中"),
 
     /** POI 环绕 */
-    POI_ORBIT(20, "POI环绕");
+    POI_ORBIT(20, "POI环绕"),
+
+    /** 进离场航线飞行过程中（v1.18.0.0 新增） */
+    AIRPORT_AREA_WAYLINE(21, "进离场航线飞行过程中");
 
     /** code → 枚举值 的不可变查找表 */
     private static final Map<Integer, DroneModeCode> BY_CODE =

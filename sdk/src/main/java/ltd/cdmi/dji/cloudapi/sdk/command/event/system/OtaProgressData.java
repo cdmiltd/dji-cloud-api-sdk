@@ -40,8 +40,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@link Output.Progress} — 步进进度（percent/current_step）</li>
  * </ul>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/config.html")
-@Verified(basis = "simulator OtaSimulator.publishOtaProgress L203-L217 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/firmware.html")
+@Verified(basis = "DJI O4 地面站 firmware.html ota_progress Data 表（result + output{status/progress{percent,current_step}}）")
 public record OtaProgressData(
     Integer result,
     Output output

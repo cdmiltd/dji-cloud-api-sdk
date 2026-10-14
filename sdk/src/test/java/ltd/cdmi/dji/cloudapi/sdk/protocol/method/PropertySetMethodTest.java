@@ -33,9 +33,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PropertySetMethodTest {
 
     @Test
-    @DisplayName("枚举总数应为 18（Dock3 4 + M3D 9 + M3D 红外 5）")
+    @DisplayName("枚举总数应为 20（18 + v1.18 新增 commander_flight_height/commander_mode_lost_action）")
     void testTotalCount() {
-        assertEquals(18, PropertySetMethod.values().length);
+        assertEquals(20, PropertySetMethod.values().length);
+    }
+
+    @Test
+    @DisplayName("v1.18 新增 property：commander_flight_height / commander_mode_lost_action")
+    void testV118NewProperties() {
+        assertEquals(PropertySetMethod.COMMANDER_FLIGHT_HEIGHT,
+                PropertySetMethod.fromPropertyName("commander_flight_height"));
+        assertEquals(PropertySetMethod.COMMANDER_MODE_LOST_ACTION,
+                PropertySetMethod.fromPropertyName("commander_mode_lost_action"));
     }
 
     @Test

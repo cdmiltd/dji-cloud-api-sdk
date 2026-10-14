@@ -14,6 +14,8 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.telemetry;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.WirelessLink;
@@ -26,18 +28,14 @@ import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.WirelessLink;
  *
  * <p>使用包装类型允许 {@code null}，因为不同 Pilot 版本上报的字段集可能不同。
  *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/remote-controller/properties.html">DJI 遥控器设备属性推送</a>
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/others/rc/properties.html">DJI 遥控器设备属性推送</a>
  *
  * @see DockOsd
  * @see DroneOsd
- * @see ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.DroneModeCode
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/dji-rc-plus-2/properties.html")
-@Verified(basis = "DJI Cloud API 官方文档 RC Plus 遥控器设备属性推送属性列表")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/others/rc/properties.html")
+@Verified(basis = "DJI Cloud API 通用 RC 设备属性页（others/rc/properties.html），与 RC Pro / RC Plus 2 机型页逐字一致；osd 含 capacity_percent，无 mode_code")
 public record RcOsd(
-
-        /** 模式码，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.DroneModeCode} */
-        Integer modeCode,
 
         /** 纬度 */
         Double latitude,
@@ -45,8 +43,12 @@ public record RcOsd(
         /** 经度 */
         Double longitude,
 
-        /** 电池电量百分比（0-100） */
-        Integer battery,
+        /**
+         * 遥控器剩余电量百分比（0-100），文档 wire key 为 {@code capacity_percent}。
+         * <p>兼容旧 wire key {@code battery}（{@link JsonAlias}），真机核对后移除兼容。
+         */
+        @JsonAlias("battery")
+        Integer capacityPercent,
 
         /** 国家区域码（如 "CN"，仅 RC Pro 上报） */
         String country,

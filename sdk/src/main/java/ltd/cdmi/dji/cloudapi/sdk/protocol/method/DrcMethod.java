@@ -47,10 +47,12 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *       {@link #DRC_AI_SPOTLIGHT_ZOOM_CONFIRM} / {@link #DRC_AI_SPOTLIGHT_ZOOM_STOP}</li>
  * </ul>
  *
- * <p>当前共 42 个 method（19 simulator catalog 盘点 + 11 v1.16 AI 新增 + 1 Pilot-to-Cloud DRC 专属 + 11 DRC 状态与相机参数控制）。Pilot-to-Cloud DRC 通道中与 services 通道
- * 同名的方法（如 {@code camera_mode_switch} / {@code camera_aim} / {@code camera_focal_length_set} /
- * {@code gimbal_reset} 等）已在 {@link ServiceMethod} 中定义且有专用 POJO，本枚举不重复定义——
- * 由调用方根据 topic（{@code drc/down} vs {@code services})判断通道归属。
+ * <p>命名口径（方案 A，2026-10-14 裁决）：DRC 通道常量 wire <b>逐字对齐官方文档</b>——DRC 相机/云台类方法带
+ * {@code drc_} 前缀（如 {@code drc_camera_aim} / {@code drc_camera_mode_switch} / {@code drc_camera_photo_take} /
+ * {@code drc_gimbal_reset}），与 {@link ServiceMethod} 中<b>无前缀</b>的同名方法（{@code camera_aim} 等）
+ * <b>并存</b>——由调用方根据 topic（{@code drc/down} vs {@code services}）判断通道归属。
+ * 飞行四件套（{@link #DRONE_EMERGENCY_STOP} / {@link #STICK_CONTROL} / {@link #DRONE_CONTROL} / {@link #HEART_BEAT}）
+ * 沿用文档的无前缀名。
  * 原 11 个 DRC 上行推送方法（{@code osd_info_push} 等）已迁移至 {@link DrcUpMethod} 枚举。
  *
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/drc/dock-drc.html">
@@ -68,18 +70,12 @@ public enum DrcMethod {
     /** 摇杆控制（实时推送控制量） */
     STICK_CONTROL("stick_control", "摇杆控制"),
 
-    /** 飞行器控制（综合控制指令） */
+    /** 飞行器控制（综合控制指令，<b>已废弃</b>：DJI 文档标注「本协议已不再维护」，推荐改用 {@link #STICK_CONTROL}） */
+    @Deprecated
     DRONE_CONTROL("drone_control", "飞行器控制"),
 
-    /**
-     * DRC 心跳（保持 DRC 连接活跃）。
-     *
-     * <p>协议格式与发起方未在 DJI 文档明确，标 {@link Inferred}。
-     */
-    @Inferred(
-            reason = "heart_beat 协议格式与发起方未在 DJI 文档明确",
-            verifyPoint = "待真机/文档确认 heart_beat 的发起方（设备 or 云）与字段结构"
-    )
+    /** DRC 心跳（保持 DRC 连接活跃） */
+    @Verified(basis = "DJI O4 remote-control 文档明确 heart_beat 的 Topic/Direction/Data（timestamp ms）与 up 回显 timestamp")
     HEART_BEAT("heart_beat", "DRC 心跳"),
 
     // ===== Dock2 专属（2 个，Dock3 文档未找到待真机验证） =====
@@ -190,15 +186,8 @@ public enum DrcMethod {
     /** 夜航灯设置（保存到设备状态，影响 drc_drone_state_push） */
     DRC_NIGHT_LIGHTS_STATE_SET("drc_night_lights_state_set", "夜航灯设置"),
 
-    /**
-     * 镜头去畸变设置。
-     * <p>{@code @Inferred}：未确认是否在 Services 通道也存在同名方法（{@code camera_dewarping_set}），
-     * 若存在则应迁移至 {@link ServiceMethod}，本枚举标记为 DRC 专属待验证。
-     */
-    @Inferred(
-            reason = "未确认是否在 Services 通道也存在 camera_dewarping_set",
-            verifyPoint = "待 DJI 文档补充确认 Services 通道是否存在同名方法"
-    )
+    /** 镜头去畸变设置（Dock2/Dock3 共有；DRC 通道文档确认，services 相机族文档未见同名方法） */
+    @Verified(basis = "DJI DRC remote-control 文档确认 drc_camera_dewarping_set Data（payload_index/camera_type/dewarping_state）")
     DRC_CAMERA_DEWARPING_SET("drc_camera_dewarping_set", "镜头去畸变设置"),
 
     /**
@@ -211,14 +200,8 @@ public enum DrcMethod {
     )
     DRC_CAMERA_MECHANICAL_SHUTTER_SET("drc_camera_mechanical_shutter_set", "机械快门设置"),
 
-    /**
-     * ISO 设置。
-     * <p>{@code @Inferred}：未确认是否在 Services 通道也存在同名方法。
-     */
-    @Inferred(
-            reason = "未确认是否在 Services 通道也存在 camera_iso_set",
-            verifyPoint = "待 DJI 文档补充确认 Services 通道是否存在同名方法"
-    )
+    /** ISO 设置（Dock2/Dock3 共有；DRC 独有，services 相机族文档未见同名方法） */
+    @Verified(basis = "DJI DRC remote-control 文档确认 drc_camera_iso_set Data（payload_index/camera_type/iso_value）；services 无 camera_iso_set")
     DRC_CAMERA_ISO_SET("drc_camera_iso_set", "ISO 设置"),
 
     /**
@@ -231,14 +214,8 @@ public enum DrcMethod {
     )
     DRC_CAMERA_SHUTTER_SET("drc_camera_shutter_set", "相机快门设置"),
 
-    /**
-     * 相机光圈设置。
-     * <p>{@code @Inferred}：未确认是否在 Services 通道也存在同名方法。
-     */
-    @Inferred(
-            reason = "未确认是否在 Services 通道也存在 camera_aperture_value_set",
-            verifyPoint = "待 DJI 文档补充确认 Services 通道是否存在同名方法"
-    )
+    /** 相机光圈设置（Dock2/Dock3 共有；DRC 通道文档确认，services 相机族文档未见同名方法） */
+    @Verified(basis = "DJI DRC remote-control 文档确认 drc_camera_aperture_value_set Data（payload_index/camera_type/aperture_value）")
     DRC_CAMERA_APERTURE_VALUE_SET("drc_camera_aperture_value_set", "相机光圈设置"),
 
     /**
@@ -251,14 +228,8 @@ public enum DrcMethod {
     )
     DRC_INTERVAL_PHOTO_SET("drc_interval_photo_set", "定时拍照间隔设置"),
 
-    /**
-     * 视频分辨率设置。
-     * <p>{@code @Inferred}：未确认是否在 Services 通道也存在同名方法。
-     */
-    @Inferred(
-            reason = "未确认是否在 Services 通道是否存在 video_resolution_set",
-            verifyPoint = "待 DJI 文档补充确认 Services 通道是否存在同名方法"
-    )
+    /** 视频分辨率设置（Dock2/Dock3 共有；DRC 通道文档确认存在，services 侧同名问题按 §5 待确认） */
+    @Verified(basis = "DJI DRC remote-control 文档确认 drc_video_resolution_set Data（payload_index/video_resolution）")
     DRC_VIDEO_RESOLUTION_SET("drc_video_resolution_set", "视频分辨率设置"),
 
     /**
@@ -269,7 +240,87 @@ public enum DrcMethod {
             reason = "未确认是否在 Services 通道是否存在 linkage_zoom_set",
             verifyPoint = "待 DJI 文档补充确认 Services 通道是否存在同名方法"
     )
-    DRC_LINKAGE_ZOOM_SET("drc_linkage_zoom_set", "红外联动变焦");
+    DRC_LINKAGE_ZOOM_SET("drc_linkage_zoom_set", "红外联动变焦"),
+
+    // ===== 新增：DRC 通道相机/云台/PSDK 指令（v1.18，逐字对齐官方文档，带 drc_ 前缀） =====
+
+    /** 相机照片分辨率设置（Dock2/Dock3 共有） */
+    DRC_CAMERA_PHOTO_SIZE_SET("drc_camera_photo_size_set", "相机照片分辨率设置"),
+
+    /** DRC PSDK 输入框文本设置 */
+    DRC_PSDK_INPUT_BOX_TEXT_SET("drc_psdk_input_box_text_set", "DRC PSDK 输入框文本设置"),
+
+    /** DRC PSDK 控件值设置 */
+    DRC_PSDK_WIDGET_VALUE_SET("drc_psdk_widget_value_set", "DRC PSDK 控件值设置"),
+
+    /** 视频存储设置 */
+    DRC_VIDEO_STORAGE_SET("drc_video_storage_set", "视频存储设置"),
+
+    /** 相机瞄准 */
+    DRC_CAMERA_AIM("drc_camera_aim", "相机瞄准"),
+
+    /** 设置相机曝光模式 */
+    DRC_CAMERA_EXPOSURE_MODE_SET("drc_camera_exposure_mode_set", "设置相机曝光模式"),
+
+    /** 设置相机曝光 */
+    DRC_CAMERA_EXPOSURE_SET("drc_camera_exposure_set", "设置相机曝光"),
+
+    /** 设置相机焦距 */
+    DRC_CAMERA_FOCAL_LENGTH_SET("drc_camera_focal_length_set", "设置相机焦距"),
+
+    /** 设置相机对焦模式 */
+    DRC_CAMERA_FOCUS_MODE_SET("drc_camera_focus_mode_set", "设置相机对焦模式"),
+
+    /** 设置相机对焦值 */
+    DRC_CAMERA_FOCUS_VALUE_SET("drc_camera_focus_value_set", "设置相机对焦值"),
+
+    /** 相机变焦 */
+    DRC_CAMERA_FRAME_ZOOM("drc_camera_frame_zoom", "相机变焦"),
+
+    /** 相机看向目标 */
+    DRC_CAMERA_LOOK_AT("drc_camera_look_at", "相机看向目标"),
+
+    /** 切换相机模式 */
+    DRC_CAMERA_MODE_SWITCH("drc_camera_mode_switch", "切换相机模式"),
+
+    /** 相机照片格式设置 */
+    DRC_CAMERA_PHOTO_FORMAT_SET("drc_camera_photo_format_set", "相机照片格式设置"),
+
+    /** 停止拍照 */
+    DRC_CAMERA_PHOTO_STOP("drc_camera_photo_stop", "停止拍照"),
+
+    /** 拍照 */
+    DRC_CAMERA_PHOTO_TAKE("drc_camera_photo_take", "拍照"),
+
+    /** 点对焦动作 */
+    DRC_CAMERA_POINT_FOCUS_ACTION("drc_camera_point_focus_action", "点对焦动作"),
+
+    /** 开始录像 */
+    DRC_CAMERA_RECORDING_START("drc_camera_recording_start", "开始录像"),
+
+    /** 停止录像 */
+    DRC_CAMERA_RECORDING_STOP("drc_camera_recording_stop", "停止录像"),
+
+    /** 屏幕拖拽 */
+    DRC_CAMERA_SCREEN_DRAG("drc_camera_screen_drag", "屏幕拖拽"),
+
+    /** 屏幕分屏 */
+    DRC_CAMERA_SCREEN_SPLIT("drc_camera_screen_split", "屏幕分屏"),
+
+    /** 云台复位 */
+    DRC_GIMBAL_RESET("drc_gimbal_reset", "云台复位"),
+
+    /** 照片存储设置 */
+    DRC_PHOTO_STORAGE_SET("drc_photo_storage_set", "照片存储设置"),
+
+    /** 红外测光区域设置 */
+    DRC_IR_METERING_AREA_SET("drc_ir_metering_area_set", "红外测光区域设置"),
+
+    /** 红外测光模式设置 */
+    DRC_IR_METERING_MODE_SET("drc_ir_metering_mode_set", "红外测光模式设置"),
+
+    /** 红外测光点设置 */
+    DRC_IR_METERING_POINT_SET("drc_ir_metering_point_set", "红外测光点设置");
 
     private final String methodName;
     private final String description;

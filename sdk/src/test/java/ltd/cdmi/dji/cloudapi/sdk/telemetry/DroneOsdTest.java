@@ -41,7 +41,7 @@ class DroneOsdTest {
 
     /**
      * 构造只有前 3 个核心字段 + extras 有值的 DroneOsd，其余字段为 null。
-     * <p>DroneOsd 共 36 个字段，此方法简化测试构造，避免 36 个参数的重复。
+     * <p>DroneOsd 共 39 个字段，此方法简化测试构造，避免 39 个参数的重复。
      *
      * @param modeCode 模式码
      * @param latitude 纬度
@@ -87,7 +87,10 @@ class DroneOsdTest {
                 null,              // 33. totalFlightSorties
                 null,              // 34. trackId
                 null,              // 35. country
-                extras             // 36. extras
+                null,              // 36. ftsInfo
+                null,              // 37. bestLinkGateway
+                null,              // 38. flysafeDatabaseVersion
+                extras             // 39. extras
         );
     }
 

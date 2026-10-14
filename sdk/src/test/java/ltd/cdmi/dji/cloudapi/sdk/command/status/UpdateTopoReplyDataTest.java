@@ -20,61 +20,41 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * 验证 {@link UpdateTopoReplyData} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
  *
- * <p><b>核心证明</b>：update_topo status_reply data（result + sub_type，sub_type 0=上线/1=下线）
- * 能反序列化为 record；缺失 result 时构造器抛 NPE。sub_type 为可空字段（@Inferred，待真机验证）。
+ * <p><b>核心证明</b>：update_topo status_reply data 仅含 {@code result}
+ * （DJI 文档输出示例无 {@code sub_type}）能反序列化为 record；缺失 result 时构造器抛 NPE。
  */
 class UpdateTopoReplyDataTest {
 
     @Test
-    @DisplayName("反序列化：{\"result\":0,\"sub_type\":0} → result=0, subType=0（上线）")
-    void testDeserializeOnline() {
-        UpdateTopoReplyData data = MessageCodec.fromJson(
-                "{\"result\":0,\"sub_type\":0}", UpdateTopoReplyData.class);
+    @DisplayName("反序列化：{\"result\":0} → result=0")
+    void testDeserialize() {
+        UpdateTopoReplyData data = MessageCodec.fromJson("{\"result\":0}", UpdateTopoReplyData.class);
         assertEquals(0, data.result());
-        assertEquals(0, data.subType());
     }
 
     @Test
-    @DisplayName("反序列化：{\"result\":0,\"sub_type\":1} → subType=1（下线）")
-    void testDeserializeOffline() {
-        UpdateTopoReplyData data = MessageCodec.fromJson(
-                "{\"result\":0,\"sub_type\":1}", UpdateTopoReplyData.class);
-        assertEquals(0, data.result());
-        assertEquals(1, data.subType());
-    }
-
-    @Test
-    @DisplayName("序列化：UpdateTopoReplyData → JSON 含 result 与 sub_type")
+    @DisplayName("序列化：UpdateTopoReplyData → JSON 含 result，且不含 sub_type")
     void testSerialize() {
-        UpdateTopoReplyData data = new UpdateTopoReplyData(0, 0);
+        UpdateTopoReplyData data = new UpdateTopoReplyData(0);
         String json = MessageCodec.toJson(data);
         assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
-        assertTrue(json.contains("\"sub_type\":0"), "JSON 应含 sub_type:0，实际: " + json);
+        assertFalse(json.contains("sub_type"), "JSON 不应含已删除的 sub_type 字段，实际: " + json);
     }
 
     @Test
     @DisplayName("往返闭环：序列化→反序列化保持不变")
     void testRoundTrip() {
-        UpdateTopoReplyData original = new UpdateTopoReplyData(0, 1);
+        UpdateTopoReplyData original = new UpdateTopoReplyData(0);
         String json = MessageCodec.toJson(original);
         UpdateTopoReplyData back = MessageCodec.fromJson(json, UpdateTopoReplyData.class);
         assertEquals(original, back);
-    }
-
-    @Test
-    @DisplayName("可空字段：sub_type 省略时为 null（@Inferred，simulator 仅读取 result）")
-    void testOptionalSubTypeNull() {
-        String json = "{\"result\":0}";
-        UpdateTopoReplyData data = MessageCodec.fromJson(json, UpdateTopoReplyData.class);
-        assertEquals(0, data.result());
-        assertNull(data.subType(), "sub_type 省略时应为 null（待真机验证）");
     }
 
     @Test

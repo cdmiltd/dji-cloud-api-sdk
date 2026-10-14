@@ -25,8 +25,9 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *
  * @see WirelessLinkTopo#centerNode()
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator WaylineTaskSimulator.parseMultiDockTask 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
+@Verified(basis = "DJI Dock3 wayline.html wireless_link_topo.center_node 字段表：sdr_id/sn")
 public record CenterNode(
+    String sdrId,
     String sn
 ) {}

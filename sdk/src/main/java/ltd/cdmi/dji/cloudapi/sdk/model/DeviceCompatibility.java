@@ -28,7 +28,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html">DJI 产品支持</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/product-support.html")
-@Verified(basis = "DJI Cloud API 官方文档产品搭配关系：Dock1↔M30/M30T，Dock2↔M3D/M3TD/M30/M30T，Dock3↔M4D/M4TD；遥控器搭配见文档")
+@Verified(basis = "DJI 官方文档 overview/product-support.html 产品搭配关系：Dock1↔M30/M30T，Dock2↔M3D/M3TD/M30/M30T，Dock3↔M4D/M4TD；遥控器搭配见同页")
 public final class DeviceCompatibility {
 
     private DeviceCompatibility() {

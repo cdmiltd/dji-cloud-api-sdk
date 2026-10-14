@@ -64,6 +64,10 @@ public record Placemark(
     WaypointTurnParam waypointTurnParam,
     @JacksonXmlProperty(localName = "gimbalPitchAngle", namespace = WpmlNamespaces.WPML)
     Double gimbalPitchAngle,
+    @JacksonXmlProperty(localName = "isRisky", namespace = WpmlNamespaces.WPML)
+    Integer isRisky,
+    @JacksonXmlProperty(localName = "useStraightLine", namespace = WpmlNamespaces.WPML)
+    Integer useStraightLine,
     @JacksonXmlElementWrapper(useWrapping = false)
     @JacksonXmlProperty(localName = "actionGroup", namespace = WpmlNamespaces.WPML)
     List<ActionGroup> actionGroups

@@ -72,7 +72,8 @@ public enum EventMethod {
     /**
      * 飞行准备异常通知（Dock1 专属，need_reply=1）。
      *
-     * <p>当 {@code flighttask_prepare} 准备阶段出现异常时上报，data 含 error_code/error_reason。
+     * <p>当飞行准备阶段出现异常时上报，data 含 {@code sn} / {@code timeout_time} / {@code timestamp} /
+     * {@code flight_type}（enum_int 1=航线任务 / 2=指令飞行）。
      *
      * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/wayline.html">
      * DJI Dock1 wayline 通道</a>
@@ -196,7 +197,33 @@ public enum EventMethod {
         reason = "drc_status_notify DJI 英文文档标注 Abandoned，协议不再维护；中文文档未标注废弃但英文版明确说明。data 结构已有定义（result + drc_state），但按废弃处理不创建 POJO",
         verifyPoint = "若真机仍上报此事件，可按 DJI 文档 data 结构（result:int + drc_state:enum_int{0,1,2}）补全 POJO，DrcState 枚举已存在可复用"
     )
-    DRC_STATUS_NOTIFY("drc_status_notify", "DRC 链路状态通知（Abandoned）", 0);
+    DRC_STATUS_NOTIFY("drc_status_notify", "DRC 链路状态通知（Abandoned）", 0),
+
+    // ===== 空域安全（v1.18 新增，A30 原文定稿）=====
+
+    /**
+     * RID 广播信息上报（need_reply 文档未标注，推断为 0）。
+     *
+     * <p>data 含 {@code capacity_percent} / {@code power_supply} / {@code device_sn} / {@code gnss} /
+     * {@code rid[]}（RID 目标列表）。
+     */
+    @Inferred(
+            reason = "DJI 文档该事件 example 与字段表均未标注 need_reply，按单向上报类事件推断为 0",
+            verifyPoint = "待真机验证 need_reply 值"
+    )
+    RID_INFOS("rid_infos", "RID 广播信息上报", 0),
+
+    /**
+     * ADS-B 广播信息上报（need_reply 文档未标注，推断为 0）。
+     *
+     * <p>data 含 {@code capacity_percent} / {@code power_supply} / {@code device_sn} / {@code gnss} /
+     * {@code adsb[]}（ADS-B 目标列表）。
+     */
+    @Inferred(
+            reason = "DJI 文档该事件 example 与字段表均未标注 need_reply，按单向上报类事件推断为 0",
+            verifyPoint = "待真机验证 need_reply 值"
+    )
+    ADSB_INFOS("adsb_infos", "ADS-B 广播信息上报", 0);
 
     private final String methodName;
     private final String description;

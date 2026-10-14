@@ -26,30 +26,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证 {@link AirportOrganizationGetReply} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
  *
- * <p><b>核心证明</b>：airport_organization_get 回复 data（result=0 表示绑定码与组织 ID 校验通过）
+ * <p><b>核心证明</b>：airport_organization_get 回复 data（result=0 校验通过 + output.organization_name）
  * 能反序列化为 record；缺失 result 时构造器抛 NPE。
  */
 class AirportOrganizationGetReplyTest {
 
     @Test
-    @DisplayName("反序列化：{\"result\":0} → result()==0（校验通过）")
+    @DisplayName("反序列化：{\"result\":0,\"output\":{\"organization_name\":\"OrgA\"}} → result()==0, organizationName==OrgA")
     void testDeserialize() {
-        AirportOrganizationGetReply reply = MessageCodec.fromJson("{\"result\":0}", AirportOrganizationGetReply.class);
+        AirportOrganizationGetReply reply = MessageCodec.fromJson(
+                "{\"result\":0,\"output\":{\"organization_name\":\"OrgA\"}}",
+                AirportOrganizationGetReply.class);
         assertEquals(0, reply.result());
+        assertEquals("OrgA", reply.output().organizationName());
     }
 
     @Test
-    @DisplayName("序列化：AirportOrganizationGetReply(0) → JSON 含 \"result\":0")
+    @DisplayName("序列化：AirportOrganizationGetReply(0, Output(\"OrgA\")) → JSON 含 \"result\":0 与 organization_name")
     void testSerialize() {
-        AirportOrganizationGetReply reply = new AirportOrganizationGetReply(0);
+        AirportOrganizationGetReply reply =
+                new AirportOrganizationGetReply(0, new AirportOrganizationGetReply.Output("OrgA"));
         String json = MessageCodec.toJson(reply);
         assertTrue(json.contains("\"result\":0"), "JSON 应含 \"result\":0，实际: " + json);
+        assertTrue(json.contains("organization_name"), "JSON 应含 organization_name，实际: " + json);
     }
 
     @Test
-    @DisplayName("往返闭环：序列化→反序列化保持 result 不变")
+    @DisplayName("往返闭环：序列化→反序列化保持 result/output 不变")
     void testRoundTrip() {
-        AirportOrganizationGetReply original = new AirportOrganizationGetReply(0);
+        AirportOrganizationGetReply original =
+                new AirportOrganizationGetReply(0, new AirportOrganizationGetReply.Output("OrgA"));
         String json = MessageCodec.toJson(original);
         AirportOrganizationGetReply back = MessageCodec.fromJson(json, AirportOrganizationGetReply.class);
         assertEquals(original, back);

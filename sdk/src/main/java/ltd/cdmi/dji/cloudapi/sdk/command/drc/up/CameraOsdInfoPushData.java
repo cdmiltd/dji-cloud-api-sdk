@@ -14,6 +14,8 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.drc.up;
 
+import java.util.List;
+
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
@@ -30,8 +32,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/drc/dock-drc.html">
  * DJI Dock3 DRC drc_camera_osd_info_push</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/drc/dock-drc.html")
-@Verified(basis = "simulator DeviceSimulator.buildDrcCameraOsdInfo 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/pilot-to-cloud/mqtt/remote-control/drc.html")
+@Verified(basis = "DJI remote-control 页 drc_camera_osd_info_push：ir_lense.ir_zoom_factor Type=float{max:20,min:2}；ir_lense.thermal_supported_palette_styles Type=array item_type=enum_int（值域同 thermal_current_palette_style）；simulator DeviceSimulator.buildDrcCameraOsdInfo 已对接验证")
 public record CameraOsdInfoPushData(
         /** 相机挂载索引（如 {@code 165-0-7}） */
         String payloadIndex,
@@ -117,8 +119,9 @@ public record CameraOsdInfoPushData(
      * 红外镜头参数。
      *
      * @param screenSplitEnable            屏幕分屏启用
-     * @param irZoomFactor                 红外变焦倍数
+     * @param irZoomFactor                 红外变焦倍数（文档 Type=float，约束 max:20, min:2）
      * @param thermalCurrentPaletteStyle   热成像调色板样式
+     * @param thermalSupportedPaletteStyles 设备支持的热成像调色盘样式集合（array of enum_int，值域同 thermalCurrentPaletteStyle）
      * @param thermalGainMode              热成像增益模式
      * @param thermalIsothermState         等温线状态
      * @param thermalIsothermUpperLimit     等温线上限温度
@@ -128,8 +131,9 @@ public record CameraOsdInfoPushData(
      */
     public record IrLense(
             boolean screenSplitEnable,
-            int irZoomFactor,
+            Double irZoomFactor,
             int thermalCurrentPaletteStyle,
+            List<Integer> thermalSupportedPaletteStyles,
             int thermalGainMode,
             int thermalIsothermState,
             int thermalIsothermUpperLimit,

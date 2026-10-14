@@ -1,8 +1,8 @@
 # DJI Cloud API SDK — 架构设计文档
 
 - **状态**：已交付
-- **日期**：2026-08-14
-- **版本**：v1.0（对齐 DJI Cloud API 文档 v1.16.1）
+- **日期**：2026-10-14
+- **版本**：v1.1（对齐 DJI Cloud API 文档 v1.18.0）
 - **关联文档**：
   - [TDD 测试套件设计](superpowers/specs/2026-08-14-tdd-test-suite-design.md)
   - [TDD 测试用例文档](tdd-test-cases.md)
@@ -34,7 +34,7 @@
 - **不管理运行时状态** — 无连接管理、无重试、无超时控制（由调用方实现）
 - **不耦合 MQTT 客户端** — 仅定义 topic 模板与消息结构，不绑定具体 MQTT 库
 - **不耦合 HTTP/WS 客户端** — `http/` 仅定义 API 路径常量与 STS 凭证结构，`websocket/` 仅定义 `biz_code` 枚举与推送消息 record；不绑定 Spring `RestTemplate`/`WebClient`、Tyrus/Jetty 等 HTTP/WS 客户端实现（由调用方集成）
-- **不实现指令 POJO 全集** — `command/` 子包已落地 97 个 services + 42 个 drc/down（含 11 个 v1.16 AI + 1 个 Pilot + 11 个 DRC 状态/相机参数）+ 12 个 drc/up（含 1 个 v1.16 AI）+ 29 个 event + 7 个 request + 1 个 status 指令 POJO，共 188 个方法、250 个 record（见 [command 设计文档](superpowers/specs/2026-08-14-command-pojo-design.md)）
+- **不实现指令 POJO 全集** — `command/` 子包已落地 102 个 services + 68 个 drc/down + 12 个 drc/up + 31 个 event + 8 个 request + 1 个 status 指令 POJO，共 222 个方法、340 个 record（见 [command 设计文档](superpowers/specs/2026-08-14-command-pojo-design.md)）
 
 ---
 
@@ -47,6 +47,14 @@
 **v1.16.1.1**（SDK 补丁版本）：新增 `model/DeviceModels` 工具类，封装跨枚举统一查询能力
 （`findByDomainTypeSubType`），补充 SDK 未提供的 (domain, type, sub_type) 三元组 → `DeviceModel` 反查入口。
 
+**v1.18.0.0**（协议版本升级，对齐 DJI Cloud API 文档 v1.18.0）：全量同步 O4 地面站（漫游基站）、机场 3
+飞行终止系统（FTS）、机场 2/3 相机录像清晰度与照片分辨率。新增 `command/drc/camera/`（含 `enumtype/`）、
+`command/drc/psdk/`、`command/event/peripheral/`、`command/peripheral/`、`command/service/flysafe/`、
+`command/service/fts/` 等包；`model/` 新增 `GroundStationModel`（domain=8）；`telemetry/` 新增
+`GroundStationOsd`/`GroundStationState` 与 FTS/O4 相关枚举；`protocol/envelope/` 新增 `FlatReplyEnvelope`；
+`wayline/model/` 新增 `WaylinesWpml`/`WaylinesDocument`。协议面细节见
+[DJI Cloud API v1.18 升级差异分析报告](dji-doc-sdk-diff-report-20261014.md)。
+
 ```
 dji-cloud-api-sdk/                        ← Git 根目录
 ├── pom.xml                               ← 父 pom（packaging=pom）
@@ -56,10 +64,10 @@ dji-cloud-api-sdk/                        ← Git 根目录
 │       ├── annotation/                      文档追溯注解
 │       ├── codec/                           JSON 编解码
 │       ├── protocol/                        协议定义（topic/method/envelope/error）
-│       ├── command/                         指令 POJO（service/drc/event/property/request/status）
-│       ├── model/                           设备型号
-│       ├── telemetry/                       遥测数据（OsdField/StateField/DockOsd/DroneOsd/RcOsd）
-│       ├── wayline/model/ + enumtype/       WPML 协议 POJO + 枚举（纯 record/enum，零业务逻辑）
+│       ├── command/                         指令 POJO（service/drc/event/property/request/status/peripheral）
+│       ├── model/                           设备型号（含 GroundStationModel）
+│       ├── telemetry/                       遥测数据（OsdField/StateField/DockOsd/DroneOsd/RcOsd/GroundStationOsd/GroundStationState）
+│       ├── wayline/model/ + enumtype/       WPML 协议 POJO + 枚举（纯 record/enum，零业务逻辑；含 WaylinesWpml/WaylinesDocument）
 │       ├── flow/                            注册流程
 │       ├── http/                            HTTP API
 │       ├── websocket/                       WebSocket 推送
@@ -107,19 +115,20 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   ├── TopicBuilder.java      topic 构造工具
 │   │   └── TopicResolver.java     topic 解析工具（→ TopicInfo record）
 │   │
-│   ├── method/                 ← Method 名称枚举（7 类 + package-info）【已落地骨架】
+│   ├── method/                 ← Method 名称枚举（7 类 + package-info）
 │   │   ├── StatusMethod.java      1 个（update_topo）
-│   │   ├── RequestsMethod.java    7 个（config/airport_bind_status/airport_organization_get/airport_organization_bind/storage_config_get/flighttask_progress_get/flight_areas_get）
-│   │   ├── EventMethod.java       29 个（flighttask_progress/fly_to_point_progress/ota_progress/file_upload_callback/hms/...，含 5 个原有 @Inferred + 1 个补全 @Inferred drc_status_notify）
-│   │   ├── DrcMethod.java         42 个（drc/down 远程控制指令，19 个 simulator catalog + 11 个 v1.16 AI + 1 个 Pilot + 11 个 DRC 状态/相机参数；@Inferred 标注 HEART_BEAT + 8 个 DRC 相机参数）
-│   │   ├── DrcUpMethod.java       12 个（drc/up 上行推送方法，10 个 simulator 已对接 + 1 个 Pilot @Inferred + 1 个 v1.16 AI）
-│   │   ├── ServiceMethod.java    97 个（services 通道方法，71 catalog + 18 补全 OTA/日志/空中航线/PSDK/ESDK + 8 回归补全 flysafe/Pilot；@Verified 全部已验证）
-│   │   ├── PropertySetMethod.java 18 个（property/set 通道可设置属性，Dock3 4 + M3D 9 + M3D 红外 5；含 v1.16.1 新增 remaining_power_for_return_home）
+│   │   ├── RequestsMethod.java    8 个（config/airport_bind_status/airport_organization_get/airport_organization_bind/storage_config_get/flighttask_progress_get/flighttask_resource_get/flight_areas_get）
+│   │   ├── EventMethod.java       31 个（flighttask_progress/fly_to_point_progress/ota_progress/file_upload_callback/hms/rid_infos/adsb_infos/...）
+│   │   ├── DrcMethod.java         68 个（drc/down 远程控制指令；v1.18 新增 26 个 drc_* 前缀方法：相机图像参数/曝光/光圈/对焦、联动变焦、夜灯警戒等）
+│   │   ├── DrcUpMethod.java       12 个（drc/up 上行推送方法）
+│   │   ├── ServiceMethod.java    102 个（services 通道方法；v1.18 新增 low_power_switch/fts_config/drone_propeller_stop_v1 及 @Deprecated 的 flighttask_create）
+│   │   ├── PropertySetMethod.java 20 个（property/set 通道可设置属性；含 v1.18 新增 commander_flight_height/commander_mode_lost_action）
 │   │   └── package-info.java      错误处理风格说明（Optional）
 │   │
-│   ├── envelope/               ← 消息信封结构（4 类）
+│   ├── envelope/               ← 消息信封结构（5 类）
 │   │   ├── RequestEnvelope.java      请求信封（services/requests/property_set，data=Object）
-│   │   ├── ReplyEnvelope.java        services_reply 信封（data=ReplyData{result,output}）
+│   │   ├── ReplyEnvelope.java        services_reply 信封（data=ReplyData{result,output}；v1.18 补末位 gateway 字段）
+│   │   ├── FlatReplyEnvelope.java     扁平 services_reply 信封（data=Object，Reply 自带 result；如 flysafe unlock_license_* 回复）
 │   │   ├── RequestReplyEnvelope.java requests_reply 信封（data=Object，直接持有 Reply record，非 ReplyData 包裹）
 │   │   └── EventEnvelope.java        事件信封（events，data=Object+needReply+gateway）
 │   │
@@ -136,18 +145,20 @@ ltd.cdmi.dji.cloudapi.sdk
 │   ├── WsBizCode.java           8 个 biz_code 枚举（4 地图元素 + 4 设备拓扑推送）
 │   └── WsPushMessage.java      推送消息信封 record（biz_code/version/timestamp/data）
 │
-├── command/                 ← 指令 POJO 层（147 类 + 33 package-info）【已落地 92 services + 19 drc + 28 event + 7 request + 1 status 指令】
-│   ├── service/                 ← services 通道指令 POJO（92 个指令，12 个子包 + 根目录共享 record）
-│   │   ├── NoParameterRequest.java         通用空 Request（32 个无参数指令共用）
+├── command/                 ← 指令 POJO 层（service 117 + drc 97 + event 37 + request 15 + status 2 + property 3 + peripheral 5 = 276 个 POJO 文件）【已落地 102 services + 68 drc/down + 12 drc/up + 31 event + 8 request + 1 status 指令】
+│   ├── service/                 ← services 通道指令 POJO（117 个 POJO 文件 + 16 package-info，15 个子包 + 根目录共享 record）
+│   │   ├── NoParameterRequest.java         通用空 Request（无参数指令共用，含 requests 通道 flight_areas_get）
 │   │   ├── NoOutputReply.java              通用空 Reply（无 output 指令共用，@Inferred）
 │   │   ├── SimulateMission.java            跨包共享嵌套 record（wayline + flight 共用，@Inferred altitude 字段）
-│   │   ├── package-info.java       子包结构说明 + 命名规则 + Reply 对称性约定
-│   │   ├── wayline/                ← 航线任务（16 类 + 1 package-info）
-│   │   │   ├── FlighttaskPrepareRequest/Reply   14 字段 + 空 Reply（含 4 嵌套 record）
-│   │   │   ├── FlighttaskExecuteRequest/Reply   multiDockTask 蛙跳嵌套 + 空 Reply（含 5 嵌套 record）
-│   │   │   ├── FlighttaskUndoRequest            flightIds(List<String>)
-│   │   │   ├── FlighttaskStopRequest            flightId, reason
-│   │   │   └── ReturnSpecificHomeRequest        homeDockSn
+│   │   ├── package-info.java               子包结构说明 + 命名规则 + Reply 对称性约定
+│   │   ├── wayline/                ← 航线任务（28 类 + 1 package-info）
+│   │   │   ├── FlighttaskPrepareRequest/Reply / FlighttaskExecuteRequest/Reply / FlighttaskUndoRequest / FlighttaskStopRequest / ReturnSpecificHomeRequest
+│   │   │   ├── FlighttaskCreateRequest/Reply   flighttask_create（@Deprecated）与回包
+│   │   │   ├── ReturnHomeReply                 return_home 回包 {result, output{status}}
+│   │   │   ├── RtcmInfo                        RTK 标定源{mountPoint,port,host,rtcmDeviceType,sourceType}
+│   │   │   ├── DockInfo / CenterNode / LeafNode / WirelessLinkTopo / FlighttaskFile / MultiDockTask / BreakPoint / ReadyConditions / ExecutableConditions  嵌套与共享 record
+│   │   │   ├── WaylinePrecisionType / TaskType / StopReason / RthMode / OutOfControlAction  子包枚举
+│   │   │   └── InFlightWaylineDeliver/Stop/RecoverRequest  空中航线切换
 │   │   ├── camera/                ← 相机/负载控制（22 类 + 1 package-info）
 │   │   │   ├── CameraPhotoTake/StopRequest          payloadIndex
 │   │   │   ├── CameraRecordingStart/StopRequest     payloadIndex
@@ -182,15 +193,15 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   │   └── DrcMqttBroker                   address, clientId, username, enableTls, expireTime
 │   │   ├── media/                  ← 媒体管理（1 类 + 1 package-info）
 │   │   │   └── UploadFlighttaskMediaPrioritizeRequest  flightId
-│   │   ├── firmware/              ← OTA 固件升级（1 类 + 1 package-info）【补全】
-│   │   │   └── OtaCreateRequest              devices[]{sn,productVersion,firmwareUpgradeType,fileUrl?,md5?,fileSize?,fileName?}
+│   │   ├── firmware/              ← OTA 固件升级（2 类 + 1 package-info）
+│   │   │   ├── OtaCreateRequest              devices[]{sn,productVersion,firmwareUpgradeType(FirmwareUpgradeType),fileUrl?,md5?,fileSize(Integer),fileName?}
+│   │   │   └── OtaCreateReply                 ota_create 回包
 │   │   ├── log/                    ← 远程日志上传（4 类 + 1 package-info）【补全】
 │   │   │   ├── FileUploadStartRequest        params{files[]{objectKey,size,type},boot{@class,args[]}}（@Inferred params 包装层）
 │   │   │   ├── FileUploadUpdateRequest       fileId, status
 │   │   │   ├── FileUploadListRequest         fileFilter(模块过滤)
 │   │   │   └── FileUploadListReply           groups[]{module,files[]{objectKey,size,name,...}}
-│   │   ├── wayline/psdk/          ← 空中航线（InFlightWaylineDeliver/Stop/RecoverRequest，见 wayline 子包）
-│   │   ├── psdk/                   ← PSDK 控制（8 类 + 1 package-info）【补全】
+│   │   ├── psdk/                   ← PSDK 控制（9 类 + 1 package-info）
 │   │   │   ├── SpeakerPlayVolumeSetRequest    psdkIndex, playVolume
 │   │   │   ├── SpeakerPlayModeSetRequest      psdkIndex, playMode
 │   │   │   ├── SpeakerPlayStopRequest          psdkIndex
@@ -198,33 +209,45 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   │   ├── SpeakerTtsPlayStartRequest     psdkIndex, volume, type, language, speed, text
 │   │   │   ├── SpeakerAudioPlayStartRequest    psdkIndex, md5, audioType
 │   │   │   ├── PsdkInputBoxTextSetRequest      psdkIndex, value
-│   │   │   └── PsdkWidgetValueSetRequest       psdkIndex, widgetValue
+│   │   │   ├── PsdkWidgetValueSetRequest       psdkIndex, widgetValue
+│   │   │   └── CustomDataTransmissionToPsdkRequest  value
 │   │   ├── esdk/                   ← ESDK 控制（1 类 + 1 package-info）【补全】
 │   │   │   └── CustomDataTransmissionToEsdkRequest  value
 │   │   ├── esim/                   ← eSIM 管理（3 类 + 1 package-info）【补全】
 │   │   │   ├── EsimActivateRequest            eid, esimInfos[]{operator,iccid,imsi}（@Inferred）
 │   │   │   ├── EsimOperatorSwitchRequest      imei, deviceType, esimOperator（@Verified DJI 文档确认）
 │   │   │   └── SimSlotSwitchRequest           slotType（@Inferred）
-│   │   └── debug/                  ← 设备控制（5 类 + 1 package-info）【补全】
-│   │       ├── RtkCalibrationRequest          caliType（@Inferred，仅 Dock3）
-│   │       ├── BatteryStoreModeSwitchRequest  mode（@Inferred）
+│   │   ├── pilot/                  ← Pilot 上云控制（4 类 + 1 package-info）
+│   │   │   └── CloudControlAuthRequest / CloudControlReleaseRequest / PoiModeEnterRequest / PoiCircleSpeedSetRequest
+│   │   ├── flysafe/                ← 远程解禁证书（15 类 + 1 package-info）【v1.18 新增】
+│   │   │   ├── UnlockLicenseListRequest/Reply、UnlockLicenseSwitchRequest/Reply、UnlockLicenseUpdateRequest
+│   │   │   └── License、CommonFields、Area/Circle/Country/Height/Polygon/Power/RidUnlock、PolygonPoint
+│   │   ├── fts/                    ← 飞行终止系统 FTS（3 类 + 1 package-info）【v1.18 新增】
+│   │   │   └── FtsConfigRequest、DronePropellerStopV1Request、FtsServerType
+│   │   └── debug/                  ← 设备控制（8 类 + 1 package-info）
+│   │       ├── RtkCalibrationRequest           devices[]{sn,type,module,data{longitude,latitude,height}}（@Inferred）
+│   │       ├── BatteryStoreModeSwitchRequest   action（@Inferred）
+│   │       ├── AirConditionerModeSwitchRequest action（@Inferred）
 │   │       ├── AlarmStateSwitchRequest         action（@Inferred）
-│   │       ├── AirConditionerModeSwitchRequest  mode（@Inferred）
-│   │       └── SdrWorkmodeSwitchRequest        linkWorkmode（@Inferred）
-│   ├── drc/                      ← drc 通道指令 POJO（42 个 drc/down 指令 + 12 个 drc/up 推送 POJO，7 个子包 + 根 DrcResultReply）【已落地】
-│   │   ├── DrcResultReply.java         通用 {result} 回复（26 个 drc/down 指令共用，区别于 services_reply 的 {result,output}）
+│   │       ├── SdrWorkmodeSwitchRequest        linkWorkmode（@Inferred）
+│   │       ├── BatteryMaintenanceSwitchRequest  batteryMaintenance{...}
+│   │       └── LowPowerSwitchRequest/Reply     低电量报警开关
+│   ├── drc/                      ← drc 通道指令 POJO（68 个 drc/down 指令 + 12 个 drc/up 推送 POJO，8 个子包 + 根 DrcResultReply）
+│   │   ├── DrcResultReply.java         通用 {result} 回复（drc/down 指令共用，区别于 services_reply 的 {result,output}）
 │   │   ├── package-info.java           DRC 消息格式说明 + 回复行为分类
 │   │   ├── up/                    ← drc/up 上行推送 POJO（12 个，对应 DrcUpMethod 枚举）
 │   │   ├── safety/                ← 飞行安全（3 个空请求指令，package-info 文档化，回复用 DrcResultReply）
-│   │   ├── flight/                ← 飞行控制（4 类 + 1 package-info）
+│   │   ├── flight/                ← 飞行控制（7 类 + 1 package-info）
 │   │   │   ├── StickControlRequest          roll, pitch, throttle, yaw（无回包）
-│   │   │   ├── DroneControlRequest          seq, x, y, h, w（无回包，已废弃 @Inferred）
-│   │   │   └── HeartBeatRequest/Reply       timestamp（回显，@Inferred 发起方未明确）
-│   │   ├── camera/                ← 相机高级控制 Dock3（4 类 + 1 package-info）
-│   │   │   ├── DrcCameraNightModeSetRequest         payloadIndex, mode
-│   │   │   ├── DrcCameraDenoiseLevelSetRequest       payloadIndex, level
-│   │   │   ├── DrcCameraNightVisionEnableRequest     payloadIndex, enable
-│   │   │   └── DrcInfraredFillLightEnableRequest     payloadIndex, enable
+│   │   │   ├── DroneControlRequest/Reply    seq, x, y, h, w（@Inferred 已废弃）
+│   │   │   ├── HeartBeatRequest/Reply       timestamp（回显，@Inferred 发起方未明确）
+│   │   │   ├── DrcNightLightsStateSetRequest  夜航灯开关（v1.18 新增）
+│   │   │   └── DrcStealthStateSetRequest      隐蔽模式开关（v1.18 新增）
+│   │   ├── camera/                ← DRC 相机控制（36 类 + 15 枚举 + 1 package-info）【v1.18 扩充】
+│   │   │   ├── DrcCamera*SetRequest ×27   图像参数：光圈/ISO/快门/曝光/对焦/去雾/夜视/夜灯/联动变焦/截图/录像/拍照/间隔拍照/存储等
+│   │   │   ├── DrcCameraPhotoTakeReply     拍照回包（含 output）
+│   │   │   ├── DrcIrMeteringMode/Point/AreaSetRequest、DrcGimbalResetRequest、DrcPhoto/VideoStorageSetRequest、DrcVideoResolutionSetRequest、DrcInfraredFillLightEnableRequest  红外/云台/存储
+│   │   │   └── enumtype/                  15 个枚举（ApertureValue/IsoValue/ShutterValue/ExposureValue/ExposureMode/FocusMode/DewarpingState/GimbalResetMode/IntervalPhoto/IrMeteringMode/NightMode/PhotoResolution/VideoResolution/CameraType/SwitchState）
 │   │   ├── light/                 ← 探照灯控制 Dock3（4 类 + 1 package-info）
 │   │   │   ├── DrcLightBrightnessSetRequest    psdkIndex, brightness
 │   │   │   ├── DrcLightModeSetRequest           psdkIndex, mode
@@ -236,7 +259,7 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │   │   ├── DrcSpeakerPlayVolumeSetRequest     psdkIndex, playVolume
 │   │   │   ├── DrcSpeakerPlayStopRequest          psdkIndex
 │   │   │   └── DrcSpeakerReplayRequest            psdkIndex
-│   │   └── ai/                    ← AI 目标识别 Dock3 v1.16（11 个 drc/down + 1 个 drc/up 推送，7 个 POJO + 6 个枚举 + 1 package-info）
+│   │   ├── ai/                    ← AI 目标识别 Dock3（15 类 + 1 package-info）
 │   │       ├── AiModelSelectRequest            index
 │   │       ├── AiIdentifySetRequest            on（AiSwitchState）
 │   │       ├── AiIdentifyScoreModeSetRequest   scoreMode（AiScoreMode）
@@ -252,37 +275,48 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │       ├── AiTrackStateReason              0-15 正常原因 + 160-168 退出原因（共 25 个）
 │   │       ├── AiImageSource                   1=WIDE, 2=ZOOM, 3=IR, 7=VISIBLE_LIGHT（enum_list 多选）
 │   │       └── AiDigitalEffect                 0=WHITE_HOT, 1=BLACK_HOT, 2=RED_HOT（enum_list 多选）
-│   ├── event/                    ← events 通道事件 POJO（28 个事件，9 个子包 + 根 PathPoint 共享 record）【已落地】
+│   │   └── psdk/                  ← PSDK DRC 指令（2 类 + 1 package-info）【v1.18 新增】
+│   │       ├── DrcPsdkWidgetValueSetRequest     psdkIndex, widgetValue
+│   │       └── DrcPsdkInputBoxTextSetRequest    psdkIndex, value
+│   ├── event/                    ← events 通道事件 POJO（37 个事件，10 个子包 + 根 PathPoint 共享 record）
 │   │   ├── PathPoint.java              共享轨迹点（latitude/longitude/height，wayline/flight 子包共用）
 │   │   ├── package-info.java           event 子包总说明
-│   │   ├── wayline/              ← 航线任务事件（5 类 + 1 package-info）
+│   │   ├── wayline/              ← 航线任务事件（6 类 + enumtype 2 + 1 package-info）
 │   │   │   ├── FlighttaskProgressData       result, output{ext, progress, status}（含嵌套 BreakPoint）
 │   │   │   ├── FlighttaskReadyData           flightIds
 │   │   │   ├── InFlightWaylineProgressData   inFlightWaylineId, progress{percent}, status, result, wayPointIndex
 │   │   │   ├── ReturnHomeInfoData            plannedPathPoints, lastPointType, flightId, homeDockSn?, multiDockHomeInfo?（@Inferred 蛙跳）
-│   │   │   └── DeviceExitHomingNotifyData    sn, action, reason（@Inferred reason 类型 enum_int vs 字符串待验证）
-│   │   ├── flight/               ← 指令飞行事件（7 类 + 1 package-info）
+│   │   │   ├── DeviceExitHomingNotifyData    sn, action, reason（@Inferred reason 类型 enum_int vs 字符串待验证）
+│   │   │   ├── FlightSetupExceptionNotifyData  飞行任务校验异常通知（v1.18 新增）
+│   │   │   └── enumtype/LastPointType、HomePlanStatus（v1.18 新增枚举）
+│   │   ├── flight/               ← 指令飞行事件（6 类 + 1 package-info）
 │   │   │   ├── FlyToPointProgressData        flyToId, status, result, wayPointIndex, remainingDistance/Time, plannedPathPoints
 │   │   │   ├── TakeoffToPointProgressData    status, result, flightId, trackId, wayPointIndex, remainingDistance/Time, plannedPathPoints
 │   │   │   ├── PoiCircleStatusData           status, reason, circleRadius, circleSpeed, maxCircleSpeed（@Inferred 方法名待验证）
 │   │   │   ├── CameraPhotoTakeProgressData   result, output{status, progress, ext}
-│   │   │   ├── PhotoProgressData             result, output（@Inferred 最小骨架，simulator 未实现）
 │   │   │   ├── ObstacleAvoidanceNotifyData   waylineUuid, flightId, obstacles[]{id,type,timestamp,lat,lng,height,waylineId,waypointIndex}, isFinalReport（仅 Dock3）
 │   │   │   └── JoystickInvalidNotifyData     reason（0-4 枚举，三 Dock 共有）
-│   │   ├── system/               ← 系统/升级/日志事件（2 类 + 1 package-info）
+│   │   ├── system/               ← 系统/升级/日志事件（4 类 + 1 package-info）
 │   │   │   ├── OtaProgressData               result, output{status, progress{percent, currentStep}}
-│   │   │   └── FileUploadProgressData         result, output{status, ext{files[]}}（4 层嵌套：FileItem/FileProgress）
+│   │   │   ├── FileUploadProgressData         result, output{status, ext{files[]}}（4 层嵌套：FileItem/FileProgress）
+│   │   │   ├── RtkCalibrationData            RTK 标定进度（v1.18 新增）
+│   │   │   └── ServiceProgressData           通用服务进度（v1.18 新增）
 │   │   ├── media/                ← 媒体管理事件（2 类 + 1 package-info）
 │   │   │   ├── HighestPriorityUploadFlighttaskMediaData  flightId
 │   │   │   └── FileUploadCallbackData         file{ext, metadata, name, objectKey, path}（4 层嵌套）
 │   │   ├── flightarea/           ← 自定义飞行区事件（2 类 + 1 package-info）
 │   │   │   ├── FlightAreasDroneLocationData  droneLocations[]{areaDistance, areaId, isInArea}
 │   │   │   └── FlightAreasSyncProgressData   status, reason, file?{name, checksum}
-│   │   ├── alert/                ← 告警/授权事件（3 类 + 1 package-info）
+│   │   ├── alert/                ← 告警/授权事件（4 类 + 1 package-info）
 │   │   │   ├── CloudControlAuthNotifyData     result, output{status}
-│   │   │   ├── AirSenseWarningData            List<Alert>（data 直接是数组，特殊结构）
-│   │   │   └── HmsData                        list[]{code, level, module, inTheSky, deviceType, imminent, args}
-│   │   ├── psdk/                 ← PSDK 事件（3 类 + 1 package-info）【新增】
+│   │   │   ├── AirSenseWarningData            List<Alert>（data 直接是数组，特殊结构；v1.18 need_reply 0→1、Alert 距离字段 Double→Integer）
+│   │   │   ├── AirSenseWarningDataDeserializer  AirSense 反序列化器
+│   │   │   └── HmsData                        list[]{code(String), level, module, inTheSky, deviceType, imminent, args}
+│   │   ├── peripheral/           ← 周边感知事件（3 类 + 1 package-info）【v1.18 新增】
+│   │   │   ├── RidInfosData                  RID 上报（含 RidTarget 嵌套）
+│   │   │   ├── AdsbInfosData                 ADS-B 上报（含 AdsbTarget 嵌套）
+│   │   │   └── Gnss                          GNSS 定位信息
+│   │   ├── psdk/                 ← PSDK 事件（3 类 + 1 package-info）
 │   │   │   ├── PsdkFloatingWindowTextData       psdkIndex, value（data 直接平铺，非 output 包裹）
 │   │   │   ├── PsdkUiResourceUploadResultData    psdkIndex, objectKey, size, result
 │   │   │   └── CustomDataFromPsdkData            value（@Inferred need_reply 待验证）
@@ -292,56 +326,62 @@ ltd.cdmi.dji.cloudapi.sdk
 │   │       ├── SpeakerOutput                 共享：psdkIndex, status, md5, progress{percent, stepKey}
 │   │       ├── SpeakerTtsPlayStartProgressData    result, output（引用 SpeakerOutput）
 │   │       └── SpeakerAudioPlayStartProgressData  result, output（引用 SpeakerOutput）
-│   ├── request/                 ← requests 通道指令 POJO（7 个方法，4 个子包）【已落地】
+│   ├── request/                 ← requests 通道指令 POJO（8 个方法，4 个子包）【已落地】
 │   │   ├── package-info.java           request 子包总说明
 │   │   ├── registration/         ← 机场注册流程（4 个方法 × Request + Reply = 8 类 + 1 package-info）
 │   │   │   ├── ConfigRequest             config_type/config_scope
-│   │   │   ├── ConfigReply               result/appId/appLicense/url/token（@Inferred data 非包裹 output）
+│   │   │   ├── ConfigReply               appId/appKey/appLicense/ntpServerHost/ntpServerPort（v1.18 重建，删 url/token/result）
 │   │   │   ├── AirportBindStatusRequest  devices[]{sn}
-│   │   │   ├── AirportBindStatusReply    result
+│   │   │   ├── AirportBindStatusReply    result, output{bindStatus[]}（v1.18 补 result/output）
 │   │   │   ├── AirportOrganizationGetRequest  deviceBindingCode/organizationId
-│   │   │   ├── AirportOrganizationGetReply     result（@Inferred output 待验证）
+│   │   │   ├── AirportOrganizationGetReply     result, output.organizationName（v1.18 补 output）
 │   │   │   ├── AirportOrganizationBindRequest  bindDevices[]{sn, deviceModelKey, deviceCallsign, organizationId, deviceBindingCode}
-│   │   │   └── AirportOrganizationBindReply    result, output{errInfos[]{errCode, errSn}}
+│   │   │   └── AirportOrganizationBindReply    result, output{errInfos[]{errCode, sn}}（v1.18 errSn→sn）
 │   │   ├── config/               ← 存储配置查询（1 个方法 × Request + Reply = 2 类 + 1 package-info）
 │   │   │   ├── StorageConfigGetRequest   module（0=媒体/1=日志）
-│   │   │   └── StorageConfigGetReply      result, output{bucket, endpoint, region, provider, objectKeyPrefix, credentials{...}}
-│   │   ├── wayline/              ← 蛙跳任务进度查询（1 个方法 × Request + Reply = 2 类 + 1 package-info）
-│   │   │   ├── FlighttaskProgressGetRequest   flightId, sn?（目标机场 SN）
-│   │   │   └── FlighttaskProgressGetReply      result, output（@Inferred 结构待验证）
-│   │   └── flightarea/           ← 自定义飞行区查询（1 个方法 × Request + Reply = 2 类 + 1 package-info）
-│   │       ├── FlightAreasGetRequest    空 record（无参数）
-│   │       └── FlightAreasGetReply      result, output{file{name, checksum}}
+│   │   │   └── StorageConfigGetReply      result, output{bucket, endpoint, region, provider, objectKeyPrefix, credentials{accessKeyId,accessKeySecret,expire}}
+│   │   ├── wayline/              ← 蛙跳任务进度/资源查询（2 个方法 × Request + Reply = 4 类 + 1 package-info）
+│   │   │   ├── FlighttaskProgressGetRequest   targetSn（v1.18 由 sn 改名）
+│   │   │   ├── FlighttaskProgressGetReply      结果结构具体化（v1.18）
+│   │   │   ├── FlighttaskResourceGetRequest    flight_id（v1.18 新增）
+│   │   │   └── FlighttaskResourceGetReply       flighttask_resource_get 回包（v1.18 新增）
+│   │   └── flightarea/           ← 自定义飞行区查询（1 个方法 = 1 类 + 1 package-info）
+│   │       └── FlightAreasGetReply      result, output{files[]{name,url,checksum,size}}（v1.18 file→files[]）
 │   ├── status/                  ← status 通道指令 POJO（1 个方法 = 2 类 + 1 package-info）【已落地】
 │   │   ├── package-info.java           status 子包总说明
-│   │   ├── UpdateTopoData             domain(String)/type/subType/deviceSecret/nonce/subDevices[]{sn,...}/thingVersion
-│   │   └── UpdateTopoReplyData        result, subType?（0=上线/1=下线，@Inferred 待验证）
+│   │   ├── UpdateTopoData             baseInfo + domain(String)/type/subType/deviceSecret/nonce/subDevices[]{sn,...}/thingVersion（v1.18 补 baseInfo）
+│   │   └── UpdateTopoReplyData        result（v1.18 删 subType）
+│   ├── property/                ← property/set 通道指令 POJO（3 类 + 1 package-info）
+│   │   └── PropertySetRequest、PropertySetReply、PropertySetResult（扁平 map 格式，@JsonAnyGetter）
+│   ├── peripheral/              ← 周边设备能力（5 类 + 1 package-info）【v1.18 新增】
+│   │   └── PeripheralInfo、PeripheralCapability、RidCapability、AdsbCapability、DockControlCapability
 │   └── package-info.java         command 子包总说明（与 envelope/method 对齐）
 │
-├── model/                   ← 设备型号层（8 类）
-│   ├── DeviceDomain.java        domain 枚举（0=飞行器/2=遥控器/3=机场）
+├── model/                   ← 设备型号层（9 类）
+│   ├── DeviceDomain.java        domain 枚举（0=飞行器/2=遥控器/3=机场/8=地面站）
 │   ├── DeviceModel.java         型号三元组 record（domain/type/subType + 展示信息）
 │   ├── DeviceModelProvider.java 接口（enum → DeviceModel 转换契约 + default 委托方法）
 │   ├── DroneModel.java          14 种飞行器型号枚举 + fromType/fromModelKey 反查
 │   ├── DockModel.java           3 种机场型号枚举 + fromType/fromModelKey 反查
 │   ├── RcModel.java             4 种遥控器型号枚举 + fromType/fromModelKey 反查
+│   ├── GroundStationModel.java  O4 地面站（漫游基站，domain=8）型号枚举 + 反查（v1.18 新增）
 │   ├── DeviceCompatibility.java 兼容性矩阵（dock↔drone / controller↔drone）
 │   └── DeviceModels.java        跨枚举统一查询（findByDomainTypeSubType）
 │
 ├── telemetry/               ← 遥测数据层
-│   ├── OsdField.java            65 个 OSD 字段名枚举（pushMode=0，周期推送）
-│   ├── StateField.java          35 个 State 字段名枚举（pushMode=1，变化推送）
-│   ├── DroneOsd.java            飞行器 OSD record（33 组件）
-│   ├── DockOsd.java             机场 OSD record（37 组件）
-│   ├── RcOsd.java       遥控器 OSD record（5 组件）
-│   └── enumtype/                ← 遥测枚举类型（7 类 + package-info）
-│       ├── Gear.java               飞行器档位（10 档，0-9）
-│       ├── DroneModeCode.java      飞行器模式码（0-20）
-│       ├── DockModeCode.java       机场模式码（0-5）
-│       ├── ModeCodeReason.java     飞行器模式码触发原因（0-23，对应 mode_code_reason 字段）
-│       ├── BatteryStoreMode.java   机场电池存储模式（1-2，1=计划模式/2=待命模式，无 0 值）
-│       ├── PositionState.java      RTK 定位收敛状态（0-3）
-│       ├── DroneChargeState.java   飞行器充电状态（0-1）
+│   ├── OsdField.java            77 个 OSD 字段名枚举（pushMode=0，周期推送；含 O4/FTS_INFO/drone_authority_info）
+│   ├── StateField.java          39 个 State 字段名枚举（pushMode=1，变化推送；含 best_link_gateway/flysafe_database_version）
+│   ├── DroneOsd.java            飞行器 OSD record（38 组件；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion）
+│   ├── DockOsd.java             机场 OSD record（40 组件；rainfall Double→Integer、heading Integer→Double、新增 droneAuthorityInfo）
+│   ├── RcOsd.java               遥控器 OSD record（7 组件；battery→capacityPercent(@JsonAlias)、删 modeCode）
+│   ├── GroundStationOsd.java    O4 地面站 OSD record（21 组件）【v1.18 新增】
+│   ├── GroundStationState.java  O4 地面站 State record（7 组件）【v1.18 新增】
+│   ├── nested/                  ← 嵌套结构 record（v1.18 新增 DroneAuthorityInfo/FtsInfo/IrMeteringArea/IrMeteringPoint）
+│   └── enumtype/                ← 遥测枚举类型（40 类 + package-info）【v1.18 新增 18 类】
+│       ├── 飞行器/机场/定位：Gear/DroneModeCode(0-21)/ModeCodeReason/DroneChargeState/CoverState/DrcState/RcLostAction/FlighttaskStepCode/Rainfall/ThermalGainMode/PhotoFormat/VideoQuality/CameraMode/AirConditionerState/DockModeCode/BatteryStoreMode/Dock2HomePositionIsValid/Dock3HomePositionIsValid/PositionState/PositionQuality
+│       ├── 网络/图传：DongleType/SourceType/NetworkQuality/NetworkType
+│       ├── O4 地面站/FTS：BasestationWorkMode/GroundStationModeCode/UnderWorkMode/SupplyPowerMode/LanStatus/PoeStatus/FixedState/GroundStationHomePositionIsValid/FtsStatus/FirmwareUpgradeType/IrMeteringMode/CalibrationState
+│       ├── RTK/周边：RtcmDeviceType/RtcmSourceType/PeripheralPort/PeripheralType
 │       └── package-info.java       错误处理风格说明（抛异常）
 │
 └── flow/                    ← 注册流程层（3 类）
@@ -350,10 +390,10 @@ ltd.cdmi.dji.cloudapi.sdk
     └── PilotRegistrationFlow.java  Pilot 上云 5 步注册流程
 ```
 
-**编译单元统计**：101 个类/接口 + 12 个 package-info = 113 个编译单元，分布于 20 个包。
-（含 http 子包 2 类、websocket 子包 2 类、protocol/method 子包 5 类 + 1 package-info、
-command 子包 1 package-info + command/service 子包 3 共享类 + 1 package-info +
-6 个子包共 52 类 + 6 package-info）
+**编译单元统计**（v1.18.0.0）：`sdk` 模块 `src/main/java` 下共 523 个 Java 文件（含 54 个 package-info），
+顶层公开类型 466 个（340 个 `public record` + 110 个 `public enum`（含嵌套）+ 16 个 class/interface）。
+`command/` 占 276 个 POJO 文件（service 117 + drc 97 + event 37 + request 15 + status 2 + property 3 + peripheral 5）；
+`sdk-wayline` 模块 `src/main/java` 下 12 个 Java 文件。
 
 ### 2.2 分层模型
 
@@ -450,6 +490,9 @@ sdk/
 │   ├── DroneOsd.java
 │   ├── DockOsd.java
 │   ├── RcOsd.java
+│   ├── GroundStationOsd.java
+│   ├── GroundStationState.java
+│   ├── nested/
 │   └── enumtype/
 ├── protocol/                ← MQTT 协议层（原命名保留，迁移至 mqtt/ 待后续重构）
 │   ├── topic/
@@ -463,7 +506,7 @@ sdk/
 
 **当前状态**：
 - `http/` 与 `websocket/` 已实施（不再属于"未来扩展"），分别承载 HTTP REST API 路径常量（`HttpApiPath`、`StsCredentials`）与 WebSocket 推送 POJO（`WsBizCode`、`WsPushMessage<T>`、`DeviceOsdPushData` 等）。
-- `protocol` → `mqtt` 重命名 **未执行**：当前 `protocol/` 包名保留，迁移至 `mqtt/` 属于"未来可选重构"（涉及 18 个类移动 + 全量 import 更新，需评估对调用方的影响后再决策）。
+- `protocol` → `mqtt` 重命名 **未执行**：当前 `protocol/` 包名保留，迁移至 `mqtt/` 属于"未来可选重构"（涉及 19 个类移动 + 全量 import 更新，需评估对调用方的影响后再决策）。
 - `flow/` 保持顶层（与 `protocol/` 平级），未迁入 `mqtt.flow`。
 
 ---
@@ -514,14 +557,15 @@ sdk/
 | `@Inferred` | 标注为推断定义，待真机验证 | `reason()` — 推断理由（必填）；`verifyPoint()` — 验证点 |
 
 **理由**：
-- DJI Cloud API 文档迭代频繁（v1.8.0 → v1.16.1），需要明确哪些协议元素已核实、哪些是推断
+- DJI Cloud API 文档迭代频繁（v1.8.0 → v1.18.0），需要明确哪些协议元素已核实、哪些是推断
 - `@Inferred` 让使用者在真机验证时能注意到假设性定义，避免盲目信任
 - `RUNTIME` 保留策略支持反射扫描，可用于自动化协议校验
 
-**当前 `@Inferred` 项**（3 处）：
+**当前 `@Inferred` 标注**（全库 `@Inferred(` 共 69 处，下表为代表性方法级项）：
 - `DrcMethod.HEART_BEAT` — heart_beat 协议格式与发起方未在文档明确
 - `ServiceMethod.CLOUD_CONTROL_AUTH_REQUEST` — 授权值 `["flight"]` 未在文档明确
 - `PilotRegistrationFlow.UPDATE_TOPO` — RC Plus 2 子设备不上报 domain/index 字段未核实
+- v1.18.0.0 新增项（FTS 字段、O4 地面站/相机枚举、RTK 标定结构等）亦按 `@Inferred` 标注，逐项依据见差异分析报告
 
 ### 3.5 差异化错误处理策略
 
@@ -538,7 +582,7 @@ sdk/
 
 ### 3.6 DroneModeCode / DockModeCode 拆分
 
-**决策**：将历史合并的 `ModeCode` 枚举拆分为 `DroneModeCode`（0-20）与 `DockModeCode`（0-5）两个独立枚举。
+**决策**：将历史合并的 `ModeCode` 枚举拆分为 `DroneModeCode`（0-21）与 `DockModeCode`（0-5）两个独立枚举。
 
 **理由**：
 - 飞行器模式码与机场模式码是 **完全不同的两套枚举**，值范围不重叠，语义无关
@@ -622,11 +666,12 @@ sdk/
 | 枚举 | 通道 | 数量 | 代表值 |
 |---|---|---|---|
 | `StatusMethod` | status | 1 | `update_topo` |
-| `RequestsMethod` | requests | 7 | `config`/`airport_bind_status`/`storage_config_get`/`flighttask_progress_get`/`flight_areas_get` |
-| `EventMethod` | events | 29 | `flighttask_progress`/`fly_to_point_progress`/`ota_progress`/`file_upload_callback`/`hms`/`device_exit_homing_notify`/`obstacle_avoidance_notify`/`joystick_invalid_notify`/`psdk_floating_window_text`/...（含 5 个原有 @Inferred + 1 个补全 @Inferred drc_status_notify） |
-| `DrcMethod` | drc/down | 42 | `heart_beat`/`stick_control`/`drone_control`/`drc_force_landing`/`drc_ai_model_select`/`drc_live_lens_change`/`drc_initial_state_subscribe`/`drc_camera_iso_set`/...（19 simulator + 11 v1.16 AI + 1 Pilot + 11 DRC 状态/相机参数） |
-| `DrcUpMethod` | drc/up | 12 | `osd_info_push`/`hsi_info_push`/`delay_info_push`/`drc_drone_state_push`/`drc_camera_state_push`/`drc_camera_osd_info_push`/`drc_psdk_state_info`/`drc_psdk_floating_window_text`/`drc_speaker_play_progress`/`drc_psdk_ui_resource`/`drc_camera_photo_info_push`/`drc_ai_info_push` |
-| `ServiceMethod` | services | 97 | `flighttask_execute`/`live_start_push`/`drone_open`/`takeoff_to_point`/`ota_create`/`fileupload_start`/`in_flight_wayline_deliver`/...（71 catalog + 18 补全 + 8 回归补全 flysafe/Pilot） |
+| `RequestsMethod` | requests | 8 | `config`/`airport_bind_status`/`storage_config_get`/`flighttask_progress_get`/`flighttask_resource_get`/`flight_areas_get` |
+| `EventMethod` | events | 31 | `flighttask_progress`/`fly_to_point_progress`/`ota_progress`/`file_upload_callback`/`hms`/`rid_infos`/`adsb_infos`/`device_exit_homing_notify`/`obstacle_avoidance_notify`/... |
+| `DrcMethod` | drc/down | 68 | `heart_beat`/`stick_control`/`drone_control`/`drc_force_landing`/`drc_camera_iso_set`/`drc_camera_aperture_value_set`/`drc_night_lights_state_set`/`drc_stealth_state_set`/...（v1.18 新增 26 个 `drc_*` 前缀方法（wire 名逐字对齐文档），飞行 4 件套沿用无前缀） |
+| `DrcUpMethod` | drc/up | 12 | `osd_info_push`/`hsi_info_push`/`delay_info_push`/`drc_drone_state_push`/`drc_camera_state_push`/`drc_camera_osd_info_push`/`drc_psdk_state_info`/`drc_speaker_play_progress`/`drc_ai_info_push` |
+| `ServiceMethod` | services | 102 | `flighttask_execute`/`live_start_push`/`ota_create`/`low_power_switch`/`fts_config`/`drone_propeller_stop_v1`/`unlock_license_list`/...（含 @Deprecated `flighttask_create`） |
+| `PropertySetMethod` | property/set | 20 | `remaining_power_for_return_home`/`commander_flight_height`/`commander_mode_lost_action`/... |
 
 **统一接口**：所有 method 枚举提供 `methodName()`/`description()`/`fromMethodName(String) → Optional`。
 
@@ -637,7 +682,8 @@ sdk/
 | 类 | 用途 | data 类型 |
 |---|---|---|
 | `RequestEnvelope` | 请求消息（services/requests/property_set） | `Object`（由 method 决定） |
-| `ReplyEnvelope` | services_reply 回复（data 固定 `{result, output}`） | `ReplyData{result, output}` |
+| `ReplyEnvelope` | services_reply 回复（data 固定 `{result, output}`；v1.18 增末位 `gateway` 字段） | `ReplyData{result, output}` |
+| `FlatReplyEnvelope` | 扁平 services_reply 回复（data=`Object`，Reply 自带 `result`；如 flysafe unlock_license_*） | `Object` |
 | `RequestReplyEnvelope` | requests_reply 回复（data 结构因指令而异，直接持有 Reply record） | `Object`（扁平或 `{result, output}`，见各 Reply record） |
 | `EventEnvelope` | 事件消息（events） | `Object`（由 method 决定） |
 
@@ -645,7 +691,7 @@ sdk/
 
 > **services_reply vs requests_reply data 结构差异**：
 > - `ReplyEnvelope`（services_reply）：`data = ReplyData{result, output}` 固定结构，空 output 用 `ReplyData(0, null)`
-> - `RequestReplyEnvelope`（requests_reply）：`data = Object`，由具体 Reply record 决定——`ConfigReply` 扁平含 `result/app_id/app_license/url/token`（非 output 包裹），`StorageConfigGetReply` 含 `{result, output:{bucket,...}}`，见各 Reply record javadoc
+> - `RequestReplyEnvelope`（requests_reply）：`data = Object`，由具体 Reply record 决定——`ConfigReply` 扁平含 `app_id/app_key/app_license/ntp_server_host/ntp_server_port`（非 output 包裹），`StorageConfigGetReply` 含 `{result, output:{bucket,...}}`，见各 Reply record javadoc
 
 ### 4.6 protocol.error — 错误码
 
@@ -665,14 +711,15 @@ sdk/
 
 | 类 | 说明 |
 |---|---|
-| `DeviceDomain` | domain 枚举：`AIRCRAFT(0)`/`CONTROLLER(2)`/`DOCK(3)` |
+| `DeviceDomain` | domain 枚举：`AIRCRAFT(0)`/`CONTROLLER(2)`/`DOCK(3)`/`GROUND_STATION(8)` |
 | `DeviceModel` | record：三元组 + `displayName`/`shortName`/`defaultSn` + `modelKey()`/`isDock()`/`isController()`/`isAircraft()` |
 | `DeviceModelProvider` | 接口：`toModel() → DeviceModel` + default 委托方法（`domain()`/`type()`/`subType()`/`displayName()`/`shortName()`/`defaultSn()`/`modelKey()`/`isDock()`/`isController()`/`isAircraft()`） |
 | `DroneModel` | 14 种飞行器 + `fromType(type, subType)` / `fromModelKey("0-67-0")` 反查 |
 | `DockModel` | 3 种机场 + `fromType(type, subType)` / `fromModelKey("3-3-0")` 反查 |
 | `RcModel` | 4 种遥控器 + `fromType(type, subType)` / `fromModelKey("2-119-0")` 反查 |
+| `GroundStationModel` | O4 地面站（漫游基站，domain=8）型号 + `fromType`/`fromModelKey` 反查（v1.18 新增） |
 | `DeviceCompatibility` | 兼容矩阵：`isCompatible(DockModel, DroneModel)` + `isCompatible(RcModel, DroneModel)` |
-| `DeviceModels` | 跨枚举反查：`findByDomainTypeSubType(int, int, int) → Optional<DeviceModel>`（按三元组分发到 `DroneModel`/`RcModel`/`DockModel` 的 `fromType`）+ `findByShortName(String) → Optional<DeviceModel>`（按简称遍历三枚举反查） |
+| `DeviceModels` | 跨枚举反查：`findByDomainTypeSubType(int, int, int) → Optional<DeviceModel>`（按三元组分发到 `DroneModel`/`RcModel`/`DockModel`/`GroundStationModel` 的 `fromType`）+ `findByShortName(String) → Optional<DeviceModel>`（按简称遍历四枚举反查） |
 
 **已知缺陷**：无（已修复 #3 switch 未覆盖 SMART_CONTROLLER_ENTERPRISE，见 §6.2 修复记录）。
 
@@ -682,11 +729,13 @@ sdk/
 
 | 类 | 说明 |
 |---|---|
-| `OsdField` | 65 个 OSD 字段名（pushMode=0，周期推送），含 `fromFieldName` |
-| `StateField` | 35 个 State 字段名（pushMode=1，变化推送），含 `fromFieldName` |
-| `DroneOsd` | 飞行器 OSD record（33 组件，camelCase） |
-| `DockOsd` | 机场 OSD record（37 组件，camelCase） |
-| `RcOsd` | 遥控器 OSD record（5 组件：modeCode/latitude/longitude/battery/country） |
+| `OsdField` | 77 个 OSD 字段名（pushMode=0，周期推送），含 `fromFieldName` |
+| `StateField` | 39 个 State 字段名（pushMode=1，变化推送），含 `fromFieldName` |
+| `DroneOsd` | 飞行器 OSD record（38 组件，camelCase；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion） |
+| `DockOsd` | 机场 OSD record（40 组件，camelCase；v1.18 rainfall Double→Integer、heading Integer→Double、新增 droneAuthorityInfo） |
+| `RcOsd` | 遥控器 OSD record（7 组件：latitude/longitude/capacityPercent/country/wirelessLink/drcState/height；`battery`→`capacityPercent`(@JsonAlias)、删 modeCode） |
+| `GroundStationOsd` | O4 地面站 OSD record（21 组件，camelCase）【v1.18 新增】 |
+| `GroundStationState` | O4 地面站 State record（7 组件，camelCase）【v1.18 新增】 |
 
 **设计要点**：
 - OSD/State record 使用包装类型（Integer/Double/Long/Object）允许 `null`，因不同机型上报字段集不同
@@ -695,21 +744,26 @@ sdk/
 
 ### 4.9 telemetry.enumtype — 遥测枚举类型
 
-**职责**：定义 OSD/State 字段中使用的枚举值。
+**职责**：定义 OSD/State 字段中使用的枚举值（目录共 40 个枚举 + package-info）。
 
 | 枚举 | 字段 | 值范围 | 数量 |
 |---|---|---|---|
 | `Gear` | `gear` | 0-9 | 10（A/P/NAV/FPV/FARM/S/F/M/G/T） |
-| `DroneModeCode` | `mode_code`（飞行器） | 0-20 | 21 |
+| `DroneModeCode` | `mode_code`（飞行器） | 0-21 | 22（v1.18 新增 `AIRPORT_WAYLINE(21)`） |
 | `DockModeCode` | `mode_code`（机场） | 0-5 | 6 |
 | `ModeCodeReason` | `mode_code_reason`（飞行器） | 0-23 | 24（无意义/低电量/低电压/严重低电压/RC按键/App请求/RC失联/外部触发/进入限飞区/距Home太近/距Home太远/航点起飞/Home上方继续降落/0.7m二段下降/突破限低/周边航班/高度控制失败/智能低电量/AP控制/硬件异常/防触地结束/返航取消/返航遇障/大风） |
 | `BatteryStoreMode` | `battery_store_mode`（机场） | 1-2 | 2（计划模式/待命模式，注意无 0 值） |
 | `PositionState` | `position_state.is_fixed` | 0-3 | 4 |
 | `DroneChargeState` | `drone_charge_state.state` | 0-1 | 2 |
+| `CameraMode` | `camera_mode` | 0-4 | 5（v1.18 新增 `TIMED_PHOTO(4)`） |
+
+**v1.18.0.0 变更**：`DroneModeCode` 补 `AIRPORT_WAYLINE(21)`；`CameraMode` 补 `TIMED_PHOTO(4)`；旧 `HomePositionIsValid` 按机型拆分为 `Dock2HomePositionIsValid`/`Dock3HomePositionIsValid`。
+
+**v1.18.0.0 新增遥测枚举（18 个）**：O4 地面站/FTS——`BasestationWorkMode`/`GroundStationModeCode`/`UnderWorkMode`/`SupplyPowerMode`/`LanStatus`/`PoeStatus`/`FixedState`/`GroundStationHomePositionIsValid`/`FtsStatus`/`FirmwareUpgradeType`/`IrMeteringMode`/`CalibrationState`；RTK——`RtcmDeviceType`/`RtcmSourceType`；周边——`PeripheralPort`/`PeripheralType`；机型 Home 位置——`Dock2HomePositionIsValid`/`Dock3HomePositionIsValid`。
 
 **统一接口**：所有枚举提供 `code()`/`description()`/`fromCode(int)`（抛 `IllegalArgumentException`）+ `BY_CODE` 不可变查找表。
 
-**Jackson 绑定（仅 `BatteryStoreMode`）**：`BatteryStoreMode` 是首个用作 POJO 字段类型的遥测枚举，在 `code()` 上加 `@JsonValue`、在 `fromCode(int)` 上加 `@JsonCreator(mode = DELEGATING)`，实现 DJI 协议 int 值与枚举的双向绑定。`BatteryStoreModeSwitchRequest.mode` 字段因此可使用类型化枚举替代原始 `int`，编译期捕获非法值。其他枚举（如 `DroneModeCode`）仅作为 Javadoc 引用，因对应字段在 OSD record 中需用 `Integer` 兼容不同机型字段集差异。
+**Jackson 绑定**：v1.18 起更多遥测枚举（`FirmwareUpgradeType`/`IrMeteringMode` 等）被用作 POJO 字段类型，在 `code()` 上加 `@JsonValue`、在 `fromCode(int)` 上加 `@JsonCreator(mode = DELEGATING)`，实现 DJI 协议 int 值与枚举的双向绑定；`BatteryStoreModeSwitchRequest` 的 `action` 字段（v1.18 由 `mode` 改名）即使用类型化枚举替代原始 `int`。其余枚举（如 `DroneModeCode`）仅作 Javadoc 引用，因对应字段在 OSD record 中需用 `Integer` 兼容机型字段集差异。
 
 ### 4.10 flow — 注册/上线流程
 
@@ -812,6 +866,8 @@ sys/product/{sn}/status_reply       ← 拓扑回复下行
 
 ### 6.3 待验证项（`@Inferred`）
 
+（全库 `@Inferred(` 共 69 处，下表为代表性方法级项；v1.18.0.0 新增推断项见差异分析报告。）
+
 | 项 | 推断理由 | 验证点 |
 |---|---|---|
 | `DrcMethod.HEART_BEAT` | 文档未明确协议格式与发起方 | 真机 heart_beat 的发起方与回包格式 |
@@ -859,3 +915,6 @@ sys/product/{sn}/status_reply       ← 拓扑回复下行
 | TDD 测试套件设计 | `docs/superpowers/specs/2026-08-14-tdd-test-suite-design.md` | 测试架构、策略与缺陷标记 |
 | TDD 测试用例文档 | `docs/tdd-test-cases.md` | 39 个测试类的详细用例（spec 24 + characterization 15） |
 | DJI 文档对比报告 | `dji-cloud-api-doc-comparison/dji-cloud-api-doc-comparison.html` | 官方文档 v1.8.0→v1.16.1 与 SDK 代码的差异分析 |
+| DJI v1.18 升级差异报告 | `docs/dji-doc-sdk-diff-report-20261014.md` | 官方文档 v1.16.1→v1.18.0 与 SDK 代码的差异分析与待确认项 |
+| 协议覆盖审查报告 | `dji-cloud-api-doc-comparison/dji-cloud-api-coverage-review.html` | SDK 协议方法封装完整度审查 |
+| SDK 终审报告 | `dji-sdk-final-review/dji-sdk-final-review.html` | SDK 整体封装终审报告 |

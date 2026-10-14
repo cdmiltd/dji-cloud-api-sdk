@@ -27,16 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  *
  * <p><b>核心证明</b>：
  * <ol>
- *   <li>DJI 飞行器 properties 文档定义的 21 个 mode_code 数值（0-20）能通过
+ *   <li>DJI 飞行器 properties 文档定义的 22 个 mode_code 数值（0-21）能通过
  *       {@link DroneModeCode#fromCode(int)} 反查</li>
  *   <li><strong>拆分防回归</strong>：与 {@link DockModeCode}（机场模式码）是不同枚举，值域不重叠</li>
- *   <li>-1 / 21 / 255 等越界值均抛出 {@link IllegalArgumentException}</li>
+ *   <li>-1 / 22 / 255 等越界值均抛出 {@link IllegalArgumentException}</li>
  * </ol>
  */
 class DroneModeCodeTest {
 
     @Test
-    @DisplayName("fromCode 反查 DJI 文档定义的 21 个数值（0-20）")
+    @DisplayName("fromCode 反查 DJI 文档定义的 22 个数值（0-21）")
     void testFromCodeAllValues() {
         assertEquals(DroneModeCode.STANDBY, DroneModeCode.fromCode(0));
         assertEquals(DroneModeCode.TAKEOFF_PREPARATION, DroneModeCode.fromCode(1));
@@ -59,28 +59,29 @@ class DroneModeCodeTest {
         assertEquals(DroneModeCode.AIRBORNE_RTK_FIXING, DroneModeCode.fromCode(18));
         assertEquals(DroneModeCode.DOCK_ADDRESS_SELECTING, DroneModeCode.fromCode(19));
         assertEquals(DroneModeCode.POI_ORBIT, DroneModeCode.fromCode(20));
+        assertEquals(DroneModeCode.AIRPORT_AREA_WAYLINE, DroneModeCode.fromCode(21));
     }
 
     @Test
     @DisplayName("fromCode 越界数值抛出 IllegalArgumentException")
     void testFromCodeUnknownThrows() {
         assertThrows(IllegalArgumentException.class, () -> DroneModeCode.fromCode(-1));
-        assertThrows(IllegalArgumentException.class, () -> DroneModeCode.fromCode(21));
         assertThrows(IllegalArgumentException.class, () -> DroneModeCode.fromCode(22));
         assertThrows(IllegalArgumentException.class, () -> DroneModeCode.fromCode(255));
     }
 
     @Test
-    @DisplayName("枚举总数应为 21（待机 + 起飞准备 + ... + POI环绕）")
+    @DisplayName("枚举总数应为 22（待机 + 起飞准备 + ... + 进离场航线）")
     void testTotalCount() {
-        assertEquals(21, DroneModeCode.values().length);
+        assertEquals(22, DroneModeCode.values().length);
     }
 
     @Test
-    @DisplayName("code() 与 fromCode 形成双射：0-20 → STANDBY-POI_ORBIT")
+    @DisplayName("code() 与 fromCode 形成双射：0-21 → STANDBY-AIRPORT_AREA_WAYLINE")
     void testCodeRoundTrip() {
         assertEquals(0, DroneModeCode.STANDBY.code());
         assertEquals(20, DroneModeCode.POI_ORBIT.code());
+        assertEquals(21, DroneModeCode.AIRPORT_AREA_WAYLINE.code());
         // 双向闭环
         for (DroneModeCode m : DroneModeCode.values()) {
             assertEquals(m, DroneModeCode.fromCode(m.code()));

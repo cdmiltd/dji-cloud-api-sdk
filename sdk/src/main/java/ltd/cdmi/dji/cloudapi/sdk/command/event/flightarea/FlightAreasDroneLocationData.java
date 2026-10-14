@@ -36,8 +36,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@link DroneLocationItem} — 位置项（area_distance/area_id/is_in_area）</li>
  * </ul>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator FlightAreaSimulator.publishDroneLocationEvent L124-L142 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/custom-flight-area.html")
+@Verified(basis = "DJI 自定义飞行区（custom-flight-area）页官方文档 flight_areas_drone_location 事件")
 public record FlightAreasDroneLocationData(
     List<DroneLocationItem> droneLocations
 ) {

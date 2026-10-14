@@ -14,40 +14,70 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.service.debug;
 
+import java.util.List;
+import java.util.Objects;
+
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
  * rtk_calibration services 请求 data。
  *
  * <p>对应 DJI Cloud API {@code rtk_calibration} 服务（services 通道，云→设备）的 data。
- * 用于一键 RTK 标定，Dock3 独有，Job 类指令（有进度事件 + need_reply=1）。
+ * 用于一键 RTK 标定，Job 类指令（异步进度经 events 通道同名 method 上报，见
+ * {@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.RtkCalibrationData}）。
  *
  * <p>对应枚举：{@link ltd.cdmi.dji.cloudapi.sdk.protocol.method.ServiceMethod#RTK_CALIBRATION}
  *
- * <p>字段依据：DJI Dock3 cmd 文档 events 部分（L462-L522）已确认输出结构
- * （ext.devices 数组 + progress.current_step），但 services 请求字段部分被截断。
- * 字段名 {@code cali_type} 来自 coverage-review.html §1.3 描述。
+ * <p>结构依据：DJI O4 地面站 cmd 文档 services 段 Data 表——
+ * {@code devices[]{ sn, type(enum_int 1=手动标定), module(enum_string 3=机场, 6=中继),
+ * data{ longitude, latitude, height(椭球高) } }}。
  *
- * <p>标 @Inferred：services 请求字段名/类型待 DJI 文档确认，simulator 未解析请求参数
- * （{@code RemoteDebugSimulator.handle} 注释"当前未使用，预留参数解析"）。
- *
- * <p>events 进度结构（@Verified，simulator 已验证）：
- * <ul>
- *   <li>output.ext.devices[] — 标定设备结果（sn/type/module/result/status）</li>
- *   <li>output.progress.current_step — 固定值 1</li>
- *   <li>need_reply=1（DJI 文档明确）</li>
- * </ul>
- *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/cmd.html">
- * DJI Dock3 远程调试（cmd）</a>
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/cmd.html">
+ * DJI O4 地面站 远程调试（cmd）</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/cmd.html")
-@Inferred(
-    reason = "DJI Dock3 cmd 文档 services 请求字段被截断，字段名来自 coverage-review.html §1.3 描述；simulator 未解析请求参数",
-    verifyPoint = "真机验证 cali_type 字段名、类型和枚举值"
-)
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/ground-station/o4/cmd.html")
+@Verified(basis = "DJI O4 地面站 cmd.html rtk_calibration services 请求 Data 表（devices[]{sn,type,module,data}）")
 public record RtkCalibrationRequest(
-    /** 标定类型（enum_int，1=手动标定，待真机验证） */
-    int caliType
-) {}
+    /** 待标定设备列表 */
+    List<Device> devices
+) {
+    public RtkCalibrationRequest {
+        Objects.requireNonNull(devices, "devices 必填，DJI JSON data 不能为空");
+    }
+
+    /**
+     * 单个待标定设备。
+     *
+     * @param sn     设备序列号
+     * @param type   标定类型（enum_int：1=手动标定）
+     * @param module 设备模块（enum_string：3=机场, 6=中继）
+     * @param data   标定数据（经纬高）
+     */
+    public record Device(
+        String sn,
+        Integer type,
+        String module,
+        CalibrationData data
+    ) {}
+
+    /**
+     * rtk_calibration 请求 data.devices[].data 标定坐标。
+     *
+     * <p>文档仅给出字段名（{@code longitude}/{@code latitude}/{@code height}），
+     * 未逐项标注类型 → 标 @Inferred。
+     */
+    @Inferred(
+        reason = "DJI O4 cmd 文档 data{ longitude, latitude, height } 未逐项标注字段类型，按经纬度/椭球高惯例承载 Double",
+        verifyPoint = "真机核对 longitude/latitude/height 的实际类型（float/double）"
+    )
+    public record CalibrationData(
+        /** 经度 */
+        Double longitude,
+        /** 纬度 */
+        Double latitude,
+        /** 椭球高（米） */
+        Double height
+    ) {}
+}

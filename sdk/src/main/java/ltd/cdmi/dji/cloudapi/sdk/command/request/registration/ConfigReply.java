@@ -14,38 +14,34 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.request.registration;
 
-import java.util.Objects;
-
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
  * config 指令回复 data。
  *
  * <p>对应 DJI Cloud API {@code config} 指令（requests 通道）的回复 data。
- * {@code result=0} 成功；{@code app_id}/{@code app_license} 用于 License 校验。
+ * 文档回复 data 字段集：{@code ntp_server_host}/{@code app_id}/{@code app_key}/{@code app_license}/{@code ntp_server_port}，
+ * <b>无 {@code result}</b>。
  *
- * <p>注意：config 回复的 data 直接含 {@code app_id}/{@code app_license}（非 output 包裹），
+ * <p>注意：config 回复的 data 直接含扁平字段（非 output 包裹），
  * 与 services_reply 的 {@code {result, output}} 结构不同。
  *
- * <p>字段依据：simulator {@code DockOnlineService} L175/L183 读取 data.app_id/data.app_license
- * 已对接 hivemind 验证。
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/config.html">
+ * DJI Dock1 配置更新（config）</a>
+ *
+ * @param appId          应用 ID
+ * @param appKey         应用 Key
+ * @param appLicense     应用 License
+ * @param ntpServerHost  NTP 服务器地址
+ * @param ntpServerPort  NTP 服务器端口（缺省 123）
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator DockOnlineService L175/L183 读取 data.app_id/data.app_license 已对接 hivemind 验证")
-@Inferred(
-    reason = "config 回复的 data 直接含 app_id/app_license（非 output 包裹），与 services_reply 的 {result, output} 结构不同",
-    verifyPoint = "真机验证 config requests_reply 的完整字段集"
-)
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/config.html")
+@Verified(basis = "DJI Dock1 配置更新（config）页 & O4 config 页 requests_reply data：{ntp_server_host,app_id,app_key,app_license,ntp_server_port}，无 result")
 public record ConfigReply(
-    Integer result,
     String appId,
+    String appKey,
     String appLicense,
-    String url,
-    String token
-) {
-    public ConfigReply {
-        Objects.requireNonNull(result, "result 必填，DJI JSON 缺失 result 字段");
-    }
-}
+    String ntpServerHost,
+    Integer ntpServerPort
+) {}

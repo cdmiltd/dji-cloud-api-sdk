@@ -23,8 +23,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * DJI 设备型号跨枚举统一查询工具。
  *
  * <p>DJI Cloud API 通过 (domain, type, sub_type) 三元组唯一标识设备型号，SDK 将型号
- * 按 domain 拆分到 {@link DroneModel}（飞行器）、{@link RcModel}（遥控器）、{@link DockModel}（机场）
- * 三个独立枚举，各自提供 {@code fromType(int, int)} 反查。本工具类封装跨枚举的统一查询入口，
+ * 按 domain 拆分到 {@link DroneModel}（飞行器）、{@link RcModel}（遥控器）、{@link DockModel}（机场）、
+ * {@link GroundStationModel}（地面站）四个独立枚举，各自提供 {@code fromType(int, int)} 反查。本工具类封装跨枚举的统一查询入口，
  * 调用方无需自行 switch domain 分发。
  *
  * <p>与 {@link DeviceCompatibility} 职责区分：
@@ -50,13 +50,14 @@ public final class DeviceModels {
      *   <li>{@code domain=0}（飞行器）→ {@link DroneModel#fromType(int, int)}</li>
      *   <li>{@code domain=2}（遥控器）→ {@link RcModel#fromType(int, int)}</li>
      *   <li>{@code domain=3}（机场）→ {@link DockModel#fromType(int, int)}</li>
+     *   <li>{@code domain=8}（地面站）→ {@link GroundStationModel#fromType(int, int)}</li>
      * </ul>
      *
      * <p>与单枚举 {@code fromType} 抛 {@link IllegalArgumentException} 不同，本方法对未知 domain
      * 或未知 (type, subType) 组合返回 {@link Optional#empty()}，便于调用方在协议数据不全或
      * 设备型号未收录时优雅降级，而非中断处理流程。
      *
-     * @param domain 设备大类（0=飞行器, 2=遥控器, 3=机场）
+     * @param domain 设备大类（0=飞行器, 2=遥控器, 3=机场, 8=地面站）
      * @param type    设备类型
      * @param subType 设备子类型
      * @return 匹配的 {@link DeviceModel}；未知 domain 或型号返回 {@link Optional#empty()}
@@ -70,9 +71,10 @@ public final class DeviceModels {
         }
         try {
             return switch (deviceDomain) {
-                case AIRCRAFT   -> Optional.of(DroneModel.fromType(type, subType).toModel());
-                case CONTROLLER -> Optional.of(RcModel.fromType(type, subType).toModel());
-                case DOCK       -> Optional.of(DockModel.fromType(type, subType).toModel());
+                case AIRCRAFT       -> Optional.of(DroneModel.fromType(type, subType).toModel());
+                case CONTROLLER     -> Optional.of(RcModel.fromType(type, subType).toModel());
+                case DOCK           -> Optional.of(DockModel.fromType(type, subType).toModel());
+                case GROUND_STATION -> Optional.of(GroundStationModel.fromType(type, subType).toModel());
             };
         } catch (IllegalArgumentException e) {
             return Optional.empty();
@@ -102,6 +104,9 @@ public final class DeviceModels {
             if (trimmed.equals(m.shortName())) return Optional.of(m.toModel());
         }
         for (DockModel m : DockModel.values()) {
+            if (trimmed.equals(m.shortName())) return Optional.of(m.toModel());
+        }
+        for (GroundStationModel m : GroundStationModel.values()) {
             if (trimmed.equals(m.shortName())) return Optional.of(m.toModel());
         }
         return Optional.empty();

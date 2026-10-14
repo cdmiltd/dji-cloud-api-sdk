@@ -26,7 +26,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * airsense_warning 事件 data。
  *
  * <p>对应 DJI Cloud API {@code airsense_warning} 事件（events 通道）的 data。
- * 用于 AirSense 告警上报，{@code need_reply=0} 单向通知。
+ * 用于 AirSense 告警上报，{@code need_reply=1}（需平台回复）。
  *
  * <p><b>特殊结构</b>：本事件 data 直接是 JSON 数组（非对象包裹），即 {@code data: [...] }，
  * 与其他事件 {@code data: {...}} 的对象结构不同。
@@ -52,8 +52,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *       heading/relative_altitude/vert_trend/distance）</li>
  * </ul>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/wayline.html")
-@Verified(basis = "simulator AirSenseSimulator.publishAirSenseEvent L81-L96 已对接 hivemind 验证；DJI 文档把 airsense_warning 事件归在 dock1/wayline.html 类目下，URL 指向正确")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/airsense.html")
+@Verified(basis = "DJI Dock1/Dock3 airsense.html 官方文档 airsense_warning Data 表（icao/warning_level/latitude/longitude/altitude/altitude_type/heading/relative_altitude/vert_trend/distance）；原 @DocUrl 误指 dock1/wayline.html（该页不含 airsense_warning）已更正")
 @JsonDeserialize(using = AirSenseWarningDataDeserializer.class)
 public record AirSenseWarningData(
     List<Alert> alerts
@@ -68,11 +68,11 @@ public record AirSenseWarningData(
         Integer warningLevel,
         Double latitude,
         Double longitude,
-        Double altitude,
+        Integer altitude,
         Integer altitudeType,
         Double heading,
-        Double relativeAltitude,
+        Integer relativeAltitude,
         Integer vertTrend,
-        Double distance
+        Integer distance
     ) {}
 }

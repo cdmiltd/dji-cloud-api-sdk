@@ -115,17 +115,17 @@ public enum OsdField {
     /** 子设备信息（struct：device_sn/device_model_key/device_online_status/device_paired） */
     SUB_DEVICE("sub_device", "子设备"),
 
-    /** 舱盖状态（0=关闭，1=打开） */
+    /** 舱盖状态（0=关闭，1=打开，2=半开，3=舱盖状态异常） */
     COVER_STATE("cover_state", "舱盖状态"),
 
     /** 飞行器在舱（0=不在舱，1=在舱） */
     DRONE_IN_DOCK("drone_in_dock", "飞行器在舱"),
 
-    /** Home 点有效性（0=无效，1=有效，Dock2/Dock3 only） */
+    /** Home 点有效性（按设备值域不同：Dock2 2 值 0=无效/1=有效；Dock3 4 值 0=都无效/1=都有效/2=航向有效/3=经纬度有效；O4 2 值 0=无效/1=有效） */
     HOME_POSITION_IS_VALID("home_position_is_valid", "Home点有效性"),
 
-    /** 机场朝向角（0-359，Dock2/Dock3 only） */
-    HEADING("heading", "机场朝向角"),
+    /** 朝向角（-180~180°，Dock2/Dock3 机场朝向，O4 地面站见 state 通道 heading） */
+    HEADING("heading", "朝向角"),
 
     /** 飞行器充电状态（struct：capacity_percent/state） */
     DRONE_CHARGE_STATE("drone_charge_state", "飞行器充电状态"),
@@ -136,11 +136,11 @@ public enum OsdField {
     /** 湿度（%） */
     HUMIDITY("humidity", "湿度"),
 
-    /** 风速（0.1 m/s，上报值需除以 10 得到实际 m/s） */
+    /** 风速（文档口径为 float，单位 m/s） */
     WIND_SPEED("wind_speed", "风速"),
 
-    /** 降雨量（mm） */
-    RAINFALL("rainfall", "降雨量"),
+    /** 降雨量（降雨等级，enum_int：0=无雨, 1=小雨, 2=中雨, 3=大雨） */
+    RAINFALL("rainfall", "降雨量（降雨等级）"),
 
     /** 环境温度（°C） */
     ENVIRONMENT_TEMPERATURE("environment_temperature", "环境温度"),
@@ -178,6 +178,35 @@ public enum OsdField {
     /** 自收敛坐标（struct，pushMode=0 周期推送） */
     SELF_CONVERGE_COORDINATE("self_converge_coordinate", "自收敛坐标"),
 
+    // ==================== O4 地面站 OSD 字段（GroundStationOsd，pushMode=0） ====================
+
+    /** 低电量开关状态（O4 地面站，0=关闭，1=开启） */
+    LOW_POWER_SWITCH_STATE("low_power_switch_state", "低电量开关状态"),
+
+    /** 市电功率（O4 地面站，W） */
+    ELECTRIC_SUPPLY_POWER("electric_supply_power", "市电功率"),
+
+    /** 供电模式（O4 地面站，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.SupplyPowerMode}） */
+    POWER_MODE("power_mode", "供电模式"),
+
+    /** 电池电压（O4 地面站，mV） */
+    BATTERY_VOLTAGE("battery_voltage", "电池电压"),
+
+    /** 倾斜角（O4 地面站，°） */
+    TILT_ANGLE("tilt_angle", "倾斜角"),
+
+    /** 基站工作模式（O4 地面站，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.BasestationWorkMode}） */
+    BASESTATION_WORK_MODE("basestation_work_mode", "基站工作模式"),
+
+    /** 工作模式（O4 地面站，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.UnderWorkMode}） */
+    UNDER_WORK_MODE("under_work_mode", "工作模式"),
+
+    /** 局域网状态（O4 地面站，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.LanStatus}） */
+    LAN_STATUS("lan_status", "局域网状态"),
+
+    /** POE 状态（O4 地面站，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.PoeStatus}） */
+    POE_STATUS("poe_status", "POE状态"),
+
     // ==================== 飞行器 OSD 字段（DroneOsd） ====================
 
     /** 俯仰角（°） */
@@ -212,6 +241,9 @@ public enum OsdField {
 
     /** 飞行器相机信息（array of struct，飞行器 OSD） */
     CAMERAS("cameras", "相机信息"),
+
+    /** 快传（FTS）信息（struct：fts_status/fts_verification_code 等，M4D/M4TD 飞行器 OSD） */
+    FTS_INFO("fts_info", "快传信息"),
 
     /** 电池信息（struct：capacity_percent/remain_flight_time/return_home_power/landing_power/batteries） */
     BATTERY("battery", "电池"),

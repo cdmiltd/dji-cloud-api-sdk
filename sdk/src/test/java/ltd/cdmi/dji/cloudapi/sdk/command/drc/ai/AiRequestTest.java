@@ -107,17 +107,17 @@ class AiRequestTest {
     }
 
     @Test
-    @DisplayName("AiSpotlightZoomSelectRequest: 归一化坐标 ×10000 反序列化 + 往返闭环")
+    @DisplayName("AiSpotlightZoomSelectRequest: 整数坐标（1/10000）反序列化 + 往返闭环")
     void testAiSpotlightZoomSelectRequest() {
-        String json = "{\"center_x\":0.0,\"center_y\":0.0,\"width\":10000.0,\"height\":10000.0}";
+        String json = "{\"center_x\":0,\"center_y\":0,\"width\":10000,\"height\":10000}";
         AiSpotlightZoomSelectRequest req = MessageCodec.fromJson(json, AiSpotlightZoomSelectRequest.class);
-        assertEquals(0.0, req.centerX());
-        assertEquals(10000.0, req.width());
+        assertEquals(0, req.centerX());
+        assertEquals(10000, req.width());
         String out = MessageCodec.toJson(req);
-        assertTrue(out.contains("\"center_x\":0.0"), "JSON 应含 center_x:0.0，实际: " + out);
-        assertTrue(out.contains("\"width\":10000.0"), "JSON 应含 width:10000.0，实际: " + out);
+        assertTrue(out.contains("\"center_x\":0"), "JSON 应含 center_x:0，实际: " + out);
+        assertTrue(out.contains("\"width\":10000"), "JSON 应含 width:10000，实际: " + out);
         assertEquals(req, MessageCodec.fromJson(out, AiSpotlightZoomSelectRequest.class));
         assertThrows(IllegalStateException.class,
-                () -> MessageCodec.fromJson("{\"center_x\":0.0}", AiSpotlightZoomSelectRequest.class));
+                () -> MessageCodec.fromJson("{\"center_x\":0}", AiSpotlightZoomSelectRequest.class));
     }
 }

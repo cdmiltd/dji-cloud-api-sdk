@@ -32,8 +32,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *
  * <p>同包共享 record：{@link SpeakerOutput}（output 字段）。
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator PsdkSimulator.triggerAudioPlayProgress L359-L378 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/psdk.html")
+@Verified(basis = "DJI Dock3 PSDK 功能页（psdk.html）官方文档 speaker_audio_play_start_progress 事件")
 public record SpeakerAudioPlayStartProgressData(
     Integer result,
     SpeakerOutput output

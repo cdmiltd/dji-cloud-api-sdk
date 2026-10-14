@@ -86,22 +86,22 @@ class BatteryStoreModeTest {
     // ==================== Jackson 双向绑定（@JsonValue + @JsonCreator）====================
 
     @Test
-    @DisplayName("Jackson 序列化：BatteryStoreModeSwitchRequest(PLANNING) → JSON 含 \"mode\":1")
+    @DisplayName("Jackson 序列化：BatteryStoreModeSwitchRequest(PLANNING) → JSON 含 \"action\":1")
     void testJacksonSerializeEnumAsIntCode() {
         BatteryStoreModeSwitchRequest req = new BatteryStoreModeSwitchRequest(BatteryStoreMode.PLANNING);
         String json = MessageCodec.toJson(req);
         // @JsonValue 使 PLANNING 序列化为 1（int 而非枚举名 "PLANNING"）
-        assertTrue(json.contains("\"mode\":1"), "JSON 应包含 \"mode\":1，实际: " + json);
+        assertTrue(json.contains("\"action\":1"), "JSON 应包含 \"action\":1，实际: " + json);
     }
 
     @Test
-    @DisplayName("Jackson 反序列化：JSON {\"mode\":2} → BatteryStoreModeSwitchRequest.mode()=STANDBY")
+    @DisplayName("Jackson 反序列化：JSON {\"action\":2} → BatteryStoreModeSwitchRequest.action()=STANDBY")
     void testJacksonDeserializeIntCodeToEnum() {
         BatteryStoreModeSwitchRequest req =
-                MessageCodec.fromJson("{\"mode\":2}", BatteryStoreModeSwitchRequest.class);
+                MessageCodec.fromJson("{\"action\":2}", BatteryStoreModeSwitchRequest.class);
         // @JsonCreator 使 int 2 反序列化为 STANDBY（而非用枚举名匹配）
-        assertEquals(BatteryStoreMode.STANDBY, req.mode());
-        assertEquals(2, req.mode().code());
+        assertEquals(BatteryStoreMode.STANDBY, req.action());
+        assertEquals(2, req.action().code());
     }
 
     @Test
@@ -112,8 +112,8 @@ class BatteryStoreModeTest {
             String json = MessageCodec.toJson(out);
             BatteryStoreModeSwitchRequest back =
                     MessageCodec.fromJson(json, BatteryStoreModeSwitchRequest.class);
-            assertEquals(original, back.mode(),
-                    "Round-trip 失败: " + original + " → JSON " + json + " → " + back.mode());
+            assertEquals(original, back.action(),
+                    "Round-trip 失败: " + original + " → JSON " + json + " → " + back.action());
         }
     }
 
@@ -123,9 +123,9 @@ class BatteryStoreModeTest {
         // DJI 文档明确无 0 值，Jackson 反序列化 0 应通过 @JsonCreator 调用 fromCode(0) 抛 IllegalArgumentException
         // MessageCodec.fromJson 将 Jackson 异常包装为 IllegalStateException
         assertThrows(IllegalStateException.class,
-                () -> MessageCodec.fromJson("{\"mode\":0}", BatteryStoreModeSwitchRequest.class));
+                () -> MessageCodec.fromJson("{\"action\":0}", BatteryStoreModeSwitchRequest.class));
         assertThrows(IllegalStateException.class,
-                () -> MessageCodec.fromJson("{\"mode\":3}", BatteryStoreModeSwitchRequest.class));
+                () -> MessageCodec.fromJson("{\"action\":3}", BatteryStoreModeSwitchRequest.class));
     }
 }
 

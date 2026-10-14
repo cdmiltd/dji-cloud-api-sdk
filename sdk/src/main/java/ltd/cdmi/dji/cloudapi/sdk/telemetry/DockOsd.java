@@ -22,6 +22,7 @@ import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.AlternateLandPoint;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.BackupBattery;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DockMaintainStatus;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DockPositionState;
+import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DroneAuthorityInfo;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DroneBatteryMaintenanceInfo;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DroneChargeState;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.MediaFileDetail;
@@ -80,7 +81,11 @@ public record DockOsd(
         /** 工作电压（mV） */
         Integer workingVoltage,
 
-        /** 市电电压（V） */
+        /**
+         * 市电电压（V）。
+         * <p>跨页口径冲突：Dock1 设备属性页 Type={@code int}，O4 地面站属性页 Type={@code double}；
+         * 取 {@code Double} 以无损承载两页口径（整数与小数均可）。
+         */
         Double electricSupplyVoltage,
 
         /** 备用电池信息 */
@@ -113,17 +118,17 @@ public record DockOsd(
         /** 子设备信息 */
         SubDevice subDevice,
 
-        /** 舱盖状态（0=关闭，1=打开） */
+        /** 舱盖状态（0=关闭，1=打开，2=半开，3=舱盖状态异常） */
         Integer coverState,
 
         /** 飞行器在舱（0=不在舱，1=在舱） */
         Integer droneInDock,
 
-        /** Home 点有效性（0=无效，1=有效，Dock2/Dock3 only） */
+        /** Home 点有效性（Dock2 2 值 0=无效/1=有效；Dock3 4 值 见 Dock3HomePositionIsValid） */
         Integer homePositionIsValid,
 
-        /** 机场朝向角（0-359，Dock2/Dock3 only） */
-        Integer heading,
+        /** 机场朝向角（-180~180°） */
+        Double heading,
 
         /** 飞行器充电状态 */
         DroneChargeState droneChargeState,
@@ -137,8 +142,8 @@ public record DockOsd(
         /** 风速（m/s） */
         Double windSpeed,
 
-        /** 降雨量（mm） */
-        Double rainfall,
+        /** 降雨量（降雨等级，enum_int：0=无雨, 1=小雨, 2=中雨, 3=大雨） */
+        Integer rainfall,
 
         /** 环境温度（°C） */
         Double environmentTemperature,
@@ -155,7 +160,7 @@ public record DockOsd(
         /** 声光报警状态（0=关闭，1=开启） */
         Integer alarmState,
 
-        /** 推杆状态（0=收回，1=展开） */
+        /** 推杆状态（0=关闭，1=打开，2=半开，3=推杆状态异常） */
         Integer putterState,
 
         /** 电池存储模式 */
@@ -179,7 +184,10 @@ public record DockOsd(
                 reason = "DJI Dock3 文档列为 struct 但未定义子字段结构，基于 DJI 文档字段存在性推断",
                 verifyPoint = "待 DJI 文档补充或真机验证字段名、类型、是否必填、业务含义"
         )
-        Object selfConvergeCoordinate
+        Object selfConvergeCoordinate,
+
+        /** 飞行器控制权状态（Dock1 OSD 专属，{@link DroneAuthorityInfo}） */
+        DroneAuthorityInfo droneAuthorityInfo
 ) {
     /**
      * 转换为 Builder（用于字段级合并场景）。
@@ -229,12 +237,12 @@ public record DockOsd(
         private Integer coverState;
         private Integer droneInDock;
         private Integer homePositionIsValid;
-        private Integer heading;
+        private Double heading;
         private DroneChargeState droneChargeState;
         private Double temperature;
         private Double humidity;
         private Double windSpeed;
-        private Double rainfall;
+        private Integer rainfall;
         private Double environmentTemperature;
         private Integer supplementLightState;
         private AirConditioner airConditioner;
@@ -246,6 +254,7 @@ public record DockOsd(
         private Long firstPowerOn;
         private DockPositionState positionState;
         private Object selfConvergeCoordinate;
+        private DroneAuthorityInfo droneAuthorityInfo;
 
         public Builder() {}
 
@@ -289,6 +298,7 @@ public record DockOsd(
             this.firstPowerOn = o.firstPowerOn;
             this.positionState = o.positionState;
             this.selfConvergeCoordinate = o.selfConvergeCoordinate;
+            this.droneAuthorityInfo = o.droneAuthorityInfo;
         }
 
         public Builder modeCode(Integer v) { this.modeCode = v; return this; }
@@ -313,12 +323,12 @@ public record DockOsd(
         public Builder coverState(Integer v) { this.coverState = v; return this; }
         public Builder droneInDock(Integer v) { this.droneInDock = v; return this; }
         public Builder homePositionIsValid(Integer v) { this.homePositionIsValid = v; return this; }
-        public Builder heading(Integer v) { this.heading = v; return this; }
+        public Builder heading(Double v) { this.heading = v; return this; }
         public Builder droneChargeState(DroneChargeState v) { this.droneChargeState = v; return this; }
         public Builder temperature(Double v) { this.temperature = v; return this; }
         public Builder humidity(Double v) { this.humidity = v; return this; }
         public Builder windSpeed(Double v) { this.windSpeed = v; return this; }
-        public Builder rainfall(Double v) { this.rainfall = v; return this; }
+        public Builder rainfall(Integer v) { this.rainfall = v; return this; }
         public Builder environmentTemperature(Double v) { this.environmentTemperature = v; return this; }
         public Builder supplementLightState(Integer v) { this.supplementLightState = v; return this; }
         public Builder airConditioner(AirConditioner v) { this.airConditioner = v; return this; }
@@ -330,6 +340,7 @@ public record DockOsd(
         public Builder firstPowerOn(Long v) { this.firstPowerOn = v; return this; }
         public Builder positionState(DockPositionState v) { this.positionState = v; return this; }
         public Builder selfConvergeCoordinate(Object v) { this.selfConvergeCoordinate = v; return this; }
+        public Builder droneAuthorityInfo(DroneAuthorityInfo v) { this.droneAuthorityInfo = v; return this; }
 
         /**
          * 合并 source 中非 null 字段到当前 Builder（覆盖语义）。
@@ -379,6 +390,7 @@ public record DockOsd(
             if (source.firstPowerOn != null) this.firstPowerOn = source.firstPowerOn;
             if (source.positionState != null) this.positionState = source.positionState;
             if (source.selfConvergeCoordinate != null) this.selfConvergeCoordinate = source.selfConvergeCoordinate;
+            if (source.droneAuthorityInfo != null) this.droneAuthorityInfo = source.droneAuthorityInfo;
             return this;
         }
 
@@ -392,7 +404,8 @@ public record DockOsd(
                     droneChargeState, temperature, humidity, windSpeed, rainfall,
                     environmentTemperature, supplementLightState, airConditioner,
                     emergencyStopState, alarmState, putterState, batteryStoreMode,
-                    alternateLandPoint, firstPowerOn, positionState, selfConvergeCoordinate);
+                    alternateLandPoint, firstPowerOn, positionState, selfConvergeCoordinate,
+                    droneAuthorityInfo);
         }
     }
 }

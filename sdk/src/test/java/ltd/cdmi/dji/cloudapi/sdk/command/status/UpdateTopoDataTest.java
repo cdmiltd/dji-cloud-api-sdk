@@ -72,7 +72,7 @@ class UpdateTopoDataTest {
     void testSerialize() {
         SubDevice sub = new SubDevice("DRONE_SN", "0", 89, 0, "A", "DSECRET", "DNONCE", "4.5.0");
         UpdateTopoData data = new UpdateTopoData("3", 1, 0, "SECRET", "NONCE001",
-                List.of(sub), "6.0.0");
+                List.of(sub), "6.0.0", null);
         String json = MessageCodec.toJson(data);
         assertTrue(json.contains("\"domain\":\"3\""), "JSON 应含 domain，实际: " + json);
         assertTrue(json.contains("\"device_secret\":\"SECRET\""), "JSON 应含 device_secret，实际: " + json);
@@ -86,7 +86,7 @@ class UpdateTopoDataTest {
     void testRoundTrip() {
         SubDevice sub = new SubDevice("DRONE_SN", "0", 89, 0, "A", "DSECRET", "DNONCE", "4.5.0");
         UpdateTopoData original = new UpdateTopoData("3", 1, 0, "SECRET", "NONCE001",
-                List.of(sub), "6.0.0");
+                List.of(sub), "6.0.0", null);
         String json = MessageCodec.toJson(original);
         UpdateTopoData back = MessageCodec.fromJson(json, UpdateTopoData.class);
         assertEquals("3", back.domain());
@@ -141,6 +141,23 @@ class UpdateTopoDataTest {
                         "{\"domain\":\"3\",\"type\":1,\"sub_type\":0,\"device_secret\":\"S\","
                         + "\"nonce\":\"N\"}",
                         UpdateTopoData.class));
+    }
+
+    @Test
+    @DisplayName("O4 地面站 base_info：country_code 反序列化")
+    void testDeserializeBaseInfo() {
+        String json = "{\"domain\":\"3\",\"type\":1,\"sub_type\":0,\"device_secret\":\"S\","
+                + "\"nonce\":\"N\",\"sub_devices\":[],\"thing_version\":\"6.0.0\","
+                + "\"base_info\":{\"country_code\":\"ENCRYPTED\"}}";
+        UpdateTopoData data = MessageCodec.fromJson(json, UpdateTopoData.class);
+        assertEquals("ENCRYPTED", data.baseInfo().countryCode());
+    }
+
+    @Test
+    @DisplayName("旧设备缺席 base_info 时为 null")
+    void testBaseInfoAbsent() {
+        UpdateTopoData data = MessageCodec.fromJson(SAMPLE_JSON, UpdateTopoData.class);
+        assertNull(data.baseInfo());
     }
 
     @Test

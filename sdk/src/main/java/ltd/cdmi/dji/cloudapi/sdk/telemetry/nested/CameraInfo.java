@@ -1,5 +1,8 @@
 package ltd.cdmi.dji.cloudapi.sdk.telemetry.nested;
 
+import java.util.List;
+
+import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
@@ -20,9 +23,15 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@code liveview_world_region} — 视场角在 liveview 中的区域</li>
  * </ul>
  *
+ * <p>v1.18.0.0 起按 M4D/M4TD 设备属性页补全 cameras[] 元素字段：
+ * {@code photo_storage_settings}/{@code video_storage_settings}（存储设置集合）、
+ * {@code wide_*}（广角镜头 4 项）、{@code zoom_*}（变焦镜头 8 项）、
+ * {@code ir_metering_mode}/{@code ir_metering_point}/{@code ir_metering_area}（红外测温 3 项）。
+ *
  * @see ltd.cdmi.dji.cloudapi.sdk.telemetry.DroneOsd#cameras()
  */
-@Verified(basis = "DJI Cloud API 官方文档飞行器设备属性 cameras 字段")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/aircraft/m4d-properties.html")
+@Verified(basis = "DJI Cloud API 官方文档 M4D/M4TD 设备属性 cameras[] 元素字段（31 字段，含 20 项扩增）")
 public record CameraInfo(
         /** 剩余拍照张数 */
         Integer remainPhotoNum,
@@ -55,7 +64,67 @@ public record CameraInfo(
         Double irZoomFactor,
 
         /** 视场角在 liveview 中的区域 */
-        LiveviewWorldRegion liveviewWorldRegion
+        LiveviewWorldRegion liveviewWorldRegion,
+
+        /** 照片存储设置集合，取值范围 {current, vision, ir} */
+        List<String> photoStorageSettings,
+
+        /** 视频存储设置集合，取值范围 {current, vision, ir} */
+        List<String> videoStorageSettings,
+
+        /** 广角镜头曝光模式（1=自动, 2=快门优先曝光, 3=光圈优先曝光, 4=手动曝光） */
+        Integer wideExposureMode,
+
+        /** 广角镜头感光度（enum_int，0=Auto ... 255=FIXED） */
+        Integer wideIso,
+
+        /** 广角镜头快门速度（enum_int，0=1/8000s ... 65534=Auto） */
+        Integer wideShutterSpeed,
+
+        /** 广角镜头曝光值（enum_int，1=-5.0EV ... 255=FIXED） */
+        Integer wideExposureValue,
+
+        /** 变焦镜头曝光模式（1=自动, 2=快门优先曝光, 3=光圈优先曝光, 4=手动曝光） */
+        Integer zoomExposureMode,
+
+        /** 变焦镜头感光度（enum_int，0=Auto ... 255=FIXED） */
+        Integer zoomIso,
+
+        /** 变焦镜头快门速度（enum_int，0=1/8000s ... 65534=Auto） */
+        Integer zoomShutterSpeed,
+
+        /** 变焦镜头曝光值（enum_int，1=-5.0EV ... 255=FIXED） */
+        Integer zoomExposureValue,
+
+        /** 变焦镜头对焦模式（0=MF, 1=AFS, 2=AFC） */
+        Integer zoomFocusMode,
+
+        /** 变焦镜头对焦值 */
+        Integer zoomFocusValue,
+
+        /** 变焦镜头最大对焦值 */
+        Integer zoomMaxFocusValue,
+
+        /** 变焦镜头最小对焦值 */
+        Integer zoomMinFocusValue,
+
+        /** 变焦镜头标定的最远对焦值 */
+        Integer zoomCalibrateFarthestFocusValue,
+
+        /** 变焦镜头标定的最近对焦值 */
+        Integer zoomCalibrateNearestFocusValue,
+
+        /** 变焦镜头对焦状态（0=空闲, 1=对焦中, 2=对焦成功, 3=对焦失败） */
+        Integer zoomFocusState,
+
+        /** 红外测温模式（0=关闭测温, 1=点测温, 2=区域测温） */
+        Integer irMeteringMode,
+
+        /** 红外测温点 */
+        IrMeteringPoint irMeteringPoint,
+
+        /** 红外测温区域 */
+        IrMeteringArea irMeteringArea
 ) {
     /**
      * 视场角（FOV）在 liveview 中的区域。

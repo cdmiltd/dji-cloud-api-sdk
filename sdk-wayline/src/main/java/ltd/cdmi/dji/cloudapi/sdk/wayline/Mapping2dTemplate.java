@@ -761,7 +761,9 @@ public final class Mapping2dTemplate {
             polygon,
             mappingHeadingParam,
             codeOf(gimbalPitchMode),
-            gimbalPitchAngle
+            gimbalPitchAngle,
+            null,
+            null
         );
 
         MappingFolder<Mapping2dPlacemark> folder = new MappingFolder<>(
@@ -857,6 +859,7 @@ public final class Mapping2dTemplate {
             executeHeightMode.code(),
             0,
             autoFlightSpeed,
+            null,
             List.of()
         );
 

@@ -1310,7 +1310,7 @@
 > - ✅ `NetworkQualityTest`
 > - ✅ `PositionQualityTest`（不连续值 1-5/10）
 > - ✅ `SourceTypeTest`
-> - ✅ `HomePositionIsValidTest`
+> - ✅ `Dock2HomePositionIsValidTest`、`Dock3HomePositionIsValidTest`（v1.18 拆分自 `HomePositionIsValidTest`）
 > - ⬜ `GearTest`（v1 规划，待实现）
 > - ⬜ `DroneModeCodeTest`（v1 规划，待实现）
 > - ⬜ `DockModeCodeTest`（v1 规划，待实现）
@@ -1561,10 +1561,10 @@
 > **已实现**：[SourceTypeTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/telemetry/enumtype/SourceTypeTest.java)
 > 覆盖：4 值反查（0=未标定, 1=自收敛标定, 2=手动标定, 3=网络RTK标定）、-1/4 越界
 
-### 7.17 HomePositionIsValidTest (`@Tag("spec")`) — ✅ 已实现
+### 7.17 HomePositionIsValid 拆分测试 (`@Tag("spec")`) — ✅ 已实现
 
-> **已实现**：[HomePositionIsValidTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/telemetry/enumtype/HomePositionIsValidTest.java)
-> 覆盖：4 值反查（0=都无效, 1=都有效, 2=航向有效经纬度无效, 3=经纬度有效航向无效）、description 含航向/经纬度有效性组合语义
+> **已实现**：[Dock2HomePositionIsValidTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/telemetry/enumtype/Dock2HomePositionIsValidTest.java)、[Dock3HomePositionIsValidTest.java](../src/test/java/ltd/cdmi/dji/cloudapi/sdk/telemetry/enumtype/Dock3HomePositionIsValidTest.java)
+> 覆盖：v1.18 按机型拆分（原 `HomePositionIsValid` 已删除改名）——`Dock2HomePositionIsValid` 2 值 `{0 无效, 1 有效}`；`Dock3HomePositionIsValid` 4 值反查（0=都无效, 1=都有效, 2=航向有效经纬度无效, 3=经纬度有效航向无效）、description 含航向/经纬度有效性组合语义；另新增 `GroundStationHomePositionIsValid`（2 值），见 §24
 
 ### 7.18 AirConditionerStateTest (`@Tag("spec")`) — ⬜ 待实现
 
@@ -1595,9 +1595,9 @@
 
 ## 第一批汇总
 
-- **测试类数**：42（annotation 3 + codec 2 + protocol.topic 4 + protocol.method 5 + protocol.envelope 3 + protocol.error 3 + telemetry.enumtype 22）
-- **telemetry.enumtype 已实现**：12/22（CameraMode/DongleType/ThermalGainMode/BatteryStoreMode/ModeCodeReason + Rainfall/VideoQuality/NetworkType/NetworkQuality/PositionQuality/SourceType/HomePositionIsValid）
-- **telemetry.enumtype 待实现**：10/22（Gear/DroneModeCode/DockModeCode/PositionState/DroneChargeState + AirConditionerState/CoverState/DrcState/FlighttaskStepCode/RcLostAction）
+- **测试类数**：43（annotation 3 + codec 2 + protocol.topic 4 + protocol.method 5 + protocol.envelope 3 + protocol.error 3 + telemetry.enumtype 23）
+- **telemetry.enumtype 已实现**：13/23（CameraMode/DongleType/ThermalGainMode/BatteryStoreMode/ModeCodeReason + Rainfall/VideoQuality/NetworkType/NetworkQuality/PositionQuality/SourceType + Dock2HomePositionIsValid/Dock3HomePositionIsValid（v1.18 拆分））
+- **telemetry.enumtype 待实现**：10/23（Gear/DroneModeCode/DockModeCode/PositionState/DroneChargeState + AirConditionerState/CoverState/DrcState/FlighttaskStepCode/RcLostAction）
 - **`@Disabled` 标红项**：2（均为 MessageCodec #1 snake_case 不匹配：`shouldDeserializeSnakeCaseOsd_whenToCamelCaseRecord`、`shouldRoundTripOsd_whenSerializeThenDeserialize`）
 - **已修复项验证**：
   - #2：`PositionState`/`DroneChargeState` 的 `fromCode` 一致性（`shouldHaveFromCodeConsistentWithOthers`）
@@ -2873,3 +2873,661 @@
 
 - **覆盖源类**：285+ 个编译单元（v2 扩展后，16 顶层包）
 - **待实现优先级**：P3 为 v1 规划的 10 个待实现测试类（Gear/DroneModeCode/DockModeCode/PositionState/DroneChargeState + AirConditionerState/CoverState/DrcState/FlighttaskStepCode/RcLostAction），P4 为 §12-§19 新增包的测试类
+
+---
+
+# v1.18.0 协议升级测试用例（2026-10-14）
+
+> **来源**：`dji-doc-sdk-diff-report-20261014.md` §4 改动清单（L338–L431）+ §9 决策（L4119–L4230，全批 62 项按「建议默认」采纳，2026-10-14）。
+> **版本**：SDK `1.16.1.3` → `1.18.0.0`（跟随 DJI Cloud API 协议 `1.16.1` → `1.18.0`）。
+> **落点**：本轮新增/改动 Java 测试类位于 `sdk/src/test/java/ltd/cdmi/dji/cloudapi/sdk/`；各用例「对应测试类」列出文件简单名。
+> **TDD 先行声明**：本节用例描述基于 DJI 官方文档 / 变更报告的**协议规格**，非代码实现；断言口径以文档字段名、类型、值域为准。
+> **基准图例**：`doc` = DJI 官方文档页；`spec` = 协议规格断言；`char` = 特征化；`green` = 期望通过。
+
+---
+
+## 20. wire key 重命名（breaking）
+
+> 变更类型：JSON wire key 与 Java 字段名不一致，或字段名与文档不符 → 统一对齐文档 wire key（AGENTS §2 序列化约定）。
+
+### 20.1 ConfigReply 重建（`command/request/registration/ConfigReply`）
+
+#### shouldBindConfigReplyFields_whenDeserialize
+- 输入：`{"app_id":"app123","app_key":"key456","app_license":"license789","ntp_server_host":"ntp.example.com","ntp_server_port":123}` → `fromJson(ConfigReply.class)`
+- 预期：`appId/appKey/appLicense/ntpServerHost` 绑定字符串，`ntpServerPort`=123（文档 `int`，SDK 用 `Integer` 包装）
+- 断言：`assertThat(reply.appId()).isEqualTo("app123")` 等 5 项
+- 基准：spec | 报告 §4 L419（Dock1 配置更新页 / O4 `config` 页） | green
+
+#### shouldSerializeConfigReply_whenToJson
+- 输入：`new ConfigReply("app123","key456","license789","ntp.example.com",123)`
+- 预期：JSON 含 `app_id/app_key/app_license/ntp_server_host/ntp_server_port`，且**不含** `result`（文档回复 data 无 result）
+- 断言：`assertThat(json).contains("\"app_id\":\"app123\"")...` + `.doesNotContain("\"result\"")`
+- 基准：spec | 报告 §4 L419（原 `url`→`ntp_server_host`、`token`→`ntp_server_port`、补 `app_key`；移除 `result`） | green
+
+#### shouldAllowNullNtpFields_whenOmitted
+- 输入：`{"app_id":"app","app_key":"key","app_license":"lic"}`（省略 ntp 两字段）
+- 预期：`ntpServerHost()`=null、`ntpServerPort()`=null（包装类型 + `@JsonInclude(NON_NULL)`，无 `requireNonNull`）
+- 基准：spec §2「可选字段包装类型」 | green
+
+- 对应测试类：`ConfigReplyTest`
+
+### 20.2 AirportOrganizationBindReply.ErrorInfo wire key `err_sn` → `sn`（`command/request/registration`）
+
+#### shouldBindSn_whenErrorInfoDeserialize
+- 输入：`{"result":0,"output":{"err_infos":[{"err_code":514001,"sn":"SN001"}]}}`
+- 预期：`ErrorInfo.sn()`=`"SN001"`（SNAKE_CASE 下 `errSn` 会映射为 `err_sn`，与文档 wire key `sn` 不符 → 改名 `sn`）
+- 断言：`assertThat(errs.get(0).sn()).isEqualTo("SN001")`
+- 基准：spec | 报告 §4 L405（§5-92） | green
+
+#### shouldAllowNullOutput_whenOnlyResult
+- 输入：`{"result":0}`（无设备级错误）
+- 预期：`output()`=null
+- 基准：spec | 报告 §4 L405 | green
+
+- 对应测试类：`AirportOrganizationBindReplyTest`
+
+### 20.3 StorageConfigGetReply.Credentials wire key `expire_time` → `expire`（`command/request/config`）
+
+#### shouldBindExpire_whenCredentialsDeserialize
+- 输入：`{"result":0,"output":{"...","credentials":{"access_key_id":"AKID","access_key_secret":"SK","security_token":"STOKEN","expire":1700000000}}}`
+- 预期：`Credentials.expire()`=1700000000L（wire key `expire`；`expireTime` 会映射为 `expire_time`，不符 → 改名）
+- 断言：`assertThat(cred.expire()).isEqualTo(1700000000L)`
+- 基准：spec | 报告 §4 L410（§5-97；`long`/`Long` 保持 long，§5-52） | green
+
+#### shouldSerializeExpireKey_whenToJson
+- 断言：`assertThat(json).contains("\"expire\":1700000000")`
+- 基准：spec | 报告 §4 L410 | green
+
+- 对应测试类：`StorageConfigGetReplyTest`
+
+### 20.4 RcOsd wire key `battery` → `capacity_percent`（`telemetry/RcOsd`）
+
+#### shouldBindCapacityPercent_whenDeserialize
+- 输入：`{"capacity_percent":88}` → `fromJson(RcOsd.class)`
+- 预期：`capacityPercent()`=88
+- 基准：spec | 报告 §4/§9.2 §5-122-①（通用页 `others/rc/properties.html`） | green
+
+#### shouldBindLegacyBatteryAlias_whenDeserialize
+- 输入：`{"battery":75}`（旧 wire key）→ `fromJson(RcOsd.class)`
+- 预期：`capacityPercent()`=75（`@JsonAlias("battery")` 兼容旧固件/旧报文）
+- 断言：`assertThat(osd.capacityPercent()).isEqualTo(75)`
+- 基准：spec | 报告 §9.2 §5-122-①（`@JsonAlias("battery")` 兼容待定 → 采纳） | green
+
+#### shouldSerializeCapacityPercentKey_whenToJson
+- 输入：`new RcOsd(...,66,...)`
+- 预期：JSON 含 `"capacity_percent":66`
+- 基准：spec | 报告 §9.2 | green
+
+#### shouldNotContainModeCode_whenRecordComponents
+- 输入：`RcOsd.class.getRecordComponents()` 名称列表
+- 预期：不含 `modeCode`（三页文档均无 `mode_code` → 删除，§5-122-②）
+- 基准：spec | 报告 §9.2 §5-122-② | green
+
+- 对应测试类：`RcOsdTest`
+
+### 20.5 AirConditionerModeSwitchRequest / BatteryStoreModeSwitchRequest 字段 `mode` → `action`（`command/service/debug`）
+
+#### shouldUseActionKey_whenAirConditionerModeSwitchSerialize
+- 输入：`new AirConditionerModeSwitchRequest(1)`
+- 预期：JSON 含 `"action":1`（文档 Dock1 远程调试页字段名为 `action`）
+- 基准：spec | 报告 §4 L415（§5-104） | green
+
+#### shouldUseActionKey_whenBatteryStoreModeSwitchSerialize
+- 输入：`new BatteryStoreModeSwitchRequest(1)`
+- 预期：JSON 含 `"action":1`（与 `alarm_state_switch` 统一）
+- 基准：spec | 报告 §4 L415（§5-104） | green
+
+#### shouldRoundTripAction_whenFromJson
+- 断言：`assertThat(MessageCodec.fromJson(json, BatteryMaintenanceSwitchRequest.class)).isEqualTo(req)`（同族 `battery_maintenance_switch` 亦用 `action`）
+- 基准：spec | 报告 §4 L415/L416（§5-104/§5-105；`ActionSwitchRequest` 死代码删除，见 §25.2） | green
+
+- 对应测试类：`BatteryMaintenanceSwitchRequestTest`（及隐含 `AirConditionerModeSwitchRequest`）
+
+### 20.6 FlighttaskProgressGetRequest 字段 `sn` → `targetSn`（`command/request/wayline`）
+
+#### shouldBindTargetSn_whenDeserialize
+- 输入：`{"flight_id":"FLIGHT001","target_sn":"DOCK_SN001"}`
+- 预期：`targetSn()`=`"DOCK_SN001"`（Dock2 页请求 data 为 `target_sn` + `flight_id`；原 `sn` 与 wire key `target_sn` 不匹配）
+- 基准：spec | 报告 §4 L371（§5-59） | green
+
+#### shouldAllowNullTargetSn_whenOmitted
+- 输入：`{"flight_id":"FLIGHT001"}`（非蛙跳场景）
+- 预期：`targetSn()`=null（可选字段）
+- 基准：spec | 报告 §4 L371 | green
+
+#### shouldRequireFlightId_whenOmitted
+- 输入：`{"target_sn":"DOCK"}`（缺 `flight_id`）
+- 预期：构造器 `Objects.requireNonNull` 触发，`MessageCodec` 包装为 `IllegalStateException`
+- 基准：spec | 报告 §4 L371 | green
+
+- 对应测试类：`FlighttaskProgressGetRequestTest`
+
+---
+
+## 21. 字段类型变更
+
+### 21.1 DockOsd：`rainfall` Double → Integer、`heading` Integer → Double（`telemetry/DockOsd`）
+
+#### shouldRainfallBeInteger_whenRecordComponent
+- 输入：`DockOsd.class.getRecordComponents()` 中 `rainfall` 的 `getType()`
+- 预期：`Integer.class`（文档 `enum_int`「降雨等级」，§5-39 已决策）
+- 基准：spec | 报告 §4 L393（§5-39） | green
+
+#### shouldHeadingBeDouble_whenRecordComponent
+- 输入：`heading` 的 `getType()`
+- 预期：`Double.class`（Dock2/Dock3 页均 `double`，-180~180；文档未声明废弃 → 不加 `@Deprecated`）
+- 基准：spec | 报告 §4 L393（A27-1） | green
+
+- 对应测试类：`DockOsdTest`（特征化扩展）
+
+### 21.2 HmsData.Item：`code` Integer → String（`command/event/alert`）
+
+#### shouldCodeBeString_whenDeserialize
+- 输入：`{"list":[{"code":"0x16100083","level":2,...}]}`
+- 预期：`item.code()`=`"0x16100083"`（文档 Type=`text`，示例 `0x16100083`）
+- 基准：spec | 报告 §4 L376（A20） | green
+
+#### shouldSerializeCodeAsText_whenToJson
+- 输入：`new HmsData.Item("0x16100083",...)`
+- 预期：JSON 含 `"code":"0x16100083"`（字符串，非数值）
+- 基准：spec | 报告 §4 L376 | green
+
+- 对应测试类：`HmsDataTest`
+
+### 21.3 AirSenseWarningData.Alert：altitude/relativeAltitude/distance Double → Integer（`command/event/alert`）
+
+#### shouldAltitudeDistanceBeInteger_whenRecordComponents
+- 输入：`Alert` 嵌套 record 的 `altitude/relativeAltitude/distance` 字段类型
+- 预期：均为 `Integer.class`（文档 `int`）；`latitude/longitude/heading` **保持** `Double`（文档 `float` → Double 既定映射）
+- 基准：spec | 报告 §4 L365（A30/§5-11） | green
+
+- 对应测试类：`AirSenseWarningDataTest`
+
+### 21.4 AiSpotlightZoomSelectRequest：centerX/centerY/width/height Double → Integer（`command/drc/ai`）
+
+#### shouldCoordinatesBeInteger_whenSerialize
+- 输入：`new AiSpotlightZoomSelectRequest(...)`
+- 预期：四字段为 `Integer`，JSON 输出整数值（文档 Type=`int`、constraint `[0,10000]`）
+- 断言：`assertThat(json).contains("\"center_x\":1000")` 等（`@Verified(basis)` 更正为 `{"max":10000,"min":0}`）
+- 基准：spec | 报告 §4 L384（§5-45，2026-10-14 已决策） | green
+
+- 对应测试类：`AiRequestTest`
+
+### 21.5 OtaCreateRequest.OtaDevice.fileSize：Long → Integer（`command/service/firmware`）
+
+#### shouldFileSizeBeInteger_whenRecordComponent
+- 输入：`OtaDevice` 的 `fileSize` 类型
+- 预期：`Integer.class`（文档 `int`）
+- 基准：spec | 报告 §4 L361（§5-48） | green
+
+- 对应测试类：`OtaCreateReplyTest`（含 OtaCreateRequest 解析）
+
+### 21.6 CameraStatePushData：photoSize → Integer、intervalPhotoInterval → Double（`command/drc/up`）
+
+#### shouldPhotoSizeBeInteger_whenRecordComponent
+- 输入：`photoSize` 类型
+- 预期：`Integer.class`（文档 `enum_int {0:4K, 4:8K}`）
+- 基准：spec | 报告 §4 L382（A24） | green
+
+#### shouldIntervalPhotoIntervalBeDouble_whenRecordComponent
+- 输入：`intervalPhotoInterval` 类型
+- 预期：`Double.class`（文档示例 `2.5`）
+- 基准：spec | 报告 §4 L382（A24） | green
+
+#### shouldNotDropNightModeOrPhotoFormatFields_whenRecordComponents
+- 预期：保留 `nightModeSettings`/`photoFormat`（本批文档为精简原文，不得据此删字段）
+- 基准：spec | 报告 §4 L382（A29） | green
+
+- 对应测试类：`DrcUpPushDataParseTest`（扩展）
+
+### 21.7 CameraOsdInfoPushData.IrLense：irZoomFactor Integer → Double（`command/drc/up`）
+
+#### shouldIrZoomFactorBeDouble_whenRecordComponent
+- 输入：`IrLense.irZoomFactor` 类型
+- 预期：`Double.class`（文档 `float`、`{"max":20,"min":2}`）
+- 基准：spec | 报告 §4 L383（§5-46/§5-47） | green
+
+- 对应测试类：`DrcUpPushDataParseTest`（扩展）
+
+### 21.8 MappingStripPlacemark.margin：int → double（`sdk-wayline` WPML）
+
+#### shouldMarginBeDouble_whenRecordComponent
+- 输入：`MappingStripPlacemark.margin` 类型（航带飞行）
+- 预期：`double.class`（文档航带 `margin` 为浮点型）
+- 基准：spec | 报告 §4 L345（§5-66） | green
+
+- 对应测试类：`WaylineEnumTest` / WPML model 测试
+
+---
+
+## 22. 新增 / 补齐字段
+
+### 22.1 ReplyEnvelope 补 `gateway`（`protocol/envelope`）
+
+#### shouldCarryGateway_whenSixArgConstruct
+- 输入：`new ReplyEnvelope(tid, bid, timestamp, data, gateway)`（`gateway` 末位、允许 null）
+- 预期：`gateway()` 序列化进 JSON；5 参辅助构造 `gateway()`=null（零破坏）
+- 断言：`assertThat(json).contains("\"gateway\":\"GW-SN\"")`；旧 5 参构造 `gateway()` 为 null
+- 基准：spec | 报告 §4 L375（A21 缺口 4，§5-22 方案 A） | green
+
+- 对应测试类：`ReplyEnvelopeTest`
+
+### 22.2 DroneOsd 补 `ftsInfo` / `bestLinkGateway` / `flysafeDatabaseVersion`（`telemetry`）
+
+#### shouldHave39Components_whenRecord
+- 输入：`DroneOsd.class.getRecordComponents()`
+- 预期：组件数 39（含新增 `ftsInfo`(36)/`bestLinkGateway`(37)/`flysafeDatabaseVersion`(38) + `extras`(39)）
+- 基准：spec | 报告 §4 L394–L395（§5-77/§5-78） | green
+
+#### shouldBindFtsInfo_whenDeserialize
+- 输入：`{"fts_info":{"fts_status":1,"fts_verification_code":"AB12CD34","fts_valid_duration":600,"fts_timestamp":1700000000,"fts_sn":"fts_sn_1","fts_firmware_version":"1.0.0"}}`
+- 预期：`ftsInfo` 映射到新建 `FtsInfo` record，逐字段绑定
+- 基准：spec | 报告 §5-78（方案 A：新建 `FtsInfo` + `FtsStatus`） | green
+
+#### shouldNullNewFields_whenAbsent
+- 输入：旧固件 JSON（无 3 新字段）
+- 预期：`ftsInfo()`/`bestLinkGateway()`/`flysafeDatabaseVersion()`=null（包装类型 + NON_NULL，不序列化）
+- 基准：spec | 报告 §4 L394 | green
+
+- 对应测试类：`DroneOsdTest`、`DroneNestedV118Test`
+
+### 22.3 CameraInfo 补 20 字段 + 新建 IrMeteringPoint / IrMeteringArea（`telemetry/nested`，A49）
+
+#### shouldParseExpandedCameraFields_whenDeserialize
+- 输入：`{"payload_index":"99-0-0","zoom_factor":2.5,"ir_zoom_factor":2.0,"photo_storage_settings":["current","vision"],"video_storage_settings":["current"],"wide_exposure_mode":1,"wide_iso":8,"wide_shutter_speed":45,"wide_exposure_value":16,"zoom_exposure_mode":2,"zoom_iso":8,"zoom_shutter_speed":45,"zoom_exposure_value":16,"zoom_focus_mode":1,"zoom_focus_value":100,"zoom_max_focus_value":200,"zoom_min_focus_value":0,"zoom_calibrate_farthest_focus_value":34,"zoom_calibrate_nearest_focus_value":64,"zoom_focus_state":2,"ir_metering_mode":2,"ir_metering_point":{...},"ir_metering_area":{...}}`
+- 预期：20 个新增字段（`photoStorageSettings`/`videoStorageSettings`/`wide*`(4)/`zoom*`(8)/`irMetering*`(3)）绑定；`irMeteringPoint`/`irMeteringArea` 映射新建 record
+- 基准：spec | 报告 §4 L396（§5-81，A49） | green
+
+#### shouldNullExpandedFields_whenAbsent
+- 输入：`{"payload_index":"99-0-0"}`（旧固件）
+- 预期：`wideExposureMode/zoomFocusState/photoStorageSettings/irMeteringMode/irMeteringArea`=null
+- 基准：spec | 报告 §4 L396 | green
+
+#### shouldParseIrMeteringAreaSubPoints_whenDeserialize
+- 预期：`IrMeteringArea.averTemperature`、`minTemperaturePoint`/`maxTemperaturePoint`（各 `{x,y,temperature}`）绑定
+- 基准：spec | 报告 §4 L396 | green
+
+- 对应测试类：`DroneNestedV118Test`
+
+### 22.4 DockOsd 补 `droneAuthorityInfo`（`telemetry` + `telemetry/nested/DroneAuthorityInfo`，A50）
+
+#### shouldBindDroneAuthorityInfo_whenDeserialize
+- 输入：`{"drone_authority_info":{"control_source":"A","locked":true,"payloads":[{"control_source":"B","payload_index":"1-1-0","sn":"PAY-1"}]}}`
+- 预期：`controlSource`/`locked`/`payloads[]` 绑定；`controlSource` 允许空字符串（未获取）
+- 基准：spec | 报告 §4 L401（§5-84） | green
+
+- 对应测试类：`DroneAuthorityInfoTest`
+
+### 22.5 UpdateTopoData 补 `baseInfo`；UpdateTopoReplyData 删 `subType`（`command/status`）
+
+#### shouldBindBaseInfo_whenDeserialize
+- 输入：`{...,"base_info":{"country_code":"ENCRYPTED"}}`
+- 预期：`baseInfo().countryCode()`=`"ENCRYPTED"`（O4 专属，§5-91 结案）
+- 基准：spec | 报告 §4 L404（§5-89/§5-91） | green
+
+#### shouldNullBaseInfo_whenAbsent
+- 预期：旧设备缺席 `base_info` → `baseInfo()`=null
+- 基准：spec | 报告 §4 L404 | green
+
+#### shouldNotContainSubType_whenReplySerialize
+- 输入：`new UpdateTopoReplyData(0)` → `toJson`
+- 预期：含 `"result":0` 且**不含** `sub_type`（文档 status_reply output 示例仅 `result`）
+- 基准：spec | 报告 §4 L404（§5-89） | green
+
+- 对应测试类：`UpdateTopoDataTest`、`UpdateTopoReplyDataTest`
+
+### 22.6 CameraStatePushData 补 `thermalSupportedPaletteStyles`（`command/drc/up`）
+
+#### shouldExposeThermalSupportedPaletteStyles_whenDeserialize
+- 预期：`IrLense.thermalSupportedPaletteStyles`（文档 Type=`array`、`item_type=enum_int`，A14 + A38 两页均有定义）
+- 基准：spec | 报告 §4 L383（§5-46） | green
+
+- 对应测试类：`DrcUpPushDataParseTest`（扩展）
+
+### 22.7 FileUploadStartRequest 补齐字段（`command/service/log`，A40）
+
+#### shouldSerializeNewFields_whenToJson
+- 输入：含顶层 `file_store_dir`/`file_type`、`params.files[].device_sn/result/object_key`、`list[].boot_index/start_time/end_time/size`
+- 预期：wire key 均可序列化（`start_time/end_time/size` 保持 `long` 口径）
+- 基准：spec | 报告 §4 L362（§5-52/§5-107） | green
+
+#### shouldAllowNullResult_whenDeserialize
+- 输入：`{"bucket":"b","params":{"files":[{"module":"0","device_sn":"SN"}]}}`
+- 预期：`file.result()`=null（可选字段缺席）
+- 基准：spec | 报告 §4 L362 | green
+
+- 对应测试类：`FileUploadStartRequestTest`
+
+### 22.8 DockInfo / CenterNode / LeafNode 补字段 + 新建 RtcmInfo（`command/service/wayline`，A41）
+
+#### shouldSerializeDockInfoNewFields_whenToJson
+- 输入：`new DockInfo("SN","dock3",0,90.0,1,30.0,120.0,50.0, rtcmInfo, alternateLandPoint)`
+- 预期：含 `heading`(Double)、`home_position_is_valid`(Integer)、`rtcm_info`、`alternate_land_point`（复用 `telemetry/nested/AlternateLandPoint`）
+- 基准：spec | 报告 §4 L368（§5-55） | green
+
+#### shouldSerializeCenterNodeSdrId_whenToJson
+- 预期：`{"sdr_id":"sdr-1","sn":"SN"}`
+- 基准：spec | 报告 §4 L368 | green
+
+#### shouldPopulateLeafNode_whenToJson
+- 输入：`new LeafNode("sdr-2","SN2",1)`
+- 预期：空 record → `{sdr_id, sn, control_source_index}`
+- 基准：spec | 报告 §4 L368 | green
+
+#### shouldSerializeRtcmInfo_whenToJson
+- 输入：`new RtcmInfo("MP",8080,"host",1,0)`
+- 预期：含 `mount_point`/`port`/`host`/`rtcm_device_type`/`source_type`
+- 基准：spec | 报告 §4 L368 | green
+
+- 对应测试类：`WaylineV118Test`
+
+---
+
+## 23. 新增 POJO / 枚举
+
+### 23.1 O4 地面站（domain=8）
+
+#### 23.1.1 DeviceDomain + GroundStationModel
+- `shouldHave4Values_whenDeviceDomainEnum`：`DeviceDomain.values().length`=4，`GROUND_STATION`=8
+- `shouldResolveO4_whenFromType`：`GroundStationModel.O4.toModel()` → domain=8/type=135/subType=0；`fromType(135,0)`、`fromModelKey("8-135-0")` 反查 O4
+- `shouldThrowWhenUnknown`：`fromType(0,0)`、`fromModelKey("3-135-0"/"8-135"/null)` 抛 `IllegalArgumentException`
+- 基准：spec | 报告 §4 L341–L342/L385（A26） | green
+- 对应测试类：`DeviceDomainTest`、`GroundStationModelTest`
+
+#### 23.1.2 GroundStationOsd（`telemetry`）
+- `shouldParseTopLevelFields_whenDeserialize`：`mode_code`/`low_power_switch_state`/`electric_supply_power`/`power_mode`/`battery_voltage`/`basestation_work_mode`/`under_work_mode`/`lan_status`/`poe_status`/`electric_supply_voltage`/`acc_time`/`longitude`/`home_position_is_valid` 绑定
+- `shouldParseNestedStructs_whenDeserialize`：`tiltAngle{value,valid}`、`battery{capacity_percent,voltage,current,temperature}`、`selfConvergeCoordinate{longitude,latitude,height}`
+- `shouldNullUnsetFields_whenAbsent`：`positionState`/`alternateLandPoint`/`networkState`/`storage`=null
+- `shouldNotSerializeNullFields_whenToJson`：NON_NULL，null 字段不输出
+- 基准：spec | 报告 §4 L386（A26） | green
+- 对应测试类：`GroundStationOsdTest`
+
+#### 23.1.3 GroundStationState（`telemetry`）
+- `shouldParseTopLevel_whenDeserialize`：`electric_supply_mode`/`is_beidou_version`
+- `shouldParsePeripherals_whenDeserialize`：`peripherals_info[]`（`device_sn/ip_addr/need_auth/main_device`）、`peripheral_list[]`（`rid/adsb/dock_control` 能力）
+- `shouldParseSubDeviceAndRtcm_whenDeserialize`：`sub_device{device_sn,device_model_key,device_online_status,device_paired}`、`rtcm_info{mount_point,port,host,rtcm_device_type,source_type}`
+- `shouldParseWirelessLinkTopo_whenDeserialize`：`center_node{...}`/`leaf_nodes[]{...}`/`secret_code[]`
+- `shouldNullHeading_whenAbsent`：未推送 `heading`=null
+- 基准：spec | 报告 §4 L386 | green
+- 对应测试类：`GroundStationStateTest`
+
+### 23.2 DRC 相机集（31 个 `DrcCamera*Request` + 15 枚举，A16/A17/A18）
+
+#### shouldRoundTripAllDrcCameraRequests_whenToJson
+- 输入：A16 组（`DrcCameraPhotoSizeSetRequest`/`DrcVideoResolutionSetRequest`/`DrcVideoStorageSetRequest`/`DrcCameraAimRequest`/`DrcCameraApertureValueSetRequest`/`DrcCameraDewarpingSetRequest`）、A17 组（`...ExposureModeSet`/`...ExposureSet`/`...FocalLengthSet`/`...FocusModeSet`/`...FocusValueSet`/`...FrameZoom`/`...IsoSet`/`...LookAt`）、A18 组（`...MechanicalShutterSet`/`...ShutterSet`/`DrcIntervalPhotoSet`/`...ModeSwitch`/`...PhotoStop`/`...PhotoTake`/`...PhotoFormatSet`/`...PointFocusAction`/`...RecordingStart`/`...RecordingStop`/`...ScreenDrag`/`...ScreenSplit`/`DrcGimbalReset`/`DrcPhotoStorageSet`/`DrcIrMeteringAreaSet`/`DrcIrMeteringModeSet`/`DrcIrMeteringPointSet`）
+- 预期：各 wire key 序列化正确 + `fromJson` 往返相等
+- 基准：spec | 报告 §4 L377–L379（A16/A17/A18） | green
+- 对应测试类：`DrcCameraRequestTest`
+
+#### shouldRoundTripPsdkRequests_whenToJson
+- 输入：`DrcPsdkInputBoxTextSetRequest`（`psdk_index`+`value`）、`DrcPsdkWidgetValueSetRequest`（`psdk_index`+`index`+`value`）
+- 基准：spec | 报告 §4 L351（A15/A16 缺口） | green
+- 对应测试类：`DrcPsdkRequestTest`
+
+#### shouldRoundTripDrcCameraPhotoTakeReply_whenToJson
+- 预期：DRC 回包多 `status`，不能复用 `DrcResultReply`/`NoOutputReply`
+- 基准：spec | 报告 §4 L379（A18 矛盾 2） | green
+- 对应测试类：`DrcCameraPhotoTakeReplyTest`
+
+#### shouldMapDrcCameraEnums_whenFromCode（详见 §24）
+- 基准：spec | 报告 §4 L380（A16/A17/A18 枚举） | green
+- 对应测试类：`DrcCameraEnumTest`
+
+### 23.3 flysafe 解禁（`command/service/flysafe`，A21）
+
+#### shouldBindUnlockSubStructures_whenDeserialize
+- 输入：`AreaUnlock{area_ids[]}`、`CircleUnlock{radius,latitude,longitude,height}`、`CountryUnlock{country_number,height}`、`HeightUnlock{height}`、`PolygonUnlock{points[]{latitude,longitude}}`、`RidUnlock{level}`、`PowerUnlock`（空 record 序列化为 `{}`）
+- 基准：spec | 报告 §4 L373（A21 缺口 1+2，§5-23） | green
+
+#### shouldBindCommonFieldsAndLicense_whenSerialize
+- 预期：`CommonFields`（`license_id/device_sn/begin_time/user_only` 等）与 `License`（`common_fields` + 类型专属 `area_unlock/circle_unlock/...`）绑定
+- 基准：spec | 报告 §4 L373 | green
+
+#### shouldBindReplies_whenSerialize
+- `UnlockLicenseListReply{result, device_model_domain, consistence, licenses[]}`、`UnlockLicenseSwitchReply{result, license_id}`
+- 基准：spec | 报告 §4 L373 | green
+- 对应测试类：`FlysafeUnlockTest`
+
+### 23.4 fts（`command/service/fts`，A22）
+
+#### shouldMapFtsServerType_whenFromCode
+- 预期：`DJI_FTS`=0、`CUSTOM`=1；`fromCode(9)` 抛 `IllegalArgumentException`
+- 基准：spec | 报告 §4 L366 | green
+
+#### shouldSerializeFtsConfig_whenToJson
+- 输入：`new FtsConfigRequest(1, new FtsConfigRequest.MqttBroker("tcp://host:1883","user","pass"))`
+- 预期：含 `fts_server_type` + 条件必填 `mqtt_broker{address,user,password}`
+- 基准：spec | 报告 §4 L366 | green
+
+#### shouldThrowWhenFtsServerTypeMissing
+- 输入：`{"mqtt_broker":{}}` → `IllegalStateException`
+- 基准：spec | 报告 §4 L366 | green
+
+#### shouldSerializePropellerStopV1_whenToJson
+- 输入：`new DronePropellerStopV1Request("AB12CD34")` → 含 `fts_verification_code`
+- 基准：spec | 报告 §4 L366 | green
+- 对应测试类：`FtsRequestTest`
+
+### 23.5 peripheral（`command/peripheral`，A26）
+
+#### shouldMapPeripheralInfo_whenDeserialize
+- 预期：`device_sn/name/port/type/ip_addr/need_auth/main_device` 绑定；可选字段缺席为 null
+- 基准：spec | 报告 §4 L387 | green
+
+#### shouldMapPeripheralCapability_whenDeserialize
+- 预期：`rid{supported,version}`/`adsb{...}`/`dock_control{...}` 三组能力绑定
+- 基准：spec | 报告 §4 L387 | green
+- 对应测试类：`PeripheralInfoTest`
+
+### 23.6 事件外设（`command/event/peripheral`，A30）
+
+#### shouldParseRidInfos_whenDeserialize
+- 预期：`gnss.time` 为**字符串**（`YYYYMMDD-HHmmss`，非时间戳）；`RidTarget.speed/uprate` 为 `Double`，`heading` 为 `Double`
+- 基准：spec | 报告 §4 L364（A30） | green
+
+#### shouldParseAdsbInfos_whenDeserialize
+- 预期：`AdsbTarget.height/speed/heading/uprate` 为 `Integer`
+- 基准：spec | 报告 §4 L364 | green
+- 对应测试类：`PeripheralEventParseTest`
+
+### 23.7 FileUploadProgressData（`command/event/system`，A40）
+
+#### shouldParseUploadProgress_whenDeserialize
+- 输入：`{"result":0,"output":{"status":"ok","ext":{"files":[{module,size,device_sn,key,fingerprint,progress{progress,finish_time,upload_rate}}]}}}`
+- 预期：`result` + `output.status` + `ext.files[]` 逐字段绑定（按示例全字段 + `@Inferred`）
+- 基准：spec | 报告 §4 L363（§5-54） | green
+- 对应测试类：`FileUploadProgressDataTest`
+
+### 23.8 RtkCalibrationData（`command/event/system`，A57）
+
+#### shouldParseRtkCalibrationEvent_whenDeserialize
+- 输入：`method=rtk_calibration`，`data{result, output{status, progress{percent,current_step}, ext{devices[]{sn,type,module,result,status}, version}}}`
+- 预期：独立建模（比通用 `ServiceProgressData` 更丰富）；`devices[].module` 为 `String`（文档 `enum_int`/`text` 口径不一，维持 `String`，§5-53）
+- 基准：spec | 报告 §4 L360（A57） | green
+- 对应测试类：`RtkCalibrationDataTest`
+
+### 23.9 FlightSetupExceptionNotifyData（`command/event/wayline`，A55）
+
+#### shouldParseFlightSetupException_whenDeserialize
+- 输入：`{"sn":"SN","timeout_time":60,"timestamp":1700000000000,"flight_type":1}`
+- 预期：`sn`/`timeoutTime`/`timestamp`/`flightType`（`flight_type` = enum_int 1 航线 / 2 指令飞行）；`EventMethod.FLIGHT_SETUP_EXCEPTION_NOTIFY` 常量已存在且 `needReply`=1
+- 基准：spec | 报告 §4 L412（§5-100） | green
+- 对应测试类：`FlightSetupExceptionNotifyDataTest`
+
+### 23.10 OtaCreateReply（`command/service/firmware`，A39）
+
+#### shouldParseOtaCreateReply_whenDeserialize
+- 输入：`{"result":0,"output":{"status":"in_progress"}}`
+- 预期：`result` + `output.status`
+- 基准：spec | 报告 §4 L361（§5-51） | green
+- 对应测试类：`OtaCreateReplyTest`
+
+### 23.11 FlatReplyEnvelope（`protocol/envelope`，A21 缺口 3）
+
+#### shouldCarryFlatResultMap_whenToJson
+- 输入：`new FlatReplyEnvelope("tid-1","bid-1",1700000000000L,"unlock_license_switch",Map.of("result",0,"license_id",7),"GW-SN")`
+- 预期：`data` 为扁平 map，序列化后顶层含 `result`/`license_id`；含 `gateway`；往返相等
+- 基准：spec | 报告 §4 L374（A21 缺口 3，方案 B） | green
+
+#### shouldNullGateway_whenFiveArgOrFactory
+- 预期：5 参兼容构造与 `of(...)` 工厂均 `gateway()`=null
+- 基准：spec | 报告 §4 L374 | green
+- 对应测试类：`FlatReplyEnvelopeTest`
+
+### 23.12 枚举助手 LastPointType / HomePlanStatus（`command/event/wayline`，§5-42）
+
+#### shouldExposeLastPointTypeAndHomePlanStatus_whenFromCode
+- 预期：`ReturnHomeInfoData` 的 `last_point_type`/`plan_status` 建模为枚举（`@Inferred`，`fromCode` 已知/未知/越界行为按 §24 通例）
+- 基准：spec | 报告 §4 L355（§5-42） | green
+- 对应测试类：`ReturnHomeInfoDataTest`
+
+---
+
+## 24. 枚举值域与数量断言
+
+> **通例**（总则 §3）：每个枚举必测 `fromXxx` 已知值、未知值（抛 `IllegalArgumentException`）、`null`、code 唯一性、枚举数量。
+
+### 24.1 方法枚举数量
+
+#### shouldHave102ServiceMethods
+- 断言：`assertThat(ServiceMethod.values()).hasSize(102)`；`fromMethodName` 反查含 `low_power_switch`/`fts_config`/`drone_propeller_stop_v1`/`flight_areas_update`；`methodName` 不重复
+- 基准：spec | 报告 §4 L349/L423（A48/§5-113） | green
+- 对应测试类：`ServiceMethodTest`
+
+#### shouldHave68DrcMethods
+- 断言：`hasSize(68)`；含 A47/A15–A18 新增 `drc_` 前缀常量；`DRONE_CONTROL` → `@Deprecated`、`HEART_BEAT` → `@Verified`
+- 基准：spec | 报告 §4 L347/L350（A15–A17/A47） | green
+- 对应测试类：`DrcMethodTest`
+
+#### shouldHave12DrcUpMethods
+- 断言：`hasSize(12)`
+- 基准：spec | 报告 §4 | green
+- 对应测试类：`DrcUpMethodTest`
+
+#### shouldHave31EventMethods
+- 断言：`hasSize(31)`；含 `RID_INFOS`/`ADSB_INFOS`（`need_reply`=0 + `@Inferred`）
+- 基准：spec | 报告 §4 L354（A30） | green
+- 对应测试类：`EventMethodTest`
+
+#### shouldHave8RequestsMethods
+- 断言：`hasSize(8)`；`FLIGHT_AREAS_GET` 可反查
+- 基准：spec | 报告 §4 L423/L426（A63） | green
+- 对应测试类：`RequestsMethodTest`
+
+#### shouldHave1StatusMethod
+- 断言：`hasSize(1)`；`UPDATE_TOPO` Topic 为 `sys/product/{gateway_sn}/status`（`sys/` 前缀）
+- 基准：spec | 报告 §4 L391（A26） | green
+- 对应测试类：`StatusMethodTest`
+
+#### shouldHave20PropertySetMethods
+- 断言：`hasSize(20)`；含 `COMMANDER_FLIGHT_HEIGHT`/`COMMANDER_MODE_LOST_ACTION`（M4D/M4TD 页 accessMode=rw）
+- 基准：spec | 报告 §4 L398（§5-80） | green
+- 对应测试类：`PropertySetMethodTest`
+
+### 24.2 telemetry 枚举值域
+
+#### shouldMapDroneModeCode_whenFromCode
+- 预期：22 值（0-21）；`AIRPORT_AREA_WAYLINE`(21)=「进离场航线飞行过程中」（`@Verified` basis 值域更正至 0-21）；`fromCode(-1/22/255)` 抛异常；与 `DockModeCode` 非同枚举
+- 基准：spec | 报告 §4 L397（§5-79，A49） | green
+- 对应测试类：`DroneModeCodeTest`
+
+#### shouldMapCameraModeTimedPhoto_whenFromCode
+- 预期：`CameraMode` 含 `TIMED_PHOTO(4)`（文档 camera_mode 新增值 4）
+- 基准：spec | 报告 §4 L381（A18） | green
+- 对应测试类：`CameraModeTest`
+
+#### shouldMapFirmwareUpgradeType_whenFromCode
+- 预期：值域 `{2,3,4}`（文档 `enum_int`）；`fromCode(4)`=`PSDK`；`fromCode(99)` 抛异常
+- 基准：spec | 报告 §4 L361（§5-49） | green
+- 对应测试类：`OtaCreateReplyTest`
+
+#### shouldMapFtsStatus_whenFromCode
+- 预期：6 值 `{0,1,2,3,4,99}`（不连续）；`fromCode(5)` 抛异常，`fromCode(99)`=`UNKNOWN_ERROR`
+- 基准：spec | 报告 §4 L395（§5-78） | green
+- 对应测试类：`GroundStationEnumTest`
+
+#### shouldMapDrcCameraEnums_whenFromCode
+- 预期（int 枚举，`@JsonValue` 输出数值）：
+  - `VideoResolution`：`FHD_1080P`=0、`UHD_4K`=1
+  - `PhotoResolution`：`R4K`=0、`R8K`=4；`fromCode(2)` 抛异常
+  - `DewarpingState.ON`=1；`SwitchState.OPEN`=1；`NightMode.AUTO`=2；`FocusMode.AFC`=2；`ExposureMode.MANUAL`=4；`IrMeteringMode.AREA`=2；`GimbalResetMode.PITCH_DOWN`=3
+  - `IsoValue.ISO_FIXED`=255；`ApertureValue.F256`=25600；`ShutterValue.AUTO`=60；`ExposureValue.FIXED`=255
+  - string 枚举（`@JsonValue` 输出字符串）：`CameraType`（`wide/zoom/ir`，`fromValue("mystery")` 抛异常）、`IntervalPhoto`（`"0.7"`/`"60"`）
+- 断言：`fromCode` 已知值 + 未知值抛 `IllegalArgumentException` + JSON round-trip
+- 基准：spec | 报告 §4 L377–L380（A16/A17/A18） | green
+- 对应测试类：`DrcCameraEnumTest`
+
+#### shouldMapGroundStationEnumFamily_whenFromCode
+- 预期：`GroundStationModeCode`（8 值 0-6,9，`fromCode(7/8)` 抛异常）、`SupplyPowerMode`（3）、`BasestationWorkMode`（3）、`UnderWorkMode`（2）、`LanStatus`/`PoeStatus`（各 5）、`RtcmDeviceType`（3）、`RtcmSourceType`（4）、`FixedState`（4）、`CalibrationState`（2）、`PeripheralPort`（2）、`PeripheralType`（8）、`GroundStationHomePositionIsValid`（2，不与 Dock 枚举复用，`fromCode(2)` 抛异常）
+- 基准：spec | 报告 §4 L388–L389（A26/§5-38） | green
+- 对应测试类：`GroundStationEnumTest`
+
+#### shouldSplitHomePositionIsValidByDockModel
+- 预期：`Dock2HomePositionIsValid` 2 值 `{0 无效, 1 有效}`；`Dock3HomePositionIsValid` 4 值 `{0 都无效, 1 都有效, 2 航向有效, 3 经纬度有效}`（设备专属命名，原 `HomePositionIsValid` 已改名）
+- 基准：spec | 报告 §4 L390（§5-38/§5-36） | green
+- 对应测试类：`Dock2HomePositionIsValidTest`、`Dock3HomePositionIsValidTest`
+
+#### shouldMapIrMeteringMode_whenFromCode
+- 预期：3 值 `{0 关闭, 1 点, 2 区域}`；`fromCode(3)` 抛异常
+- 基准：spec | 报告 §4 L396（§5-81） | green
+- 对应测试类：`GroundStationEnumTest`
+
+---
+
+## 25. 删除 / 合并项
+
+### 25.1 requests 通道 `flight_areas_get` 复用 `NoParameterRequest`
+
+#### shouldReuseNoParameterRequest_whenFlightAreasGet
+- 输入：`flight_areas_get` 请求 Data=null
+- 预期：改用既有 `NoParameterRequest`（序列化 `{}`），不再有专用空 record `FlightAreasGetRequest`；`RequestsMethod.FLIGHT_AREAS_GET` 保留
+- 基准：spec | 报告 §4 L426（§5-116，非阻断） | green
+- 对应测试类：`RequestsMethodTest`（及 `NoParameterRequest` 使用点）
+
+### 25.2 ActionSwitchRequest 删除（死代码）
+
+#### shouldNotExist_whenScanClasspath
+- 预期：`ActionSwitchRequest` 已删除（全仓无引用；职责归 `AirConditionerModeSwitchRequest`/`BatteryStoreModeSwitchRequest`/`BatteryMaintenanceSwitchRequest` 3 专用 POJO）
+- 基准：spec | 报告 §4 L416（§5-105；AGENTS §2「未使用的接口相关代码必须删除」） | green
+- 对应测试类：`BatteryMaintenanceSwitchRequestTest`（替代覆盖）
+
+### 25.3 HomePositionIsValid 拆分
+
+- 见 §24.2 `shouldSplitHomePositionIsValidByDockModel`（原枚举改名 `Dock3HomePositionIsValid`，新增 `Dock2HomePositionIsValid`；同步改 §7.17 引用）
+- 基准：spec | 报告 §4 L390 | green
+
+---
+
+## 26. 旧固件兼容（可选字段缺席 → null）
+
+> **口径**（AGENTS §2 版本兼容性）：v1.18 新增的可选字段一律用包装类型 + `@JsonInclude(NON_NULL)`，旧固件未推送时反序列化为 null，序列化时不出现在 payload。
+
+#### shouldNullV118OptionalFields_whenAbsent
+- `DroneOsd`：`ftsInfo`/`bestLinkGateway`/`flysafeDatabaseVersion` = null
+- `DockOsd`：`droneAuthorityInfo` = null
+- `CameraInfo`：`wideExposureMode`/`zoomFocusState`/`photoStorageSettings`/`irMeteringMode`/`irMeteringArea` = null
+- `GroundStationOsd`：`positionState`/`alternateLandPoint`/`networkState`/`storage` = null
+- `UpdateTopoData`：`baseInfo` = null
+- `DroneOsd` 序列化：null 字段不输出（`doesNotContain("\"fts_info\"")` 等）
+- 基准：spec | 报告 §4 L394–L404（AGENTS §2） | green
+- 对应测试类：`DroneOsdTest`、`DroneNestedV118Test`、`GroundStationOsdTest`、`UpdateTopoDataTest`
+
+---
+
+## v1.18.0 升级用例汇总
+
+| 变更类 | 子节 | 用例数（约） | 来源 |
+|---|---|---|---|
+| wire key 重命名（breaking） | §20 | 18 | §4 L405/L410/L419/L371/L415/L364 |
+| 字段类型变更 | §21 | 12 | §4 L393/L376/L365/L384/L361/L382/L383/L345 |
+| 新增 / 补齐字段 | §22 | 22 | §4 L375/L394–L396/L401/L404/L362/L368 |
+| 新增 POJO / 枚举 | §23 | 30+ | §4 L341–L342/L351/L357–L366/L373–L388/L412 |
+| 枚举值域与数量 | §24 | 14 | §4 L347–L350/L354/L381/L391/L398/L423 |
+| 删除 / 合并项 | §25 | 3 | §4 L390/L416/L426 |
+| 旧固件兼容 | §26 | 1（聚合） | AGENTS §2 |
+
+> **待确认项（未核实，交开发者）**：
+> 1. §23.2 DRC 相机请求「具体 wire key 逐项」仅对 A16/A17/A18 三组抽样断言，未覆盖全部 31 个的逐字段值域——以文档为准，实现时补全。
+> 2. §23.12 `LastPointType`/`HomePlanStatus` 枚举的具体 code↔描述映射未在报告中给出，用例仅约定「建模为枚举 + fromCode 通例」，值域待文档核实。
+> 3. §23.8 `RtkCalibrationData.devices[].module` 维持 `String`（文档 `enum_int`/`text` 口径不一，§5-53 建议维持 `String`）——若后续改为枚举需同步更新用例。
+> 4. §22.3 `CameraInfo` 新增字段的逐字段 wire key（`ir_metering_point/area` 子结构）以测试 `DroneNestedV118Test` 为准，未与文档逐字段核对。

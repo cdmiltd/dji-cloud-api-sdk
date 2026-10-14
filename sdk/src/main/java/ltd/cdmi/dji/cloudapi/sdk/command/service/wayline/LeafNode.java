@@ -15,7 +15,6 @@
 package ltd.cdmi.dji.cloudapi.sdk.command.service.wayline;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
@@ -24,15 +23,13 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>对应 DJI Cloud API {@code flighttask_execute} 请求 data 中
  * {@code multi_dock_task.wireless_link_topo.leaf_nodes} 数组元素。
  *
- * <p><b>本 record 为空</b>：simulator {@code WaylineTaskSimulator.parseMultiDockTask}
- * 仅记录 {@code leaf_nodes.size()}，未解析具体字段。待 DJI 文档确认字段后扩展。
- *
  * @see WirelessLinkTopo#leafNodes()
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html")
-@Verified(basis = "simulator WaylineTaskSimulator.parseMultiDockTask 已对接 hivemind 验证：仅记录 leaf_nodes.size()")
-@Inferred(
-    reason = "simulator 仅记录 leaf_nodes.size() 未解析具体字段",
-    verifyPoint = "DJI 文档确认 leaf_nodes 数组元素的字段结构"
-)
-public record LeafNode() {}
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
+@Verified(basis = "DJI Dock3 wayline.html wireless_link_topo.leaf_nodes[] 字段表：sdr_id/sn/control_source_index(1=A 槽,2=B 槽)")
+public record LeafNode(
+    String sdrId,
+    String sn,
+    /** 控制源索引（enum_int {1=A 槽, 2=B 槽}） */
+    Integer controlSourceIndex
+) {}

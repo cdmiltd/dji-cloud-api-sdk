@@ -20,6 +20,7 @@ import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.ActionGroup;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.WaypointHeadingParam;
@@ -49,12 +50,20 @@ public record ExecutePlacemark(
     Double executeHeight,
     @JacksonXmlProperty(localName = "waypointSpeed", namespace = WpmlNamespaces.WPML)
     Double waypointSpeed,
+    @Inferred(
+        reason = "waylines.wpml Placemark 字段表未列 gimbalPitchAngle（template.kml 侧有定义），层级归属待确认",
+        verifyPoint = "真机验证 waylines.wpml 是否上报 gimbalPitchAngle"
+    )
     @JacksonXmlProperty(localName = "gimbalPitchAngle", namespace = WpmlNamespaces.WPML)
     Double gimbalPitchAngle,
     @JacksonXmlProperty(localName = "waypointHeadingParam", namespace = WpmlNamespaces.WPML)
     WaypointHeadingParam waypointHeadingParam,
     @JacksonXmlProperty(localName = "waypointTurnParam", namespace = WpmlNamespaces.WPML)
     WaypointTurnParam waypointTurnParam,
+    @JacksonXmlProperty(localName = "isRisky", namespace = WpmlNamespaces.WPML)
+    Integer isRisky,
+    @JacksonXmlProperty(localName = "useStraightLine", namespace = WpmlNamespaces.WPML)
+    Integer useStraightLine,
     @JacksonXmlElementWrapper(useWrapping = false)
     @JacksonXmlProperty(localName = "actionGroup", namespace = WpmlNamespaces.WPML)
     List<ActionGroup> actionGroups

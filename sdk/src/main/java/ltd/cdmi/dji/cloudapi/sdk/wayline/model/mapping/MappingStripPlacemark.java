@@ -34,7 +34,7 @@ import ltd.cdmi.dji.cloudapi.sdk.wayline.model.coordinate.LineString;
  * @see Overlap
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dji-wpml/template-kml.html")
-@Verified(basis = "DJI WPML template.kml 文档航带飞行模板元素定义")
+@Verified(basis = "DJI WPML template-kml.html 文档航带飞行模板 margin Type=double")
 public record MappingStripPlacemark(
     @JacksonXmlProperty(localName = "caliFlightEnable", namespace = WpmlNamespaces.WPML)
     Integer caliFlightEnable,
@@ -43,7 +43,7 @@ public record MappingStripPlacemark(
     @JacksonXmlProperty(localName = "direction", namespace = WpmlNamespaces.WPML)
     int direction,
     @JacksonXmlProperty(localName = "margin", namespace = WpmlNamespaces.WPML)
-    int margin,
+    double margin,
     @JacksonXmlProperty(localName = "singleLineEnable", namespace = WpmlNamespaces.WPML)
     int singleLineEnable,
     @JacksonXmlProperty(localName = "cuttingDistance", namespace = WpmlNamespaces.WPML)

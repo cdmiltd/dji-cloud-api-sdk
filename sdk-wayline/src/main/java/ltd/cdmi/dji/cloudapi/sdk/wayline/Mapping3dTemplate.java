@@ -794,6 +794,7 @@ public final class Mapping3dTemplate {
             executeHeightMode.code(),
             0,
             autoFlightSpeed,
+            null,
             List.of()
         );
 

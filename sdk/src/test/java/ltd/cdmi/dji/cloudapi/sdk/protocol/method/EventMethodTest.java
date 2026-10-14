@@ -38,9 +38,16 @@ class EventMethodTest {
     // ==================== 枚举总数 ====================
 
     @Test
-    @DisplayName("枚举总数应为 29")
+    @DisplayName("枚举总数应为 31（29 + v1.18 新增 rid_infos/adsb_infos）")
     void testTotalCount() {
-        assertEquals(29, EventMethod.values().length);
+        assertEquals(31, EventMethod.values().length);
+    }
+
+    @Test
+    @DisplayName("v1.18 新增 event：rid_infos / adsb_infos 反查成功")
+    void testV118NewEvents() {
+        assertEquals(EventMethod.RID_INFOS, EventMethod.fromMethodName("rid_infos").orElseThrow());
+        assertEquals(EventMethod.ADSB_INFOS, EventMethod.fromMethodName("adsb_infos").orElseThrow());
     }
 
     // ==================== needReply 属性验证 ====================
@@ -55,12 +62,12 @@ class EventMethodTest {
     }
 
     @Test
-    @DisplayName("need_reply=0 的事件共 11 个（单向通知）")
+    @DisplayName("need_reply=0 的事件共 13 个（单向通知，含 v1.18 rid_infos/adsb_infos）")
     void testNeedReplyZero() {
         long count = java.util.Arrays.stream(EventMethod.values())
                 .filter(m -> m.needReply() == 0)
                 .count();
-        assertEquals(11, count);
+        assertEquals(13, count);
     }
 
     @Test

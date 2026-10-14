@@ -62,7 +62,7 @@ public enum StateField {
 
     // ==================== 固件相关（pushMode=1, r）====================
 
-    /** 固件版本（Dock state + 飞行器 state，M400 飞行器 state 除外） */
+    /** 固件版本（Dock state + 飞行器 state + RC state，M400 飞行器 state 除外） */
     FIRMWARE_VERSION("firmware_version", "固件版本"),
 
     /** 固件升级状态（Dock state + 飞行器 state） */
@@ -76,10 +76,10 @@ public enum StateField {
     /** 机场累计运行时长，单位秒（Dock state） */
     ACC_TIME("acc_time", "机场累计运行时长"),
 
-    /** 直播状态推送，无在推视频流时为空数组（Dock state） */
+    /** 直播状态推送，无在推视频流时为空数组（Dock state + RC state） */
     LIVE_STATUS("live_status", "直播状态推送"),
 
-    /** 网关设备直播能力（struct，Dock state，pushMode=1 变化推送） */
+    /** 网关设备直播能力（struct，Dock state + RC state，pushMode=1 变化推送） */
     LIVE_CAPACITY("live_capacity", "网关设备直播能力"),
 
     // ==================== 用户配置（pushMode=1, rw）====================
@@ -104,16 +104,33 @@ public enum StateField {
     /** 图传连接拓扑（Dock state: Dock2/Dock3 only; 飞行器 state: M3D/M4D only） */
     WIRELESS_LINK_TOPO("wireless_link_topo", "图传连接拓扑"),
 
-    /** 4G Dongle 信息（Dock state: Dock2/Dock3 only; 飞行器 state: M400 only） */
+    /** 4G Dongle 信息（Dock state: Dock2/Dock3 only; 飞行器 state: M400/M4D/M4TD; RC state 亦上报） */
     DONGLE_INFOS("dongle_infos", "4G Dongle信息"),
 
-    /** 离线地图开关（飞行器 state, M400 only） */
+    /** 离线地图开关（飞行器 state, M400/M4D/M4TD only） */
     OFFLINE_MAP_ENABLE("offline_map_enable", "离线地图开关"),
 
-    // ==================== 飞行器控制（pushMode=1）====================
+    /** 飞行器图传连接质量最好的网关 SN（飞行器 state, r，蛙跳任务场景） */
+    BEST_LINK_GATEWAY("best_link_gateway", "最好图传网关SN"),
 
-    /** 飞行器控制权状态（Dock state, Dock1 only, payloads 部分） */
-    DRONE_AUTHORITY_INFO("drone_authority_info", "飞行器控制权状态"),
+    /** FlySafe 数据库版本（飞行器 state, r，text） */
+    FLYSAFE_DATABASE_VERSION("flysafe_database_version", "FlySafe数据库版本"),
+
+    // ==================== O4 地面站 state 字段（GroundStationState，pushMode=1） ====================
+
+    /** 供电模式（O4 地面站 state，见 {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.SupplyPowerMode}） */
+    ELECTRIC_SUPPLY_MODE("electric_supply_mode", "供电模式"),
+
+    /** 是否北斗版本（O4 地面站 state，0=非北斗，1=北斗） */
+    IS_BEIDOU_VERSION("is_beidou_version", "是否北斗版本"),
+
+    /** 外设信息（O4 地面站 state，struct） */
+    PERIPHERALS_INFO("peripherals_info", "外设信息"),
+
+    /** 外设列表（O4 地面站 state，array of struct：{index,type}） */
+    PERIPHERAL_LIST("peripheral_list", "外设列表"),
+
+    // ==================== 飞行器控制（pushMode=1）====================
 
     /** 负载状态（飞行器 state） */
     PAYLOADS("payloads", "负载状态"),
@@ -167,7 +184,7 @@ public enum StateField {
 
     // ==================== 航线（pushMode=1）====================
 
-    /** 航线解析库版本号（飞行器 state） */
+    /** 航线解析库版本号（机场/飞行器 state 均可能上报，Dock1 页列于机场属性） */
     WPMZ_VERSION("wpmz_version", "航线解析库版本号"),
 
     // ==================== PSDK（pushMode=1）====================

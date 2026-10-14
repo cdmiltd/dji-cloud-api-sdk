@@ -37,6 +37,7 @@ import ltd.cdmi.dji.cloudapi.sdk.wayline.model.action.GimbalRotateParam;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.Kml;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.KmzContent;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.ParsedKmz;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.WaylinesWpml;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.action.TakePhotoParam;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.execute.ExecuteFolder;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.execute.ExecutePlacemark;
@@ -164,15 +165,15 @@ class WpmlParserTest {
     // ==================== parseWaylinesWpml 测试 ====================
 
     @Test
-    @DisplayName("parseWaylinesWpml 正确解析 waylines.wpml 为 Kml<ExecuteFolder> POJO")
+    @DisplayName("parseWaylinesWpml 正确解析 waylines.wpml 为 WaylinesWpml POJO")
     void shouldParseWaylinesWpmlToPojo() {
         WaypointTemplate template = buildSampleTemplate();
         String wpml = template.toWpml();
 
-        Kml<ExecuteFolder> parsed = WpmlCodec.parseWaylinesWpml(wpml);
+        WaylinesWpml parsed = WpmlCodec.parseWaylinesWpml(wpml);
 
         assertNotNull(parsed, "解析结果不应为 null");
-        ExecuteFolder folder = parsed.document().folder();
+        ExecuteFolder folder = parsed.document().folders().get(0);
         assertNotNull(folder, "ExecuteFolder 不应为 null");
         assertEquals(7.0, folder.autoFlightSpeed(), "autoFlightSpeed 应为 7");
         assertNotNull(folder.placemarks(), "placemarks 不应为 null");
@@ -183,9 +184,9 @@ class WpmlParserTest {
     @DisplayName("parseWaylinesWpml 正确解析 executeHeight 和 waypointSpeed")
     void shouldParseExecuteFields() {
         WaypointTemplate template = buildSampleTemplate();
-        Kml<ExecuteFolder> parsed = WpmlCodec.parseWaylinesWpml(template.toWpml());
+        WaylinesWpml parsed = WpmlCodec.parseWaylinesWpml(template.toWpml());
 
-        ExecutePlacemark firstWaypoint = parsed.document().folder().placemarks().get(0);
+        ExecutePlacemark firstWaypoint = parsed.document().folders().get(0).placemarks().get(0);
         assertEquals(100.0, firstWaypoint.executeHeight(), "executeHeight 应为 100");
         assertEquals(7.0, firstWaypoint.waypointSpeed(), "waypointSpeed 应为 7（全局展开）");
         assertNotNull(firstWaypoint.waypointHeadingParam(), "waypointHeadingParam 不应为 null");
@@ -254,7 +255,7 @@ class WpmlParserTest {
         assertEquals(2, templateFolder.placemarks().size(), "template 应有 2 个航点");
 
         // 验证 waylines POJO
-        ExecuteFolder waylinesFolder = parsed.waylines().document().folder();
+        ExecuteFolder waylinesFolder = parsed.waylines().document().folders().get(0);
         assertEquals(2, waylinesFolder.placemarks().size(), "waylines 应有 2 个航点");
         assertEquals(7.0, waylinesFolder.autoFlightSpeed(), "autoFlightSpeed 应为 7");
     }
@@ -284,7 +285,7 @@ class WpmlParserTest {
         WaypointTemplate template = buildSampleTemplate();
         String originalXml = template.toWpml();
 
-        Kml<ExecuteFolder> parsed = WpmlCodec.parseWaylinesWpml(originalXml);
+        WaylinesWpml parsed = WpmlCodec.parseWaylinesWpml(originalXml);
         String reSerializedXml = WpmlCodec.toXml(parsed);
 
         assertEquals(

@@ -20,69 +20,64 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * 验证 {@link ConfigReply} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
+ * 验证 {@link ConfigReply} 的 Jackson 反序列化、序列化、往返闭环与可空字段。
  *
- * <p><b>核心证明</b>：config 回复 data（result + app_id + app_license + url + token，
- * 非 output 包裹）能反序列化为 record；缺失 result 时构造器抛 NPE。
- * app_id/app_license 等为可空字段（@Inferred）。
+ * <p><b>核心证明</b>：config 回复 data（{@code app_id/app_key/app_license/ntp_server_host/ntp_server_port}，
+ * 非 output 包裹，<b>无 result</b>）能反序列化为 record；省略的可选字段为 null。
  */
 class ConfigReplyTest {
 
     private static final String SAMPLE_JSON =
-            "{\"result\":0,\"app_id\":\"app123\",\"app_license\":\"license456\","
-            + "\"url\":\"https://example.com\",\"token\":\"tok\"}";
+            "{\"app_id\":\"app123\",\"app_key\":\"key456\",\"app_license\":\"license789\","
+            + "\"ntp_server_host\":\"ntp.example.com\",\"ntp_server_port\":123}";
 
     @Test
-    @DisplayName("反序列化：完整 JSON → 字段正确绑定（app_id/app_license 直挂 data）")
+    @DisplayName("反序列化：完整 JSON → 字段正确绑定（直挂 data，无 result）")
     void testDeserialize() {
         ConfigReply reply = MessageCodec.fromJson(SAMPLE_JSON, ConfigReply.class);
-        assertEquals(0, reply.result());
         assertEquals("app123", reply.appId());
-        assertEquals("license456", reply.appLicense());
-        assertEquals("https://example.com", reply.url());
-        assertEquals("tok", reply.token());
+        assertEquals("key456", reply.appKey());
+        assertEquals("license789", reply.appLicense());
+        assertEquals("ntp.example.com", reply.ntpServerHost());
+        assertEquals(123, reply.ntpServerPort());
     }
 
     @Test
-    @DisplayName("序列化：ConfigReply → JSON 含 app_id 与 app_license（snake_case）")
+    @DisplayName("序列化：ConfigReply → JSON 含 app_id/app_key/app_license/ntp_server_host/ntp_server_port（snake_case）")
     void testSerialize() {
-        ConfigReply reply = new ConfigReply(0, "app123", "license456", "https://example.com", "tok");
+        ConfigReply reply = new ConfigReply("app123", "key456", "license789", "ntp.example.com", 123);
         String json = MessageCodec.toJson(reply);
         assertTrue(json.contains("\"app_id\":\"app123\""), "JSON 应含 app_id，实际: " + json);
-        assertTrue(json.contains("\"app_license\":\"license456\""), "JSON 应含 app_license，实际: " + json);
-        assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
+        assertTrue(json.contains("\"app_key\":\"key456\""), "JSON 应含 app_key，实际: " + json);
+        assertTrue(json.contains("\"app_license\":\"license789\""), "JSON 应含 app_license，实际: " + json);
+        assertTrue(json.contains("\"ntp_server_host\":\"ntp.example.com\""), "JSON 应含 ntp_server_host，实际: " + json);
+        assertTrue(json.contains("\"ntp_server_port\":123"), "JSON 应含 ntp_server_port，实际: " + json);
+        assertFalse(json.contains("\"result\""), "JSON 不应含 result 字段，实际: " + json);
     }
 
     @Test
     @DisplayName("往返闭环：序列化→反序列化保持不变")
     void testRoundTrip() {
-        ConfigReply original = new ConfigReply(0, "app123", "license456", "url", "tok");
+        ConfigReply original = new ConfigReply("app123", "key456", "license789", "ntp.example.com", 123);
         String json = MessageCodec.toJson(original);
         ConfigReply back = MessageCodec.fromJson(json, ConfigReply.class);
         assertEquals(original, back);
     }
 
     @Test
-    @DisplayName("可空字段：url/token 省略时为 null（非必填，无 requireNonNull）")
+    @DisplayName("可空字段：ntp_server_host/ntp_server_port 省略时为 null（无 requireNonNull）")
     void testOptionalFieldsNull() {
-        String json = "{\"result\":0,\"app_id\":\"app\",\"app_license\":\"lic\"}";
+        String json = "{\"app_id\":\"app\",\"app_key\":\"key\",\"app_license\":\"lic\"}";
         ConfigReply reply = MessageCodec.fromJson(json, ConfigReply.class);
-        assertEquals(0, reply.result());
         assertEquals("app", reply.appId());
+        assertEquals("key", reply.appKey());
         assertEquals("lic", reply.appLicense());
-        assertNull(reply.url(), "url 省略时应为 null");
-        assertNull(reply.token(), "token 省略时应为 null");
-    }
-
-    @Test
-    @DisplayName("缺失 result 字段：反序列化后构造器抛 NPE（包装为 IllegalStateException）")
-    void testMissingResultThrowsNpe() {
-        assertThrows(IllegalStateException.class,
-                () -> MessageCodec.fromJson("{\"app_id\":\"app\"}", ConfigReply.class));
+        assertNull(reply.ntpServerHost(), "ntp_server_host 省略时应为 null");
+        assertNull(reply.ntpServerPort(), "ntp_server_port 省略时应为 null");
     }
 }

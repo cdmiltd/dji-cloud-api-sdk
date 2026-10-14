@@ -37,7 +37,7 @@ import ltd.cdmi.dji.cloudapi.sdk.wayline.model.Folder;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.Kml;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.KmzContent;
 import ltd.cdmi.dji.cloudapi.sdk.wayline.model.ParsedKmz;
-import ltd.cdmi.dji.cloudapi.sdk.wayline.model.execute.ExecuteFolder;
+import ltd.cdmi.dji.cloudapi.sdk.wayline.model.WaylinesWpml;
 
 /**
  * WPML template.kml 的 XML 序列化工具。
@@ -80,9 +80,9 @@ public final class WpmlCodec {
     private static final JavaType TEMPLATE_KML_TYPE =
         MAPPER.getTypeFactory().constructParametricType(Kml.class, Folder.class);
 
-    /** waylines.wpml 反序列化目标类型（Kml<ExecuteFolder>），不可变，类加载时缓存 */
+    /** waylines.wpml 反序列化目标类型（{@link WaylinesWpml}，支持多 Folder），不可变，类加载时缓存 */
     private static final JavaType WAYLINES_WPML_TYPE =
-        MAPPER.getTypeFactory().constructParametricType(Kml.class, ExecuteFolder.class);
+        MAPPER.getTypeFactory().constructType(WaylinesWpml.class);
 
     private WpmlCodec() {
     }
@@ -219,13 +219,17 @@ public final class WpmlCodec {
     }
 
     /**
-     * 解析 waylines.wpml XML 字符串为 {@link Kml}{@code <}{@link ExecuteFolder}{@code >} POJO。
+     * 解析 waylines.wpml XML 字符串为 {@link WaylinesWpml} POJO。
+     *
+     * <p>waylines.wpml 的 {@code <Document>} 可含多个 {@code <Folder>}（倾斜摄影 5 条航线），
+     * 由 {@link WaylinesWpml} + {@link ltd.cdmi.dji.cloudapi.sdk.wayline.model.WaylinesDocument}
+     * 承载（§5-70 方案 B）。
      *
      * @param xml waylines.wpml XML 字符串
      * @return 解析后的 POJO
      * @throws IllegalStateException 如果反序列化失败
      */
-    public static Kml<ExecuteFolder> parseWaylinesWpml(String xml) {
+    public static WaylinesWpml parseWaylinesWpml(String xml) {
         try {
             return MAPPER.readValue(xml, WAYLINES_WPML_TYPE);
         } catch (Exception e) {

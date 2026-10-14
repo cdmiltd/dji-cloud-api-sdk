@@ -26,6 +26,7 @@ import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.CameraInfo;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DistanceLimitStatus;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DroneMaintainStatus;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.DronePositionState;
+import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.FtsInfo;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.ObstacleAvoidance;
 import ltd.cdmi.dji.cloudapi.sdk.telemetry.nested.Storage;
 
@@ -167,6 +168,15 @@ public record DroneOsd(
         /** 国家/地区代码（ISO 3166-1 标准，如 CN/US） */
         String country,
 
+        /** 快传（FTS）信息（M4D/M4TD 飞行器 OSD，v1.18.0.0 新增） */
+        FtsInfo ftsInfo,
+
+        /** 飞行器图传连接质量最好的网关 SN（蛙跳任务场景，state 通道，v1.18.0.0 新增） */
+        String bestLinkGateway,
+
+        /** FlySafe 数据库版本（state 通道，v1.18.0.0 新增） */
+        String flysafeDatabaseVersion,
+
         /**
          * 动态 key 字段容器，用于容纳无法用 record 固定字段表达的协议字段。
          * <p>M30 旧版协议使用负载索引（如 {@code "52-0-0"}）作为 JSON 顶层 key，
@@ -257,6 +267,9 @@ public record DroneOsd(
         private Integer totalFlightSorties;
         private String trackId;
         private String country;
+        private FtsInfo ftsInfo;
+        private String bestLinkGateway;
+        private String flysafeDatabaseVersion;
         private Map<String, Object> extras;
 
         public Builder() {}
@@ -297,6 +310,9 @@ public record DroneOsd(
             this.totalFlightSorties = o.totalFlightSorties;
             this.trackId = o.trackId;
             this.country = o.country;
+            this.ftsInfo = o.ftsInfo;
+            this.bestLinkGateway = o.bestLinkGateway;
+            this.flysafeDatabaseVersion = o.flysafeDatabaseVersion;
             this.extras = o.extras;
         }
 
@@ -335,6 +351,9 @@ public record DroneOsd(
         public Builder totalFlightSorties(Integer v) { this.totalFlightSorties = v; return this; }
         public Builder trackId(String v) { this.trackId = v; return this; }
         public Builder country(String v) { this.country = v; return this; }
+        public Builder ftsInfo(FtsInfo v) { this.ftsInfo = v; return this; }
+        public Builder bestLinkGateway(String v) { this.bestLinkGateway = v; return this; }
+        public Builder flysafeDatabaseVersion(String v) { this.flysafeDatabaseVersion = v; return this; }
         public Builder extras(Map<String, Object> v) { this.extras = v; return this; }
 
         /**
@@ -382,6 +401,9 @@ public record DroneOsd(
             if (source.totalFlightSorties != null) this.totalFlightSorties = source.totalFlightSorties;
             if (source.trackId != null) this.trackId = source.trackId;
             if (source.country != null) this.country = source.country;
+            if (source.ftsInfo != null) this.ftsInfo = source.ftsInfo;
+            if (source.bestLinkGateway != null) this.bestLinkGateway = source.bestLinkGateway;
+            if (source.flysafeDatabaseVersion != null) this.flysafeDatabaseVersion = source.flysafeDatabaseVersion;
             if (source.extras != null) this.extras = source.extras;
             return this;
         }
@@ -396,7 +418,7 @@ public record DroneOsd(
                     heightLimit, homeDistance, distanceLimitStatus, rthAltitude,
                     isNearAreaLimit, isNearHeightLimit, maintainStatus, nightLightsState,
                     obstacleAvoidance, storage, totalFlightDistance, totalFlightSorties,
-                    trackId, country, extras);
+                    trackId, country, ftsInfo, bestLinkGateway, flysafeDatabaseVersion, extras);
         }
     }
 }

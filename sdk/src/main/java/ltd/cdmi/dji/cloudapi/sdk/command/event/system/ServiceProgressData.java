@@ -22,12 +22,15 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 设备管理类 service 进度上报通用 event data。
  *
  * <p>DJI Cloud API 中，设备管理类 service 指令（如 {@code device_reboot}、{@code cover_open}、
- * {@code cover_close}、{@code charge_open}、{@code charge_close}、{@code power_on}、
- * {@code power_off}、{@code format_storage}、{@code esim_activate}、{@code rtk_calibration}
- * 等）的异步进度上报使用与 service 同名 method 发送至 events 通道，data 结构统一为
- * {@code output{status, progress{percent, step_key?}}}。
+ * {@code cover_close}、{@code charge_open}、{@code charge_close}、{@code drone_open}、
+ * {@code drone_close}、{@code device_format}、{@code drone_format}、{@code esim_activate}、
+ * {@code esim_operator_switch} 等）的异步进度上报使用与 service 同名 method 发送至 events 通道，
+ * data 结构统一为 {@code output{status, progress{percent, step_key?}}}。
  *
- * <p>本 POJO 覆盖上述 13 个方法的通用进度结构。部分方法可能有额外扩展字段（如
+ * <p>{@code rtk_calibration} 的进度结构更丰富（{@code output.ext.devices[]} + {@code version}），
+ * 不使用本通用记录，见 {@link ltd.cdmi.dji.cloudapi.sdk.command.event.system.RtkCalibrationData}。
+ *
+ * <p>本 POJO 覆盖上述方法的通用进度结构。部分方法可能有额外扩展字段（如
  * {@code esim_activate} 的 {@code output.ext}），以 {@link Object} 承接，按需解析。
  *
  * <p>字段依据：simulator {@code RemoteDebugSimulator} 第 267 行注明通用结构

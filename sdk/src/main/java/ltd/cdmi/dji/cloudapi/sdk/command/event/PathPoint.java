@@ -33,6 +33,12 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>字段对应 DJI JSON 的 {@code latitude}/{@code longitude}/{@code height}，
  * Jackson SNAKE_CASE 策略下与 camelCase 字段名自动映射（latitude/longitude 同名，height 同名）。
  *
+ * <p>{@code height} 为<b>椭球高度</b>（ellipsoid height，WGS84 椭球面之上，单位米），非相对起飞点高度。
+ *
+ * <p>本 record 为跨页共用元素（同时出现在 {@code return_home_info}（航线管理页）、
+ * {@code fly_to_point_progress} / {@code takeoff_to_point_progress}（远程控制页）），
+ * 故 {@code @DocUrl} 取远程控制（drc）页为代表性依据。
+ *
  * <p>字段依据：simulator {@code FlightCommandSimulator.buildPathPoints} 构建轨迹点已对接 hivemind 验证。
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/drc.html")

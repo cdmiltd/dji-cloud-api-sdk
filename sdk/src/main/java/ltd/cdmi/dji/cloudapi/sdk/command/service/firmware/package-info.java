@@ -15,9 +15,17 @@
 /**
  * 固件升级 services 指令 POJO。
  *
- * <p>承载 DJI Cloud API services 通道对固件升级（OTA）的控制指令。
- * 数据来源依据为 simulator
+ * <p>本包含 2 个 POJO：
+ * <ul>
+ *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.firmware.OtaCreateRequest OtaCreateRequest}
+ *       — ota_create 请求（devices[] 结构，firmware_upgrade_type 类型化枚举
+ *       {@link ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.FirmwareUpgradeType}）</li>
+ *   <li>{@link ltd.cdmi.dji.cloudapi.sdk.command.service.firmware.OtaCreateReply OtaCreateReply}
+ *       — ota_create 回复（{result, output{status}}）</li>
+ * </ul>
+ *
+ * <p>数据来源依据为 simulator
  * <a href="file:///d:/99.Code/hivemind-simulator/src/main/java/ltd/cdmi/hivemind/simulator/handler/OtaSimulator.java">
- * OtaSimulator</a> 已对接 hivemind 验证的字段集。
+ * OtaSimulator</a> 已对接 hivemind 验证的字段集，并核对 DJI O4 地面站 firmware.html。
  */
 package ltd.cdmi.dji.cloudapi.sdk.command.service.firmware;

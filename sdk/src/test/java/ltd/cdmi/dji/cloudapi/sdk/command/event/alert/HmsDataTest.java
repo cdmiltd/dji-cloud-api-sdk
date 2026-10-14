@@ -33,7 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class HmsDataTest {
 
     private static final String SAMPLE_JSON =
-            "{\"list\":[{\"code\":1,\"level\":2,\"module\":3,\"in_the_sky\":1,"
+            "{\"list\":[{\"code\":\"0x16100083\",\"level\":2,\"module\":3,\"in_the_sky\":1,"
             + "\"device_type\":\"typeA\",\"imminent\":0,"
             + "\"args\":{\"component_index\":0,\"sensor_index\":1}}]}";
 
@@ -44,7 +44,7 @@ class HmsDataTest {
         assertNotNull(data.list());
         assertEquals(1, data.list().size());
         HmsData.Item item = data.list().get(0);
-        assertEquals(1, item.code());
+        assertEquals("0x16100083", item.code());
         assertEquals(2, item.level());
         assertEquals(3, item.module());
         assertEquals(1, item.inTheSky());
@@ -58,21 +58,21 @@ class HmsDataTest {
     @Test
     @DisplayName("反序列化：多元素 list 集合验证")
     void testDeserializeMultipleItems() {
-        String json = "{\"list\":[{\"code\":1},{\"code\":2},{\"code\":3}]}";
+        String json = "{\"list\":[{\"code\":\"1\"},{\"code\":\"2\"},{\"code\":\"3\"}]}";
         HmsData data = MessageCodec.fromJson(json, HmsData.class);
         assertEquals(3, data.list().size());
-        assertEquals(1, data.list().get(0).code());
-        assertEquals(2, data.list().get(1).code());
-        assertEquals(3, data.list().get(2).code());
+        assertEquals("1", data.list().get(0).code());
+        assertEquals("2", data.list().get(1).code());
+        assertEquals("3", data.list().get(2).code());
     }
 
     @Test
     @DisplayName("反序列化：缺失可选字段（args/module 等）容错")
     void testDeserializeMissingOptionalFields() {
-        String json = "{\"list\":[{\"code\":1,\"level\":2}]}";
+        String json = "{\"list\":[{\"code\":\"1\",\"level\":2}]}";
         HmsData data = MessageCodec.fromJson(json, HmsData.class);
         HmsData.Item item = data.list().get(0);
-        assertEquals(1, item.code());
+        assertEquals("1", item.code());
         assertEquals(2, item.level());
         assertNull(item.module());
         assertNull(item.deviceType());
@@ -83,7 +83,7 @@ class HmsDataTest {
     @DisplayName("序列化：record → snake_case JSON（含 in_the_sky/device_type/component_index）")
     void testSerialize() {
         HmsData.Args args = new HmsData.Args(0, 1);
-        HmsData.Item item = new HmsData.Item(1, 2, 3, 1, "typeA", 0, args);
+        HmsData.Item item = new HmsData.Item("0x16100083", 2, 3, 1, "typeA", 0, args);
         HmsData data = new HmsData(List.of(item));
         String json = MessageCodec.toJson(data);
         assertTrue(json.contains("\"in_the_sky\":1"), "JSON 应含 \"in_the_sky\":1，实际: " + json);
@@ -96,7 +96,7 @@ class HmsDataTest {
     @DisplayName("往返闭环：序列化→反序列化保持不变")
     void testRoundTrip() {
         HmsData.Args args = new HmsData.Args(0, 1);
-        HmsData.Item item = new HmsData.Item(1, 2, 3, 1, "typeA", 0, args);
+        HmsData.Item item = new HmsData.Item("0x16100083", 2, 3, 1, "typeA", 0, args);
         HmsData original = new HmsData(List.of(item));
         String json = MessageCodec.toJson(original);
         HmsData back = MessageCodec.fromJson(json, HmsData.class);

@@ -38,7 +38,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * </ul>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/hms.html")
-@Verified(basis = "simulator HmsSimulator.publishHmsEvent L158-L176 已对接 hivemind 验证")
+@Verified(basis = "DJI Dock3 hms.html Data 表（Item.code Type=text，示例 \"0x16100083\"；其余字段 level(0/1/2)/module(0-3)/in_the_sky(0/1)/device_type(text)/imminent(0/1)/args 核对一致）；另与 simulator HmsSimulator.publishHmsEvent 对接验证")
 public record HmsData(
     List<Item> list
 ) {
@@ -48,7 +48,8 @@ public record HmsData(
 
     /** hms 事件 list 数组元素，单个告警项。 */
     public record Item(
-        Integer code,
+        /** 告警码（文档 Type=text，十六进制字符串，如 "0x16100083"） */
+        String code,
         Integer level,
         Integer module,
         Integer inTheSky,

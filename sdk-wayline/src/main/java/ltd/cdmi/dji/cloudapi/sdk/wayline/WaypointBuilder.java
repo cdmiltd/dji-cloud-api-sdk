@@ -251,7 +251,7 @@ public final class WaypointBuilder {
         return new Placemark(point, index, ellipsoidHeight, height,
             useGlobalHeight, useGlobalSpeed, useGlobalHeadingParam, useGlobalTurnParam,
             waypointSpeed, waypointHeadingParam, waypointTurnParam,
-            gimbalPitchAngle, groups);
+            gimbalPitchAngle, null, null, groups);
     }
 
     private static String formatCoordinates(double lon, double lat) {

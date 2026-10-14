@@ -23,7 +23,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * 的请求 data 为空对象 {@code {}}，不携带任何业务字段。本 record 作为这些指令的通用 Request，
  * 避免为每个无参数指令创建空 record 文件。
  *
- * <p><b>适用指令清单（27 个，含 1 个 Pilot @Verified）</b>：
+ * <p><b>适用指令清单（28 个，含 1 个 Pilot + 1 个 requests 通道 @Verified）</b>：
  * <ul>
  *   <li><b>机场硬件控制 — Job（12 个，异步含进度，@Verified）</b>：cover_open/cover_close/cover_force_close/
  *       drone_open/drone_close/charge_open/charge_close/device_reboot/device_format/drone_format/
@@ -35,6 +35,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *       return_home_cancel/flight_setup_abort/in_flight_wayline_cancel</li>
  *   <li><b>DRC 模式（1 个，@Verified）</b>：drc_mode_exit</li>
  *   <li><b>Pilot 上云 — 指令飞行（1 个，@Verified）</b>：poi_mode_exit（退出 POI 环绕模式，data=null）</li>
+ *   <li><b>请求（requests）通道（1 个，@Verified）</b>：flight_areas_get（自定义飞行区配置获取，data=null）</li>
  * </ul>
  *
  * <p><b>不适用（已有专用 POJO，8 个）</b>：esim_activate/esim_operator_switch/sim_slot_switch/

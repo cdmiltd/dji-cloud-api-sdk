@@ -183,7 +183,7 @@ class DrcUpPushDataParseTest {
                 + "\"data\":{\"payload_index\":\"165-0-7\","
                 + "\"camera_state\":{\"camera_mode\":1,\"interval_photo_interval\":5,"
                 + "\"video_resolution\":\"3840x2160\",\"linkage_zoom_state\":0,"
-                + "\"photo_size\":\"4:3\",\"record_time\":120,\"recording_state\":1,"
+                + "\"photo_size\":0,\"record_time\":120,\"recording_state\":1,"
                 + "\"photo_state\":0,\"remain_photo_num\":100,\"remain_record_duration\":3600,"
                 + "\"night_mode_settings\":{\"night_mode\":1,\"denoise_level\":3,"
                 + "\"night_vision_enable\":true,\"infrared_fill_light_enable\":false,"
@@ -198,7 +198,7 @@ class DrcUpPushDataParseTest {
         CameraStatePushData data = msg.data();
         assertEquals("165-0-7", data.payloadIndex());
         assertEquals(1, data.cameraState().cameraMode());
-        assertEquals(5, data.cameraState().intervalPhotoInterval());
+        assertEquals(5.0, data.cameraState().intervalPhotoInterval(), 0.001);
         assertEquals("3840x2160", data.cameraState().videoResolution());
         assertEquals(120, data.cameraState().recordTime());
         assertEquals(1, data.cameraState().recordingState());
@@ -218,7 +218,7 @@ class DrcUpPushDataParseTest {
                 + "\"data\":{\"payload_index\":\"165-0-7\","
                 + "\"camera_state\":{\"camera_mode\":0,\"interval_photo_interval\":5,"
                 + "\"video_resolution\":\"1920x1080\",\"linkage_zoom_state\":0,"
-                + "\"photo_size\":\"4:3\",\"record_time\":0,\"recording_state\":0,"
+                + "\"photo_size\":0,\"record_time\":0,\"recording_state\":0,"
                 + "\"photo_state\":0,\"remain_photo_num\":100,\"remain_record_duration\":3600,"
                 + "\"night_mode_settings\":{\"night_mode\":0,\"denoise_level\":0,"
                 + "\"night_vision_enable\":false,\"infrared_fill_light_enable\":false,"
@@ -270,10 +270,32 @@ class DrcUpPushDataParseTest {
         assertEquals(113.9, data.measureTarget().measureTargetLongitude(), 0.001);
         assertEquals(100.0, data.measureTarget().measureTargetDistance(), 0.001);
         assertEquals(false, data.irLense().screenSplitEnable());
-        assertEquals(2, data.irLense().irZoomFactor());
+        assertEquals(2.0, data.irLense().irZoomFactor(), 0.001);
         assertEquals(-10.5, data.irLense().thermalGlobalTemperatureMin(), 0.001);
         assertEquals(0.4324, data.liveview().liveviewWorldRegion().left(), 0.001);
         assertEquals(0.5609, data.liveview().liveviewWorldRegion().bottom(), 0.001);
+    }
+
+    @Test
+    @DisplayName("drc_camera_osd_info_push — ir_lense.thermal_supported_palette_styles（v1.18 新增）")
+    void testParseCameraOsdInfoPushData_thermalPaletteStyles() {
+        String payload = "{\"method\":\"drc_camera_osd_info_push\","
+                + "\"data\":{\"payload_index\":\"165-0-7\","
+                + "\"ir_lense\":{\"screen_split_enable\":false,\"ir_zoom_factor\":2,"
+                + "\"thermal_current_palette_style\":11,"
+                + "\"thermal_supported_palette_styles\":[0,1,11],"
+                + "\"thermal_gain_mode\":2,\"thermal_isotherm_state\":0,"
+                + "\"thermal_isotherm_upper_limit\":150,\"thermal_isotherm_lower_limit\":-20,"
+                + "\"thermal_global_temperature_min\":-10.5,\"thermal_global_temperature_max\":80.5}},"
+                + "\"seq\":1017}";
+
+        DjiMessage<CameraOsdInfoPushData> msg = DjiMessage.parse(payload, CameraOsdInfoPushData.class);
+
+        CameraOsdInfoPushData data = msg.data();
+        assertEquals(2.0, data.irLense().irZoomFactor(), 0.001);
+        assertEquals(3, data.irLense().thermalSupportedPaletteStyles().size());
+        assertEquals(0, data.irLense().thermalSupportedPaletteStyles().get(0));
+        assertEquals(11, data.irLense().thermalSupportedPaletteStyles().get(2));
     }
 
     @Test

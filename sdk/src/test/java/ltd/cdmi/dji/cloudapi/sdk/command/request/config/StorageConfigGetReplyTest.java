@@ -37,7 +37,7 @@ class StorageConfigGetReplyTest {
             "{\"result\":0,\"output\":{\"bucket\":\"cdmi-bucket\",\"endpoint\":\"oss.example.com\","
             + "\"region\":\"cn-east\",\"provider\":\"aliyun\",\"object_key_prefix\":\"media/\","
             + "\"credentials\":{\"access_key_id\":\"AKID\",\"access_key_secret\":\"SK\","
-            + "\"security_token\":\"STOKEN\",\"expire_time\":1700000000}}}";
+            + "\"security_token\":\"STOKEN\",\"expire\":1700000000}}}";
 
     @Test
     @DisplayName("反序列化：完整 JSON → 嵌套 Output + Credentials")
@@ -54,7 +54,7 @@ class StorageConfigGetReplyTest {
         assertEquals("AKID", cred.accessKeyId());
         assertEquals("SK", cred.accessKeySecret());
         assertEquals("STOKEN", cred.securityToken());
-        assertEquals(1700000000L, cred.expireTime());
+        assertEquals(1700000000L, cred.expire());
     }
 
     @Test
@@ -68,7 +68,7 @@ class StorageConfigGetReplyTest {
         assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
         assertTrue(json.contains("\"bucket\":\"cdmi-bucket\""), "JSON 应含 bucket，实际: " + json);
         assertTrue(json.contains("\"access_key_id\":\"AKID\""), "JSON 应含 access_key_id，实际: " + json);
-        assertTrue(json.contains("\"expire_time\":1700000000"), "JSON 应含 expire_time，实际: " + json);
+        assertTrue(json.contains("\"expire\":1700000000"), "JSON 应含 expire，实际: " + json);
     }
 
     @Test
@@ -82,7 +82,7 @@ class StorageConfigGetReplyTest {
         assertEquals(0, back.result());
         assertEquals("b", back.output().bucket());
         assertEquals("AKID", back.output().credentials().accessKeyId());
-        assertEquals(1700000000L, back.output().credentials().expireTime());
+        assertEquals(1700000000L, back.output().credentials().expire());
     }
 
     @Test

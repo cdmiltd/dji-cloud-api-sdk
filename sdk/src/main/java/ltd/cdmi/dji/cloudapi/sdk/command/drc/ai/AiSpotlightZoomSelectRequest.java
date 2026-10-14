@@ -28,30 +28,27 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *
  * <p>Reply 使用 {@link ltd.cdmi.dji.cloudapi.sdk.command.drc.DrcResultReply}。
  *
- * <p><b>坐标约定</b>：归一化坐标 [0, 1] × 10000 = 实际传输值 [0.0, 10000.0]，
+ * <p><b>坐标约定</b>：归一化坐标 [0, 1] × 10000 = 实际传输值 [0, 10000]（整数），
  * 与 SEI 解析中 {@code dji_ai_obj_2d_box_with_distance} 的 {@code cx/cy/w/h} 单位一致
  * （1/10000 × 画面宽/高）。
  *
- * <p><b>文档修正</b>：DJI 文档原文中 {@code height} 单位描述为"画面宽度"、{@code width} 单位描述为"画面高度"，
- * 疑似文档错误，已修正为 {@code height} → "画面高度"、{@code width} → "画面宽度"。
- *
- * <p>字段说明：
+ * <p>字段说明（文档 Type={@code int}、constraint {@code {max:10000, min:0}}）：
  * <ul>
- *   <li>{@code centerX} — 框的中心点 X 坐标，单位 1/10000 × 画面宽度，范围 [0.0, 10000.0]</li>
- *   <li>{@code centerY} — 框的中心点 Y 坐标，单位 1/10000 × 画面高度，范围 [0.0, 10000.0]</li>
- *   <li>{@code width} — 框的宽度，单位 1/10000 × 画面宽度，范围 [0.0, 10000.0]</li>
- *   <li>{@code height} — 框的高度，单位 1/10000 × 画面高度，范围 [0.0, 10000.0]</li>
+ *   <li>{@code centerX} — 框的中心点 X 坐标，单位 1/10000 × 画面宽度，范围 [0, 10000]</li>
+ *   <li>{@code centerY} — 框的中心点 Y 坐标，单位 1/10000 × 画面高度，范围 [0, 10000]</li>
+ *   <li>{@code width} — 框的宽度，单位 1/10000 × 画面宽度，范围 [0, 10000]</li>
+ *   <li>{@code height} — 框的高度，单位 1/10000 × 画面高度，范围 [0, 10000]</li>
  * </ul>
  *
  * @see ltd.cdmi.dji.cloudapi.sdk.protocol.method.DrcMethod#DRC_AI_SPOTLIGHT_ZOOM_SELECT
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/remote-control.html")
-@Verified(basis = "DJI v1.16 remote-control 文档 drc_ai_spotlight_zoom_select Data 表 center_x/center_y/width/height 字段约束 {max:1, min:0}*10000；height/width 单位描述已修正（文档原文互换）")
+@Verified(basis = "DJI v1.18 remote-control 文档 drc_ai_spotlight_zoom_select Data 表 center_x/center_y/width/height Type=int、约束 {max:10000, min:0}")
 public record AiSpotlightZoomSelectRequest(
-    Double centerX,
-    Double centerY,
-    Double width,
-    Double height
+    Integer centerX,
+    Integer centerY,
+    Integer width,
+    Integer height
 ) {
     public AiSpotlightZoomSelectRequest {
         Objects.requireNonNull(centerX, "centerX 必填，DJI JSON 缺失 center_x 字段");

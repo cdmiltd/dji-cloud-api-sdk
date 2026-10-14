@@ -777,6 +777,7 @@ public final class WaypointTemplate {
             executeHeightMode.code(),
             waylineId != null ? waylineId : 0,
             autoFlightSpeed,
+            null,
             executePlacemarks
         );
 
@@ -822,6 +823,8 @@ public final class WaypointTemplate {
             p.gimbalPitchAngle(),
             headingParam,
             turnParam,
+            p.isRisky(),
+            p.useStraightLine(),
             p.actionGroups()
         );
     }

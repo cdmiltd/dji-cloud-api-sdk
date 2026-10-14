@@ -25,15 +25,15 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>对应 DJI Cloud API {@code flighttask_progress_get} 指令（requests 通道）的请求 data。
  * 用于查询航线任务执行进度。
  *
- * <p>{@code sn} 可选，目标机场 SN；蛙跳场景查询另一机场的任务进度时填写。
+ * <p>{@code targetSn}（wire {@code target_sn}）可选，目标机场 SN；蛙跳场景查询另一机场的任务进度时填写。
  *
  * <p>字段依据：simulator {@code WaylineTaskSimulator} L1186-L1193 已对接 hivemind 验证。
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator WaylineTaskSimulator L1186-L1193 已对接 hivemind 验证")
+@Verified(basis = "DJI flytask progress 示例字段 target_sn；simulator WaylineTaskSimulator L1186-L1193 已对接 hivemind 验证")
 public record FlighttaskProgressGetRequest(
     String flightId,
-    String sn
+    String targetSn
 ) {
     public FlighttaskProgressGetRequest {
         Objects.requireNonNull(flightId, "flightId 必填，DJI JSON 缺失 flight_id 字段");

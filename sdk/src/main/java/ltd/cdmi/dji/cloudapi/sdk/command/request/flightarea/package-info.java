@@ -15,13 +15,15 @@
 /**
  * requests 通道限飞区类指令 POJO。
  *
- * <p>本包含限飞区配置获取指令的 Request/Reply record：
+ * <p>本包含限飞区配置获取指令的 Reply record：
  * <ul>
- *   <li>{@link FlightAreasGetRequest}/{@link FlightAreasGetReply} — flight_areas_get（@Verified）</li>
+ *   <li>{@link FlightAreasGetReply} — flight_areas_get 回复（@Verified）</li>
  * </ul>
  *
- * <p>{@link FlightAreasGetRequest} 为空 record（无请求参数）。
+ * <p>请求侧 {@code flight_areas_get} 的 data 为 {@code null}，按 §5-116 复用
+ * {@link ltd.cdmi.dji.cloudapi.sdk.command.service.NoParameterRequest}
+ * （不再保留专用空 record {@code FlightAreasGetRequest}）。
  *
- * <p>DJI 文档：https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html
+ * <p>DJI 文档：https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/custom-flight-area.html
  */
 package ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea;

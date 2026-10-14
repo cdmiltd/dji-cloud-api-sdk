@@ -26,37 +26,53 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证 {@link AirportBindStatusReply} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
  *
- * <p><b>核心证明</b>：airport_bind_status 回复 data（result: 0=未绑定/1=已绑定）
+ * <p><b>核心证明</b>：airport_bind_status 回复 data（result=返回码 + output.bind_status[]）
  * 能反序列化为 record；缺失 result 时构造器抛 NPE。
  */
 class AirportBindStatusReplyTest {
 
     @Test
-    @DisplayName("反序列化：{\"result\":0} → result()==0（未绑定）")
-    void testDeserializeUnbound() {
-        AirportBindStatusReply reply = MessageCodec.fromJson("{\"result\":0}", AirportBindStatusReply.class);
+    @DisplayName("反序列化：result=0（成功）+ output.bind_status[] → 各字段映射正确")
+    void testDeserialize() {
+        String json = "{\"result\":0,\"output\":{\"bind_status\":[{\"sn\":\"SN-1\","
+                + "\"is_device_bind_organization\":true,\"organization_id\":\"ORG-1\","
+                + "\"organization_name\":\"OrgA\",\"device_callsign\":\"CALL\"}]}}";
+        AirportBindStatusReply reply = MessageCodec.fromJson(json, AirportBindStatusReply.class);
         assertEquals(0, reply.result());
+        AirportBindStatusReply.BindStatus status = reply.output().bindStatus().get(0);
+        assertEquals("SN-1", status.sn());
+        assertEquals(Boolean.TRUE, status.isDeviceBindOrganization());
+        assertEquals("ORG-1", status.organizationId());
+        assertEquals("OrgA", status.organizationName());
+        assertEquals("CALL", status.deviceCallsign());
     }
 
     @Test
-    @DisplayName("反序列化：{\"result\":1} → result()==1（已绑定）")
-    void testDeserializeBound() {
+    @DisplayName("反序列化：非 0 result（错误返回码）")
+    void testDeserializeError() {
         AirportBindStatusReply reply = MessageCodec.fromJson("{\"result\":1}", AirportBindStatusReply.class);
         assertEquals(1, reply.result());
     }
 
     @Test
-    @DisplayName("序列化：AirportBindStatusReply(1) → JSON 含 \"result\":1")
+    @DisplayName("序列化：含 output.bind_status → JSON 含 result 与 bind_status")
     void testSerialize() {
-        AirportBindStatusReply reply = new AirportBindStatusReply(1);
+        AirportBindStatusReply.BindStatus status =
+                new AirportBindStatusReply.BindStatus("SN-1", Boolean.TRUE, "ORG-1", "OrgA", "CALL");
+        AirportBindStatusReply reply =
+                new AirportBindStatusReply(0, new AirportBindStatusReply.Output(java.util.List.of(status)));
         String json = MessageCodec.toJson(reply);
-        assertTrue(json.contains("\"result\":1"), "JSON 应含 \"result\":1，实际: " + json);
+        assertTrue(json.contains("\"result\":0"), "JSON 应含 \"result\":0，实际: " + json);
+        assertTrue(json.contains("bind_status"), "JSON 应含 bind_status，实际: " + json);
     }
 
     @Test
-    @DisplayName("往返闭环：序列化→反序列化保持 result 不变")
+    @DisplayName("往返闭环：序列化→反序列化保持 result/output 不变")
     void testRoundTrip() {
-        AirportBindStatusReply original = new AirportBindStatusReply(1);
+        AirportBindStatusReply.BindStatus status =
+                new AirportBindStatusReply.BindStatus("SN-1", Boolean.FALSE, "ORG-1", "OrgA", "CALL");
+        AirportBindStatusReply original =
+                new AirportBindStatusReply(0, new AirportBindStatusReply.Output(java.util.List.of(status)));
         String json = MessageCodec.toJson(original);
         AirportBindStatusReply back = MessageCodec.fromJson(json, AirportBindStatusReply.class);
         assertEquals(original, back);

@@ -26,9 +26,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class DeviceDomainTest {
 
     @Test
-    @DisplayName("枚举总数应为 3（飞行器 + 遥控器 + 机场）")
+    @DisplayName("枚举总数应为 4（飞行器 + 遥控器 + 机场 + 地面站）")
     void testTotalCount() {
-        assertEquals(3, DeviceDomain.values().length);
+        assertEquals(4, DeviceDomain.values().length);
     }
 
     @Test
@@ -37,14 +37,16 @@ class DeviceDomainTest {
         assertEquals(0, DeviceDomain.AIRCRAFT.value());
         assertEquals(2, DeviceDomain.CONTROLLER.value());
         assertEquals(3, DeviceDomain.DOCK.value());
+        assertEquals(8, DeviceDomain.GROUND_STATION.value());
     }
 
     @Test
-    @DisplayName("fromValue 反查：覆盖全部 3 个 domain")
+    @DisplayName("fromValue 反查：覆盖全部 4 个 domain")
     void testFromValue() {
         assertEquals(DeviceDomain.AIRCRAFT, DeviceDomain.fromValue(0));
         assertEquals(DeviceDomain.CONTROLLER, DeviceDomain.fromValue(2));
         assertEquals(DeviceDomain.DOCK, DeviceDomain.fromValue(3));
+        assertEquals(DeviceDomain.GROUND_STATION, DeviceDomain.fromValue(8));
     }
 
     @Test

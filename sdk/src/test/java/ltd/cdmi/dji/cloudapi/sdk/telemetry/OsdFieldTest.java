@@ -148,9 +148,9 @@ class OsdFieldTest {
     // ==================== 枚举值总数验证 ====================
 
     @Test
-    @DisplayName("枚举总数应为 67（机场 OSD 40 + 飞行器 OSD 27；type_subtype_gimbalindex 占位符不收录）")
+    @DisplayName("枚举总数应为 77（机场 OSD 40 + O4 地面站 OSD 9 + 飞行器 OSD 28；type_subtype_gimbalindex 占位符不收录）")
     void testTotalCount() {
-        assertEquals(67, OsdField.values().length);
+        assertEquals(77, OsdField.values().length);
     }
 
     // ==================== fieldName 唯一性验证 ====================

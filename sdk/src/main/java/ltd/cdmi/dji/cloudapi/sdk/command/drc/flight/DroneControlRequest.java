@@ -26,8 +26,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>飞行器控制（综合控制指令）。已废弃 — Dock1 有效，Dock2/Dock3 已废弃，
  * 建议使用 {@link StickControlRequest}（stick_control）替代。
  *
- * <p><b>无回包机制</b>：成功不回复，仅异常时回包 {@code result=非0}。
- * 本指令无 Reply record。
+ * <p><b>回包</b>：成功不回复，仅异常时回包 {@code {result, output{seq}}}，见
+ * {@link DroneControlReply}。
  *
  * <p>字段说明：
  * <ul>

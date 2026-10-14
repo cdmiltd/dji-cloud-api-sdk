@@ -25,7 +25,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>对应 DJI Cloud API {@code storage_config_get} 指令（requests 通道）的请求 data。
  * 用于获取对象存储配置（媒体/日志上传）。
  *
- * <p>{@code module} 取值：{@code 0=媒体}、{@code 1=日志}。
+ * <p>{@code module} 取值：{@code 0=媒体}、{@code 1=PSDK UI 资源}
+ * （依据 DJI Dock「PSDK 功能」页；原 SDK 注释记为「1=日志」，系错误口径，已更正）。
  *
  * <p>字段依据：simulator {@code MediaUploadSimulator.fetchStorageConfig} L243 已对接 hivemind 验证。
  */

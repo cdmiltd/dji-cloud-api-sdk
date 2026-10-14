@@ -37,8 +37,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@link SpeakerProgress} — 进度（percent/step_key）</li>
  * </ul>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator PsdkSimulator.triggerTtsPlayProgress/triggerAudioPlayProgress 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/psdk.html")
+@Verified(basis = "DJI Dock3 PSDK 功能页（psdk.html）官方文档 speaker_*_play_start_progress 事件 output 表")
 public record SpeakerOutput(
     Integer psdkIndex,
     String status,

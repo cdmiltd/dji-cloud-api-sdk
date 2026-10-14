@@ -60,6 +60,17 @@ public enum ServiceMethod {
     FLIGHTTASK_RECOVERY("flighttask_recovery", "航线任务恢复"),
     /** 航线任务撤销 */
     FLIGHTTASK_UNDO("flighttask_undo", "航线任务撤销"),
+    /**
+     * 航线任务创建（三 Dock 共有，请求 data: {@code flight_id}/{@code type}/{@code file{url,sign}}，
+     * 回复 data 仅 {@code result}）。
+     *
+     * <p><b>DJI 文档标注「废弃」</b>，SDK 补入以忠实协议，标 {@link Deprecated}。
+     * 对应 POJO：{@code FlighttaskCreateRequest}/{@code FlighttaskCreateReply}。
+     *
+     * @deprecated DJI 文档标注 {@code flighttask_create} 已废弃，改用 {@link #FLIGHTTASK_PREPARE}。
+     */
+    @Deprecated
+    FLIGHTTASK_CREATE("flighttask_create", "航线任务创建（已废弃）"),
     /** 返航 */
     RETURN_HOME("return_home", "返航"),
     /** 取消返航 */
@@ -177,7 +188,8 @@ public enum ServiceMethod {
 
     // ===== Dock1 独有（3 个）=====
 
-    /** 中断起飞设置（Dock1 独有，Dock2/Dock3 用 flighttask_stop） */
+    /** 中断起飞设置（Dock1 独有，Dock2/Dock3 用 flighttask_stop）；请求 data=null，
+     * 回复仅 {@code result}（0 成功 / 326108 当前状态不支持 / 326109 飞行器已起飞不支持取消） */
     FLIGHT_SETUP_ABORT("flight_setup_abort", "中断起飞设置"),
     /** 打开推杆（Dock1 独有） */
     PUTTER_OPEN("putter_open", "打开推杆"),
@@ -258,7 +270,18 @@ public enum ServiceMethod {
     /** 请求云控授权（Pilot 上云，data: user_id/user_callsign/control_keys） */
     CLOUD_CONTROL_AUTH_REQUEST("cloud_control_auth_request", "请求云控授权"),
     /** 释放云端控制权（Pilot 上云，data: control_keys 控制权列表） */
-    CLOUD_CONTROL_RELEASE("cloud_control_release", "释放云端控制权");
+    CLOUD_CONTROL_RELEASE("cloud_control_release", "释放云端控制权"),
+
+    // ===== v1.18 新增（O4 远程调试 / FTS / 自定义飞行区）=====
+
+    /** 低电量开关（O4 远程调试，请求 data {@code action} enum_int{0 关闭,1 打开}） */
+    LOW_POWER_SWITCH("low_power_switch", "低电量开关"),
+    /** FTS 飞行终止系统配置（请求 data: {@code fts_server_type} + {@code mqtt_broker}） */
+    FTS_CONFIG("fts_config", "FTS 飞行终止系统配置"),
+    /** 飞行器桨叶停止（V1，请求 data: {@code fts_verification_code}） */
+    DRONE_PROPELLER_STOP_V1("drone_propeller_stop_v1", "飞行器桨叶停止（V1）"),
+    /** 自定义飞行区更新（请求 data=null，复用 {@code NoParameterRequest}；回复复用 {@code NoOutputReply}） */
+    FLIGHT_AREAS_UPDATE("flight_areas_update", "自定义飞行区更新");
 
     private final String methodName;
     private final String description;

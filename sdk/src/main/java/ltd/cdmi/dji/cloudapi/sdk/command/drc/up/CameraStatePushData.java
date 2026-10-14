@@ -36,7 +36,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * DJI Dock3 DRC drc_camera_state_push</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/drc/dock-drc.html")
-@Verified(basis = "simulator DeviceSimulator.buildDrcCameraState 已对接 hivemind 验证 + DJI 文档 photo_format 字段（v1.16.1 新增）")
+@Verified(basis = "DJI Dock3 DRC drc_camera_state_push 字段集（文档 Type 列）：photo_size enum_int{0:4K,4:8K}、interval_photo_interval Type=int（示例 2.5 按 Double 承载）、linkage_zoom_state 保持 int")
 public record CameraStatePushData(
         /** 相机挂载索引（如 {@code 165-0-7}） */
         String payloadIndex,
@@ -49,24 +49,25 @@ public record CameraStatePushData(
      * 相机状态子结构。
      *
      * @param cameraMode             相机模式（枚举值：0=拍照, 1=录像, 2=拍照+录像, ...）
-     * @param intervalPhotoInterval  间隔拍照间隔（秒）
+     * @param intervalPhotoInterval  间隔拍照间隔（秒；文档 Type 列标注 int 但示例为 2.5，按 {@code Double} 承载以兼容小数，§5-27）
      * @param videoResolution        视频分辨率（枚举值）
-     * @param linkageZoomState       联动变焦状态（0=关闭, 1=开启）
-     * @param photoSize              照片尺寸（枚举值）
+     * @param linkageZoomState       联动变焦状态（{@code int} 承载，值域 {@code {0:关闭, 1:开启}}；文档 Type 标 bool 与示例 {@code 0} 冲突，以数字示例为准，§5-35）
+     * @param photoSize              照片尺寸（enum_int：0=4K, 4=8K，§5-5）
      * @param recordTime             已录像时长（秒）
      * @param recordingState         录像状态（0=未录像, 1=录像中）
      * @param photoState             拍照状态（0=空闲, 1=拍照中）
      * @param remainPhotoNum         剩余可拍照数
      * @param remainRecordDuration   剩余可录像时长（秒）
      * @param nightModeSettings      夜景模式设置（Dock3 特有）
-     * @param photoFormat            照片格式（v1.16.1 新增，enum_int：7=RJPEG, 16=DLT664；null 表示旧固件未推送）`n     *                              @see ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.PhotoFormat
+     * @param photoFormat            照片格式（v1.16.1 新增，enum_int：7=RJPEG, 16=DLT664；null 表示旧固件未推送）
+     *                              @see ltd.cdmi.dji.cloudapi.sdk.telemetry.enumtype.PhotoFormat
      */
     public record CameraState(
             int cameraMode,
-            int intervalPhotoInterval,
+            Double intervalPhotoInterval,
             String videoResolution,
             int linkageZoomState,
-            String photoSize,
+            Integer photoSize,
             int recordTime,
             int recordingState,
             int photoState,
@@ -79,12 +80,12 @@ public record CameraStatePushData(
     /**
      * 夜景模式设置（Dock3 特有）。
      *
-     * @param nightMode                  夜景模式（0=关闭, 1=开启）
-     * @param denoiseLevel               降噪等级
+     * @param nightMode                  夜景模式（enum_int：0=关闭, 1=开启, 2=自动）
+     * @param denoiseLevel               降噪等级（enum_int：0=关闭, 1=标准降噪, 2=增强降噪, 3=超强降噪）
      * @param nightVisionEnable          夜视启用
      * @param infraredFillLightEnable    红外补光启用
-     * @param nightSceneModeSuggestion   夜景模式建议
-     * @param isWorking                  是否正在工作
+     * @param nightSceneModeSuggestion   夜景模式建议（值域 {@code {0:无建议, 1:建议开启夜景模式}}）
+     * @param isWorking                  是否正在工作（值域 {@code {0:未工作, 1:工作中}}）
      */
     public record NightModeSettings(
             int nightMode,
@@ -98,8 +99,8 @@ public record CameraStatePushData(
     /**
      * 媒体存储子结构。
      *
-     * @param photoStorageSettings 照片存储位置列表（如 {@code ["current", "ir"]}）
-     * @param videoStorageSettings 视频存储位置列表（如 {@code ["current", "ir"]}）
+     * @param photoStorageSettings 照片存储位置列表（取值 {@code {current, vision, ir}}，如 {@code ["current", "ir"]}）
+     * @param videoStorageSettings 视频存储位置列表（取值 {@code {current, vision, ir}}，如 {@code ["current", "ir"]}）
      */
     public record MediaStorage(
             List<String> photoStorageSettings,

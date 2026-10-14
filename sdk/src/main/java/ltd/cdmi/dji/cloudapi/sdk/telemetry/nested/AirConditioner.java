@@ -15,7 +15,7 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  */
 @Verified(basis = "DJI Cloud API 官方文档机场设备属性 air_conditioner 字段")
 public record AirConditioner(
-        /** 机场空调状态（0=空闲, 1=制冷, 2=制热, 3=除湿, ...） */
+        /** 机场空调状态（枚举 0-15，共 16 值；0=空闲，1=制冷，2=制热，3=除湿，… 各值含义详见 DJI 机场设备属性页 air_conditioner 字段） */
         Integer airConditionerState,
 
         /** 剩余等待可切换时间（秒） */

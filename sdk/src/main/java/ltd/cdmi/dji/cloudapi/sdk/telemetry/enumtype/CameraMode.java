@@ -31,9 +31,10 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <p>camera_mode 标识相机当前工作模式，出现在 M3D/M30 properties 的 cameras 数组元素中，
  * 也出现在 camera_photo_take_progress 事件的 output.ext 字段。
  *
- * <p><strong>注意值域</strong>：M3D 文档定义 4 个值（0-3）；M30 文档额外含 -1=不支持的模式。
- * 本枚举以 M3D properties 文档为准，仅定义 4 个正常值。M30 的 -1 为异常值，开发者可通过
- * {@link #fromCode(int)} 抛 {@link IllegalArgumentException} 捕获。
+ * <p><strong>注意值域</strong>：M3D 文档定义 4 个值（0-3）；v1.18 文档（remote-control 页
+ * {@code drc_camera_state_push.camera_state.camera_mode}）新增 4=定时拍照。M30 文档额外含
+ * -1=不支持的模式。本枚举以 v1.18 文档为准，定义 5 个正常值（0-4）。M30 的 -1 为异常值，
+ * 开发者可通过 {@link #fromCode(int)} 抛 {@link IllegalArgumentException} 捕获。
  *
  * <p><b>Jackson 绑定</b>：通过 {@link JsonValue}（序列化：枚举 → int code）与
  * {@link JsonCreator}（反序列化：int code → 枚举）实现 DJI 协议 int 值与枚举类型的双向绑定，
@@ -52,13 +53,14 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * DJI M3D/M3TD 设备属性 camera_mode 枚举定义</a>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/aircraft/m3d-properties.html")
-@Verified(basis = "DJI M3D properties.html camera_mode 枚举定义（0-3）")
+@Verified(basis = "DJI M3D properties.html camera_mode 枚举 0-3 + v1.18 remote-control.html camera_mode 值 4=定时拍照")
 public enum CameraMode {
 
     PHOTO(0, "拍照"),
     VIDEO(1, "录像"),
     HYPER_LIGHT(2, "智能低光"),
-    PANORAMA(3, "全景拍照");
+    PANORAMA(3, "全景拍照"),
+    TIMED_PHOTO(4, "定时拍");
 
     private static final Map<Integer, CameraMode> BY_CODE =
             Stream.of(values()).collect(Collectors.toUnmodifiableMap(CameraMode::code, Function.identity()));

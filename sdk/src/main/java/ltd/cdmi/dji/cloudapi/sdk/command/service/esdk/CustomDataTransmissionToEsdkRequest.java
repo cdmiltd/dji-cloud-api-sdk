@@ -24,13 +24,14 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * <a href="file:///d:/99.Code/hivemind-simulator/src/main/java/ltd/cdmi/hivemind/simulator/handler/EsdkSimulator.java#L87-L92">
  * EsdkSimulator custom_data_transmission_to_esdk 处理逻辑</a> 已对接 hivemind 验证。
  *
- * <p>DJI Dock3 esdk.html 文档访问受限（cookie 验证），依据 simulator 对接 hivemind 的实现字段。
+ * <p>DJI Dock1「ESDK 互联互通」页显式列出 service
+ * {@code custom_data_transmission_to_esdk}（down，{@code {value(text <256)}}）。
  *
- * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/esdk.html">
- * DJI Dock3 ESDK services</a>
+ * <p>参考：<a href="https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/esdk-transmit-custom-data.html">
+ * DJI Dock3 ESDK 互联互通 services</a>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/esdk.html")
-@Verified(basis = "simulator EsdkSimulator custom_data_transmission_to_esdk 已对接 hivemind 验证（DJI 文档访问受限，依据 hivemind 实测）")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/esdk-transmit-custom-data.html")
+@Verified(basis = "DJI Dock1「ESDK 互联互通」页官方文档显式列出 custom_data_transmission_to_esdk（{value(text <256)}）")
 public record CustomDataTransmissionToEsdkRequest(
         /** 自定义数据内容（长度 < 256 字节） */
         String value

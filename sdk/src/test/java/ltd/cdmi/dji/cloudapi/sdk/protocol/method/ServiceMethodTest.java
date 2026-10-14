@@ -27,9 +27,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class ServiceMethodTest {
 
     @Test
-    @DisplayName("枚举数量：97 个 method")
+    @DisplayName("枚举数量：102 个 method（含 v1.18 新增 5 个）")
     void testCount() {
-        assertEquals(97, ServiceMethod.values().length);
+        assertEquals(102, ServiceMethod.values().length);
+    }
+
+    @Test
+    @DisplayName("v1.18 新增 method：low_power_switch / fts_config / drone_propeller_stop_v1 / flight_areas_update / flighttask_create")
+    void testV118NewMethods() {
+        assertEquals(ServiceMethod.LOW_POWER_SWITCH, ServiceMethod.fromMethodName("low_power_switch").orElseThrow());
+        assertEquals(ServiceMethod.FTS_CONFIG, ServiceMethod.fromMethodName("fts_config").orElseThrow());
+        assertEquals(ServiceMethod.DRONE_PROPELLER_STOP_V1, ServiceMethod.fromMethodName("drone_propeller_stop_v1").orElseThrow());
+        assertEquals(ServiceMethod.FLIGHT_AREAS_UPDATE, ServiceMethod.fromMethodName("flight_areas_update").orElseThrow());
+        assertEquals(ServiceMethod.FLIGHTTASK_CREATE, ServiceMethod.fromMethodName("flighttask_create").orElseThrow());
     }
 
     @Test

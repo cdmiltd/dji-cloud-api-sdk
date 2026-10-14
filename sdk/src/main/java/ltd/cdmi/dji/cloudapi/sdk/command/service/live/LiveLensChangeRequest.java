@@ -41,7 +41,10 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 @Verified(basis = "DJI Dock3 live.html + GitHub others/rc/live.md + rc-pro/live.md — video_id 为 RC Plus/RC Pro 必填，Dock 不适用")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record LiveLensChangeRequest(
+    /** 镜头类型（enum_string：{@code ir} / {@code normal} / {@code wide} / {@code zoom}） */
     String videoType,
+
+    /** 视频流 ID（RC Plus/RC Pro 必填；Dock 不适用） */
     String videoId
 ) {
     public LiveLensChangeRequest {

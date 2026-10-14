@@ -107,9 +107,9 @@ class CameraModeSwitchRequestTest {
     }
 
     @Test
-    @DisplayName("非法 camera_mode int 值（-1, 4）反序列化抛异常：未知枚举值不允许绑定")
+    @DisplayName("非法 camera_mode int 值（-1, 5）反序列化抛异常：未知枚举值不允许绑定")
     void testDeserializeInvalidCameraModeThrows() {
-        // M30 文档的 -1 与越界 4 均应通过 @JsonCreator 调用 fromCode 抛 IllegalArgumentException
+        // M30 文档的 -1 与越界 5 均应通过 @JsonCreator 调用 fromCode 抛 IllegalArgumentException
         // MessageCodec.fromJson 将 Jackson 异常包装为 IllegalStateException
         assertThrows(IllegalStateException.class,
                 () -> MessageCodec.fromJson(
@@ -117,7 +117,7 @@ class CameraModeSwitchRequestTest {
                         CameraModeSwitchRequest.class));
         assertThrows(IllegalStateException.class,
                 () -> MessageCodec.fromJson(
-                        "{\"payload_index\":\"" + PAYLOAD_INDEX + "\",\"camera_mode\":4}",
+                        "{\"payload_index\":\"" + PAYLOAD_INDEX + "\",\"camera_mode\":5}",
                         CameraModeSwitchRequest.class));
     }
 }

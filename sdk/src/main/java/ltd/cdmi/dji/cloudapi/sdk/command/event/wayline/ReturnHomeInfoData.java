@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Objects;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
 import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 import ltd.cdmi.dji.cloudapi.sdk.command.event.PathPoint;
 
@@ -31,11 +30,21 @@ import ltd.cdmi.dji.cloudapi.sdk.command.event.PathPoint;
  *
  * <p>对应枚举：{@link ltd.cdmi.dji.cloudapi.sdk.protocol.method.EventMethod#RETURN_HOME_INFO}
  *
- * <p>字段依据：simulator {@code WaylineTaskSimulator.publishReturnHomeInfo}（L980-L1036）
- * 已对接 hivemind 验证。
+ * <p>{@code planned_path_points} 为<b>全量更新</b>语义：每次上报为完整的规划轨迹点集合，
+ * 而非增量追加。
+ *
+ * <p>{@code last_point_type} 为<b>显示判定</b>语义：标识末段航点类型，用于平台侧返航进度显示
+ * （见 DJI Dock2/Dock3 航线管理页 {@code return_home_info} 字段说明）。
  *
  * <p>{@code home_dock_sn}/{@code multi_dock_home_info} 仅 Dock2/3 支持蛙跳场景，
- * Dock1 无此字段，故标记 @Inferred 待真机验证。
+ * Dock1 无此字段；字段存在性与可选性已由 DJI Dock2/Dock3 官方文档明确声明，故非推断项。
+ *
+ * <p>相关枚举助手（字段类型保持 {@code Integer}）：
+ * {@link ltd.cdmi.dji.cloudapi.sdk.command.event.wayline.enumtype.LastPointType}（last_point_type）、
+ * {@link ltd.cdmi.dji.cloudapi.sdk.command.event.wayline.enumtype.HomePlanStatus}（plan_status）。
+ *
+ * <p>字段依据：DJI Dock3 航线管理页（wayline.html）Data 表 +
+ * simulator {@code WaylineTaskSimulator.publishReturnHomeInfo}（L980-L1036）已对接 hivemind 验证。
  *
  * <p>跨包共享 record：{@link PathPoint}（planned_path_points 数组元素）。
  *
@@ -45,11 +54,7 @@ import ltd.cdmi.dji.cloudapi.sdk.command.event.PathPoint;
  * </ul>
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator WaylineTaskSimulator.publishReturnHomeInfo L980-L1036 已对接 hivemind 验证")
-@Inferred(
-    reason = "home_dock_sn/multi_dock_home_info 仅 Dock2/3 支持，Dock1 无此字段",
-    verifyPoint = "真机验证蛙跳场景字段"
-)
+@Verified(basis = "DJI Dock3 wayline.html return_home_info Data 表 + simulator WaylineTaskSimulator.publishReturnHomeInfo L980-L1036 已对接 hivemind 验证")
 public record ReturnHomeInfoData(
     List<PathPoint> plannedPathPoints,
     Integer lastPointType,

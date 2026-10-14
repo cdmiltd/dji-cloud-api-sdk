@@ -14,8 +14,6 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.request.wayline;
 
-import java.util.Map;
-
 import ltd.cdmi.dji.cloudapi.sdk.codec.MessageCodec;
 
 import org.junit.jupiter.api.DisplayName;
@@ -29,38 +27,49 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证 {@link FlighttaskProgressGetReply} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
  *
- * <p><b>核心证明</b>：flighttask_progress_get 回复 data（result + output，output 结构待真机验证
- * 暂用 Object 承接）能反序列化为 record；缺失 result 时构造器抛 NPE。
+ * <p><b>核心证明</b>：flighttask_progress_get 回复 data（result + output{flight_id, progress{current_step,
+ * percent}, status}）能反序列化为 record；缺失 result 时构造器抛 NPE。
  */
 class FlighttaskProgressGetReplyTest {
 
     @Test
-    @DisplayName("反序列化：{\"result\":0,\"output\":{\"status\":\"sent\"}} → result 绑定，output 为 Map")
+    @DisplayName("反序列化：output 具体结构绑定（flight_id/progress.current_step/percent/status）")
     void testDeserialize() {
-        String json = "{\"result\":0,\"output\":{\"status\":\"sent\"}}";
+        String json = "{\"result\":0,\"output\":{\"flight_id\":\"ft-1\","
+                + "\"progress\":{\"current_step\":2,\"percent\":55},\"status\":\"sent\"}}";
         FlighttaskProgressGetReply reply = MessageCodec.fromJson(json, FlighttaskProgressGetReply.class);
         assertEquals(0, reply.result());
-        assertTrue(reply.output() instanceof Map, "output 应反序列化为 Map");
-        assertEquals("sent", ((Map<?, ?>) reply.output()).get("status"));
+        assertEquals("ft-1", reply.output().flightId());
+        assertEquals(2, reply.output().progress().currentStep());
+        assertEquals(55, reply.output().progress().percent());
+        assertEquals("sent", reply.output().status());
     }
 
     @Test
-    @DisplayName("序列化：FlighttaskProgressGetReply → JSON 含 result 与 output")
+    @DisplayName("序列化：Output → JSON 含 wire key flight_id / current_step")
     void testSerialize() {
-        FlighttaskProgressGetReply reply = new FlighttaskProgressGetReply(0, Map.of("status", "sent"));
+        FlighttaskProgressGetReply reply = new FlighttaskProgressGetReply(0,
+                new FlighttaskProgressGetReply.Output("ft-1",
+                        new FlighttaskProgressGetReply.Progress(2, 55), "sent"));
         String json = MessageCodec.toJson(reply);
         assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
-        assertTrue(json.contains("\"status\":\"sent\""), "JSON 应含 output.status，实际: " + json);
+        assertTrue(json.contains("\"flight_id\":\"ft-1\""), "JSON 应含 flight_id，实际: " + json);
+        assertTrue(json.contains("\"current_step\":2"), "JSON 应含 current_step，实际: " + json);
+        assertTrue(json.contains("\"percent\":55"), "JSON 应含 percent，实际: " + json);
     }
 
     @Test
-    @DisplayName("往返闭环：序列化→反序列化保持 result 不变")
+    @DisplayName("往返闭环：序列化→反序列化保持结构不变")
     void testRoundTrip() {
-        FlighttaskProgressGetReply original = new FlighttaskProgressGetReply(0, Map.of("status", "sent"));
+        FlighttaskProgressGetReply original = new FlighttaskProgressGetReply(0,
+                new FlighttaskProgressGetReply.Output("ft-1",
+                        new FlighttaskProgressGetReply.Progress(2, 55), "sent"));
         String json = MessageCodec.toJson(original);
         FlighttaskProgressGetReply back = MessageCodec.fromJson(json, FlighttaskProgressGetReply.class);
         assertEquals(0, back.result());
-        assertEquals("sent", ((Map<?, ?>) back.output()).get("status"));
+        assertEquals("ft-1", back.output().flightId());
+        assertEquals(2, back.output().progress().currentStep());
+        assertEquals("sent", back.output().status());
     }
 
     @Test

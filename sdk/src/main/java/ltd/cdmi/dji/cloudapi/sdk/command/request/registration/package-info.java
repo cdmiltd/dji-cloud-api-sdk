@@ -18,8 +18,8 @@
  * <p>本包含机场上云注册四步流程的 Request/Reply record：
  * <ul>
  *   <li>{@link ConfigRequest}/{@link ConfigReply} — config（@Verified；Reply data 结构 @Inferred 待真机验证）</li>
- *   <li>{@link AirportBindStatusRequest}/{@link AirportBindStatusReply} — airport_bind_status（@Verified）</li>
- *   <li>{@link AirportOrganizationGetRequest}/{@link AirportOrganizationGetReply} — airport_organization_get（@Verified；Reply output 字段 @Inferred 待真机验证）</li>
+ *   <li>{@link AirportBindStatusRequest}/{@link AirportBindStatusReply} — airport_bind_status（@Verified；Reply 含 output.bind_status[]）</li>
+ *   <li>{@link AirportOrganizationGetRequest}/{@link AirportOrganizationGetReply} — airport_organization_get（@Verified；Reply 含 output.organization_name）</li>
  *   <li>{@link AirportOrganizationBindRequest}/{@link AirportOrganizationBindReply} — airport_organization_bind（@Verified）</li>
  * </ul>
  *

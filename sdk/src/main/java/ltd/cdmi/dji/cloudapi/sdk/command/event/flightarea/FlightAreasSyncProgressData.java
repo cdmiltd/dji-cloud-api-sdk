@@ -38,8 +38,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   <li>{@link SyncFile} — 同步文件（name/checksum）</li>
  * </ul>
  */
-@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Verified(basis = "simulator FlightAreaSimulator.publishSyncProgressEvent L186-L207 已对接 hivemind 验证")
+@DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock1/custom-flight-area.html")
+@Verified(basis = "DJI 自定义飞行区（custom-flight-area）页官方文档 flight_areas_sync_progress 事件")
 public record FlightAreasSyncProgressData(
     String status,
     Integer reason,

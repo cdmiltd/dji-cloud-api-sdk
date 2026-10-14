@@ -53,6 +53,6 @@ public record StorageConfigGetReply(
         String accessKeyId,
         String accessKeySecret,
         String securityToken,
-        Long expireTime
+        Long expire
     ) {}
 }

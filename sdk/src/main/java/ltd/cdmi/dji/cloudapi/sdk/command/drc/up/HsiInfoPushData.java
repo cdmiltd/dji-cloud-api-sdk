@@ -33,9 +33,9 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/drc/dock-drc.html")
 @Verified(basis = "simulator DeviceSimulator.buildHsiInfo 已对接 hivemind 验证")
 public record HsiInfoPushData(
-        /** 上方距离（米，整数） */
+        /** 上方距离（毫米 / mm，整数） */
         int upDistance,
-        /** 下方距离（米，整数） */
+        /** 下方距离（毫米 / mm，整数） */
         int downDistance,
         /** 上方避障开关 */
         boolean upEnable,
@@ -70,7 +70,7 @@ public record HsiInfoPushData(
         /** 水平方向避障工作状态 */
         boolean horizontalWork,
         /**
-         * 360° 周围距离数组，每 30° 一个值（共 12 个），空数组表示任意角度无障碍物。
+         * 360° 周围距离数组，每 1° 一个值（共 360 个），空数组表示任意角度无障碍物。
          *
          * <p>DJI 文档明确：空数组代表无障碍物。
          */

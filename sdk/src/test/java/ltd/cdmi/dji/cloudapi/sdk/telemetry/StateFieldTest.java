@@ -68,7 +68,6 @@ class StateFieldTest {
     @Test
     @DisplayName("fromFieldName 反查飞行器控制/指点飞行/返航相关字段（飞行器 state）")
     void testFromFieldNameAircraftControlSpotCheck() {
-        assertEquals(StateField.DRONE_AUTHORITY_INFO, StateField.fromFieldName("drone_authority_info"));
         assertEquals(StateField.PAYLOADS, StateField.fromFieldName("payloads"));
         assertEquals(StateField.CONTROL_SOURCE, StateField.fromFieldName("control_source"));
         assertEquals(StateField.MODE_CODE_REASON, StateField.fromFieldName("mode_code_reason"));
@@ -156,9 +155,9 @@ class StateFieldTest {
     // ==================== 枚举值总数验证 ====================
 
     @Test
-    @DisplayName("枚举总数应为 34（固件 3 + 运行 3 + 用户配置 4 + 网络 4 + 飞行器控制 4 + 指点 4 + 电池告警 2 + 返航 3 + Home 2 + 航线 1 + PSDK 2 + 水印 1 + Pilot 1；type_subtype_gimbalindex 占位符不收录）")
+    @DisplayName("枚举总数应为 39（固件 3 + 运行 3 + 用户配置 4 + 网络 6 + O4 地面站 4 + 飞行器控制 3 + 指点 4 + 电池告警 2 + 返航 3 + Home 2 + 航线 1 + PSDK 2 + 水印 1 + Pilot 1；type_subtype_gimbalindex 占位符不收录，drone_authority_info 归 OsdField）")
     void testTotalCount() {
-        assertEquals(34, StateField.values().length);
+        assertEquals(39, StateField.values().length);
     }
 
     // ==================== fieldName 唯一性验证 ====================

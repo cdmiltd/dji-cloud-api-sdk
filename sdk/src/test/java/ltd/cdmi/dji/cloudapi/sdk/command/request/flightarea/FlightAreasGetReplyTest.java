@@ -14,9 +14,11 @@
 
 package ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea;
 
+import java.util.List;
+
 import ltd.cdmi.dji.cloudapi.sdk.codec.MessageCodec;
+import ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea.FlightAreasGetReply.File;
 import ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea.FlightAreasGetReply.Output;
-import ltd.cdmi.dji.cloudapi.sdk.command.request.flightarea.FlightAreasGetReply.SyncFile;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,46 +30,61 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * 验证 {@link FlightAreasGetReply} 的 Jackson 反序列化、序列化、往返闭环与必填字段校验。
  *
- * <p><b>核心证明</b>：flight_areas_get 回复 data（result + output{file{name,checksum}}）
- * 能反序列化为嵌套 record；缺失 result 时构造器抛 NPE。
+ * <p><b>核心证明</b>：flight_areas_get 回复 data（result + output{files[{name,url,checksum,size}]}）
+ * 能反序列化为嵌套 record 数组；缺失 result 时构造器抛 NPE。
  */
 class FlightAreasGetReplyTest {
 
     private static final String SAMPLE_JSON =
-            "{\"result\":0,\"output\":{\"file\":{\"name\":\"flight_area.geofence\",\"checksum\":\"abc123\"}}}";
+            "{\"result\":0,\"output\":{\"files\":[{\"name\":\"flight_area.geofence\","
+            + "\"url\":\"https://oss.example.com/fa.geofence\",\"checksum\":\"abc123\",\"size\":1024}]}}";
 
     @Test
-    @DisplayName("反序列化：完整 JSON → 嵌套 Output + SyncFile")
+    @DisplayName("反序列化：完整 JSON → 嵌套 Output + File 数组")
     void testDeserialize() {
         FlightAreasGetReply reply = MessageCodec.fromJson(SAMPLE_JSON, FlightAreasGetReply.class);
         assertEquals(0, reply.result());
-        SyncFile file = reply.output().file();
-        assertEquals("flight_area.geofence", file.name());
-        assertEquals("abc123", file.checksum());
+        List<File> files = reply.output().files();
+        assertEquals(1, files.size());
+        assertEquals("flight_area.geofence", files.get(0).name());
+        assertEquals("https://oss.example.com/fa.geofence", files.get(0).url());
+        assertEquals("abc123", files.get(0).checksum());
+        assertEquals(1024, files.get(0).size());
     }
 
     @Test
-    @DisplayName("序列化：含嵌套 Output/SyncFile 的 record → JSON")
+    @DisplayName("序列化：含嵌套 Output/File 的 record → JSON（files 为数组）")
     void testSerialize() {
-        SyncFile file = new SyncFile("flight_area.geofence", "abc123");
-        Output output = new Output(file);
+        File file = new File("flight_area.geofence", "https://oss.example.com/fa.geofence", "abc123", 1024);
+        Output output = new Output(List.of(file));
         FlightAreasGetReply reply = new FlightAreasGetReply(0, output);
         String json = MessageCodec.toJson(reply);
         assertTrue(json.contains("\"result\":0"), "JSON 应含 result:0，实际: " + json);
-        assertTrue(json.contains("\"name\":\"flight_area.geofence\""), "JSON 应含 name，实际: " + json);
-        assertTrue(json.contains("\"checksum\":\"abc123\""), "JSON 应含 checksum，实际: " + json);
+        assertTrue(json.contains("\"files\":["), "JSON 应含 files 数组，实际: " + json);
+        assertTrue(json.contains("\"url\":\"https://oss.example.com/fa.geofence\""), "JSON 应含 url，实际: " + json);
+        assertTrue(json.contains("\"size\":1024"), "JSON 应含 size，实际: " + json);
     }
 
     @Test
     @DisplayName("往返闭环：序列化→反序列化保持嵌套结构不变")
     void testRoundTrip() {
-        SyncFile file = new SyncFile("fa.bin", "deadbeef");
-        FlightAreasGetReply original = new FlightAreasGetReply(0, new Output(file));
+        File file = new File("fa.bin", "https://oss.example.com/fa.bin", "deadbeef", 2048);
+        FlightAreasGetReply original = new FlightAreasGetReply(0, new Output(List.of(file)));
         String json = MessageCodec.toJson(original);
         FlightAreasGetReply back = MessageCodec.fromJson(json, FlightAreasGetReply.class);
         assertEquals(0, back.result());
-        assertEquals("fa.bin", back.output().file().name());
-        assertEquals("deadbeef", back.output().file().checksum());
+        assertEquals("fa.bin", back.output().files().get(0).name());
+        assertEquals("https://oss.example.com/fa.bin", back.output().files().get(0).url());
+        assertEquals(2048, back.output().files().get(0).size());
+    }
+
+    @Test
+    @DisplayName("空 files 数组：result=0 且 output.files 为空数组（无自定义飞行区）")
+    void testEmptyFiles() {
+        String json = "{\"result\":0,\"output\":{\"files\":[]}}";
+        FlightAreasGetReply reply = MessageCodec.fromJson(json, FlightAreasGetReply.class);
+        assertEquals(0, reply.result());
+        assertTrue(reply.output().files().isEmpty());
     }
 
     @Test

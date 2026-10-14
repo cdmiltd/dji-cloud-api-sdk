@@ -71,6 +71,7 @@ public record FileUploadCallbackData(
     public record MediaFileMetadata(
         Double absoluteAltitude,
         String createTime,
+        /** 云台偏航角（DJI 媒体文档 file_upload_callback 示例为字符串，如 "0.000000"，保持 String 对齐示例） */
         String gimbalYawDegree,
         Double relativeAltitude,
         ShootPosition shootPosition

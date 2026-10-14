@@ -17,26 +17,48 @@ package ltd.cdmi.dji.cloudapi.sdk.command.request.wayline;
 import java.util.Objects;
 
 import ltd.cdmi.dji.cloudapi.sdk.annotation.DocUrl;
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 /**
  * flighttask_progress_get 指令回复 data。
  *
  * <p>对应 DJI Cloud API {@code flighttask_progress_get} 指令（requests 通道）的回复 data。
- * {@code result=0} 成功；{@code output} 结构待 DJI 文档确认，暂用 {@code Object} 类型承接。
+ * {@code result=0} 成功；{@code output} 含 {@code flight_id} / {@code progress} / {@code status}。
  *
- * <p>字段依据：simulator 返回原始 JsonNode 未解析 output 结构，回复字段待真机验证。
+ * <p>字段依据：DJI Dock2/Dock3 wayline 页 {@code flighttask_progress_get} reply
+ * {@code {result, output{flight_id, progress{current_step(int), percent(int)}, status(text)}}}。
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt/dock/dock3/wayline.html")
-@Inferred(
-    reason = "simulator 返回原始 JsonNode 未解析 output 结构，回复字段待真机验证",
-    verifyPoint = "真机验证 flighttask_progress_get 回复 output 字段结构"
-)
+@Verified(basis = "DJI Dock3 wayline.html flighttask_progress_get reply：{result, output{flight_id, progress{current_step, percent}, status}}")
 public record FlighttaskProgressGetReply(
     Integer result,
-    Object output
+    Output output
 ) {
     public FlighttaskProgressGetReply {
         Objects.requireNonNull(result, "result 必填，DJI JSON 缺失 result 字段");
     }
+
+    /**
+     * 输出结构。
+     *
+     * @param flightId 航线任务 ID
+     * @param progress 执行进度
+     * @param status   任务状态（text）
+     */
+    public record Output(
+        String flightId,
+        Progress progress,
+        String status
+    ) {}
+
+    /**
+     * 执行进度。
+     *
+     * @param currentStep 当前步骤（int）
+     * @param percent     进度百分比（int，0-100）
+     */
+    public record Progress(
+        Integer currentStep,
+        Integer percent
+    ) {}
 }

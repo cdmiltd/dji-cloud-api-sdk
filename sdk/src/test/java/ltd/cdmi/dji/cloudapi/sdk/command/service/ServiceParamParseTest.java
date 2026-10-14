@@ -84,27 +84,34 @@ class ServiceParamParseTest {
     // ==================== debug 包（5 个）====================
 
     @Test
-    @DisplayName("rtk_calibration — cali_type（@Inferred）")
+    @DisplayName("rtk_calibration — devices[]（@Verified O4 cmd 文档）")
     void testParseRtkCalibration() {
         String payload = "{\"method\":\"rtk_calibration\","
-                + "\"data\":{\"cali_type\":1},"
+                + "\"data\":{\"devices\":[{\"sn\":\"SN-1\",\"type\":1,\"module\":\"3\","
+                + "\"data\":{\"longitude\":116.3,\"latitude\":40.0,\"height\":45.5}}]},"
                 + "\"tid\":\"t1\",\"bid\":\"b1\"}";
         DjiMessage<RtkCalibrationRequest> msg =
                 DjiMessage.parse(payload, RtkCalibrationRequest.class);
-        assertEquals(1, msg.data().caliType());
+        assertEquals(1, msg.data().devices().size());
+        RtkCalibrationRequest.Device device = msg.data().devices().get(0);
+        assertEquals("SN-1", device.sn());
+        assertEquals(1, device.type());
+        assertEquals("3", device.module());
+        assertEquals(116.3, device.data().longitude());
+        assertEquals(45.5, device.data().height());
     }
 
     @Test
-    @DisplayName("battery_store_mode_switch — mode（类型化枚举 BatteryStoreMode，@Inferred 字段名）")
+    @DisplayName("battery_store_mode_switch — action（类型化枚举 BatteryStoreMode）")
     void testParseBatteryStoreModeSwitch() {
         String payload = "{\"method\":\"battery_store_mode_switch\","
-                + "\"data\":{\"mode\":1},"
+                + "\"data\":{\"action\":1},"
                 + "\"tid\":\"t1\",\"bid\":\"b1\"}";
         DjiMessage<BatteryStoreModeSwitchRequest> msg =
                 DjiMessage.parse(payload, BatteryStoreModeSwitchRequest.class);
-        // mode 字段类型化为 BatteryStoreMode 枚举，Jackson 通过 @JsonCreator 将 int 1 绑定为 PLANNING
-        assertEquals(BatteryStoreMode.PLANNING, msg.data().mode());
-        assertEquals(1, msg.data().mode().code());
+        // action 字段类型化为 BatteryStoreMode 枚举，Jackson 通过 @JsonCreator 将 int 1 绑定为 PLANNING
+        assertEquals(BatteryStoreMode.PLANNING, msg.data().action());
+        assertEquals(1, msg.data().action().code());
     }
 
     @Test
@@ -119,14 +126,14 @@ class ServiceParamParseTest {
     }
 
     @Test
-    @DisplayName("air_conditioner_mode_switch — mode（@Inferred）")
+    @DisplayName("air_conditioner_mode_switch — action")
     void testParseAirConditionerModeSwitch() {
         String payload = "{\"method\":\"air_conditioner_mode_switch\","
-                + "\"data\":{\"mode\":1},"
+                + "\"data\":{\"action\":1},"
                 + "\"tid\":\"t1\",\"bid\":\"b1\"}";
         DjiMessage<AirConditionerModeSwitchRequest> msg =
                 DjiMessage.parse(payload, AirConditionerModeSwitchRequest.class);
-        assertEquals(1, msg.data().mode());
+        assertEquals(1, msg.data().action());
     }
 
     @Test

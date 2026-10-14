@@ -18,7 +18,7 @@
  * <p>本包含 DJI Cloud API {@code status} 通道上报 data 与 {@code status_reply} 回复 data record：
  * <ul>
  *   <li>{@link UpdateTopoData} — update_topo 上报 data（@Verified）</li>
- *   <li>{@link UpdateTopoReplyData} — update_topo 回复 data（@Verified；sub_type 字段 @Inferred 待真机验证）</li>
+ *   <li>{@link UpdateTopoReplyData} — update_topo 回复 data（@Verified，仅含 result）</li>
  * </ul>
  *
  * <p>DJI 文档：https://developer.dji.com/doc/cloud-api-tutorial/cn/api-reference/dock-to-cloud/mqtt-dock.html

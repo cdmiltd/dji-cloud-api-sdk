@@ -21,7 +21,7 @@ import java.util.Set;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import ltd.cdmi.dji.cloudapi.sdk.annotation.Inferred;
+import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -41,9 +41,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DrcMethodTest {
 
     @Test
-    @DisplayName("枚举总数应为 42（19 catalog + 11 AI + 1 RC Plus 2 + 11 状态与相机参数控制）")
+    @DisplayName("枚举总数应为 68（42 + v1.18 新增 26 个 drc_ 相机/云台方法）")
     void testTotalCount() {
-        assertEquals(42, DrcMethod.values().length);
+        assertEquals(68, DrcMethod.values().length);
+    }
+
+    @Test
+    @DisplayName("v1.18 新增 drc_ 相机/云台方法反查（抽样）")
+    void testV118NewDrcMethods() {
+        assertEquals(DrcMethod.DRC_CAMERA_PHOTO_TAKE, DrcMethod.fromMethodName("drc_camera_photo_take").orElseThrow());
+        assertEquals(DrcMethod.DRC_CAMERA_RECORDING_START, DrcMethod.fromMethodName("drc_camera_recording_start").orElseThrow());
+        assertEquals(DrcMethod.DRC_CAMERA_MODE_SWITCH, DrcMethod.fromMethodName("drc_camera_mode_switch").orElseThrow());
+        assertEquals(DrcMethod.DRC_GIMBAL_RESET, DrcMethod.fromMethodName("drc_gimbal_reset").orElseThrow());
+        assertEquals(DrcMethod.DRC_IR_METERING_MODE_SET, DrcMethod.fromMethodName("drc_ir_metering_mode_set").orElseThrow());
+        assertEquals(DrcMethod.DRC_PSDK_WIDGET_VALUE_SET, DrcMethod.fromMethodName("drc_psdk_widget_value_set").orElseThrow());
+        assertEquals(DrcMethod.DRC_VIDEO_STORAGE_SET, DrcMethod.fromMethodName("drc_video_storage_set").orElseThrow());
     }
 
     @Test
@@ -112,11 +124,10 @@ class DrcMethodTest {
     }
 
     @Test
-    @DisplayName("HEART_BEAT 标注 @Inferred，reason/verifyPoint 非空")
-    void testHeartBeatInferred() throws NoSuchFieldException {
-        Inferred inf = DrcMethod.class.getField("HEART_BEAT").getAnnotation(Inferred.class);
-        assertNotNull(inf, "HEART_BEAT 必须标注 @Inferred");
-        assertTrue(!inf.reason().isBlank(), "reason 不能为空");
-        assertTrue(!inf.verifyPoint().isBlank(), "verifyPoint 不能为空");
+    @DisplayName("HEART_BEAT 升格 @Verified，basis 非空")
+    void testHeartBeatVerified() throws NoSuchFieldException {
+        Verified ver = DrcMethod.class.getField("HEART_BEAT").getAnnotation(Verified.class);
+        assertNotNull(ver, "HEART_BEAT 必须标注 @Verified");
+        assertTrue(!ver.basis().isBlank(), "basis 不能为空");
     }
 }

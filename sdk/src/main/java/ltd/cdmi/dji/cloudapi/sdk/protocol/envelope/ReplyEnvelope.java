@@ -33,7 +33,8 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  *   "data": {
  *     "result": 0,
  *     "output": { ... }
- *   }
+ *   },
+ *   "gateway": "gateway_sn"
  * }
  * }</pre>
  *
@@ -44,16 +45,33 @@ import ltd.cdmi.dji.cloudapi.sdk.annotation.Verified;
  * @param timestamp 时间戳（毫秒）
  * @param method    方法名，与请求 method 一致
  * @param data      回复数据，含 result 与 output
+ * @param gateway   网关设备 SN（可空，DJI 文档 services_reply 示例含此字段，与 {@code EventEnvelope} 对齐）
  */
 @DocUrl("https://developer.dji.com/doc/cloud-api-tutorial/cn/overview/connection.html")
-@Verified(basis = "DJI Cloud API 官方文档回复消息信封字段定义：data.result 表示执行结果，data.output 为输出")
+@Verified(basis = "DJI Cloud API 官方文档回复消息信封字段定义：data.result 表示执行结果，data.output 为输出；services_reply 示例含 gateway（网关设备 SN，可空）")
 public record ReplyEnvelope(
         String tid,
         String bid,
         long timestamp,
         String method,
-        ReplyData data
+        ReplyData data,
+        String gateway
 ) {
+
+    /**
+     * 兼容构造：省略 {@code gateway}（置 null）。
+     *
+     * <p>保留历史 5 参调用点零破坏；新代码如需承载 gateway，使用规范构造器（6 参）。
+     *
+     * @param tid       事务 ID
+     * @param bid       批次 ID
+     * @param timestamp 时间戳（毫秒）
+     * @param method    方法名，与请求 method 一致
+     * @param data      回复数据，含 result 与 output
+     */
+    public ReplyEnvelope(String tid, String bid, long timestamp, String method, ReplyData data) {
+        this(tid, bid, timestamp, method, data, null);
+    }
 
     /**
      * 静态工厂：构造无 output 的成功回复（data={result:0, output:null}）。
