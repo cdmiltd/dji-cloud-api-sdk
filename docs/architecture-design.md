@@ -371,7 +371,7 @@ ltd.cdmi.dji.cloudapi.sdk
 ├── telemetry/               ← 遥测数据层
 │   ├── OsdField.java            77 个 OSD 字段名枚举（pushMode=0，周期推送；含 O4/FTS_INFO/drone_authority_info）
 │   ├── StateField.java          39 个 State 字段名枚举（pushMode=1，变化推送；含 best_link_gateway/flysafe_database_version）
-│   ├── DroneOsd.java            飞行器 OSD record（38 组件；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion）
+│   ├── DroneOsd.java            飞行器 OSD record（39 组件；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion）
 │   ├── DockOsd.java             机场 OSD record（40 组件；rainfall Double→Integer、heading Integer→Double、新增 droneAuthorityInfo）
 │   ├── RcOsd.java               遥控器 OSD record（7 组件；battery→capacityPercent(@JsonAlias)、删 modeCode）
 │   ├── GroundStationOsd.java    O4 地面站 OSD record（21 组件）【v1.18 新增】
@@ -731,7 +731,7 @@ sdk/
 |---|---|
 | `OsdField` | 77 个 OSD 字段名（pushMode=0，周期推送），含 `fromFieldName` |
 | `StateField` | 39 个 State 字段名（pushMode=1，变化推送），含 `fromFieldName` |
-| `DroneOsd` | 飞行器 OSD record（38 组件，camelCase；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion） |
+| `DroneOsd` | 飞行器 OSD record（39 组件，camelCase；v1.18 新增 ftsInfo/bestLinkGateway/flysafeDatabaseVersion） |
 | `DockOsd` | 机场 OSD record（40 组件，camelCase；v1.18 rainfall Double→Integer、heading Integer→Double、新增 droneAuthorityInfo） |
 | `RcOsd` | 遥控器 OSD record（7 组件：latitude/longitude/capacityPercent/country/wirelessLink/drcState/height；`battery`→`capacityPercent`(@JsonAlias)、删 modeCode） |
 | `GroundStationOsd` | O4 地面站 OSD record（21 组件，camelCase）【v1.18 新增】 |

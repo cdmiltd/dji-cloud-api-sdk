@@ -2232,102 +2232,94 @@
 
 ### 10.3 DroneOsdTest (`@Tag("characterization")`)
 
-#### shouldHave33Components_whenRecord
-- 输入：`DroneOsd.class.getRecordComponents()`
-- 预期：组件数 33
-- 断言：`assertThat(DroneOsd.class.getRecordComponents()).hasSize(33)`
-- 基准：doc:aircraft/properties.html | characterization | green
+> DroneOsd 现 **39 组件**（v1.18 新增 ftsInfo / bestLinkGateway / flysafeDatabaseVersion / storage / nightLightsState / obstacleAvoidance 等）。
+> 对应测试类：`DroneOsdTest`（序列化）+ `DroneOsdBuilderTest`（Builder 合并辅助）。
 
-#### shouldComponentsBeCamelCase_whenInspected
-- 输入：所有组件名
-- 预期：匹配 `^[a-z][a-zA-Z0-9]*$`（camelCase）
-- 断言：`assertThat(names).allMatch(n -> n.matches("^[a-z][a-zA-Z0-9]*$"))`
-- 基准：char | characterization | green
+#### testNonNullSerializationExcludesNullFields
+- Given：`minimalOsd(0, 22.5, 113.9, null)`（仅前 3 字段非 null，其余为 null）
+- When：`MessageCodec.toJson(osd)`
+- Then：含 `"mode_code":0` / `"latitude":22.5` / `"longitude":113.9`；不含 `"height"` / `"elevation"` / `"extras"` 等 null 字段键
+- 断言：`assertTrue(json.contains("\"mode_code\":0"))` 等 + `assertFalse(json.contains("\"height\""))`
+- 基准：doc:aircraft/properties.html | NON_NULL 部分字段序列化 | green
 
-#### shouldContainKeyFields_whenInspected
-- 输入：组件名列表
-- 预期：含 `modeCode, latitude, longitude, height, elevation, gear, battery, positionState, firmwareVersion`
-- 断言：`assertThat(names).contains("modeCode","latitude","longitude","height","elevation","gear","battery","positionState","firmwareVersion")`
-- 基准：doc:aircraft/properties.html | characterization | green
+#### testExtrasExpandedToJsonTopLevel
+- Given：`extras = {"52-0-0": {"gimbal_pitch": 0.0, "zoom_factor": 2.0}}`
+- When：`MessageCodec.toJson(osd)`
+- Then：JSON 顶层含 `"52-0-0"`，负载属性在该 key 下；不含包裹键 `"extras"`
+- 基准：char | @JsonAnyGetter 动态 key（M30 负载索引）| green
 
-#### shouldAllowNullFields_whenInstance
-- 输入：`new DroneOsd(null,null,...,null)`（全部 null）
-- 预期：不抛异常，各访问器返回 null（包装类型允许 null）
-- 断言：
-  ```java
-  DroneOsd osd = new DroneOsd(null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,null);
-  assertThat(osd.modeCode()).isNull();
-  assertThat(osd.latitude()).isNull();
-  ```
-- 基准：char | characterization | green
+#### testFixedFieldsAndExtrasCoexist
+- Given：固定字段 + `extras = {"42-0-0": {"gimbal_yaw": 10.0}}`
+- When：`MessageCodec.toJson(osd)`
+- Then：固定字段与动态 key 输出于同一 JSON 层级（非嵌套）
+- 基准：char | green
 
-#### shouldDeserializeSnakeCaseJson_whenAllFieldsNull
-- 输入：`"{\"mode_code\":0,\"latitude\":22.0,\"gear\":1}"` → `fromJson(DroneOsd.class)`
-- 预期（特征化，当前行为）：`modeCode()`=null（因 #1 snake_case 不匹配）
-- 断言：`assertThat(osd.modeCode()).isNull()`（锁定当前 bug 行为，修复后此测试需更新为 `isEqualTo(0)`）
-- 基准：char | characterization | green
+> 以下 6 例来自 `DroneOsdBuilderTest`（生产类 `DroneOsd.Builder`）：
+
+#### builder_应构造包含所有设置字段的Record
+- Given：`DroneOsd.builder().modeCode(2).latitude(30.67).longitude(104.07).elevation(120.0).horizontalSpeed(15.5).battery(battery).build()`
+- Then：已设置字段值一致；未设置字段（height / verticalSpeed）为 null
+- 基准：char | green
+
+#### toBuilder_应保留原Record全部字段值
+- Given：完整构造的 record → `toBuilder().build()`
+- Then：`assertEquals(original, rebuilt)`（逐字段等值）
+- 基准：char | green
+
+#### mergeNonNullFrom_应仅覆盖SourceNonNull字段
+- Given：existing（完整）+ partial（仅 horizontalSpeed / elevation 非 null）
+- Then：partial 非 null 字段覆盖 existing；其余保留原值
+- 基准：char | 高频遥测合并语义 | green
+
+#### mergeNonNullFrom_null_不应改变任何字段
+- Given：`mergeNonNullFrom(null)`
+- Then：`assertEquals(existing, merged)`
+- 基准：char | green
+
+#### mergeNonNullFrom_多次调用应实现多源合并
+- Given：existing → mergeNonNullFrom(source1) → mergeNonNullFrom(source2)
+- Then：各源非 null 字段依次覆盖；未覆盖字段保留 existing 值
+- 基准：char | green
+
+#### builder_应支持嵌套Record构造
+- Given：`builder().battery(new Battery(100, 1500, null, null, null))`
+- Then：`osd.battery().capacityPercent()` = 100，`remainFlightTime()` = 1500
+- 基准：char | green
 
 ### 10.4 RcOsdTest (`@Tag("characterization")`)
 
-#### shouldHave5Components_whenRecord
-- 输入：`RcOsd.class.getRecordComponents()`
-- 预期：`modeCode, latitude, longitude, battery, country`
-- 断言：`assertThat(names).containsExactly("modeCode","latitude","longitude","battery","country")`
-- 基准：doc:remote-controller/properties.html | characterization | green
+> RcOsd 现 **7 组件**：`latitude, longitude, capacityPercent, country, wirelessLink, drcState, height`。
+> v1.18：删除 `modeCode`（§5-122-②）；`battery`→`capacityPercent`（§5-122-①），`@JsonAlias("battery")` 兼容旧 wire key。
 
-#### shouldComponentsBeCamelCase
-- 断言：`assertThat(names).allMatch(n -> n.matches("^[a-z][a-zA-Z0-9]*$"))`
-- 基准：char | characterization | green
+#### testDeserializeCapacityPercent
+- Given：`{"capacity_percent":88}` → `fromJson(RcOsd.class)`
+- Then：`capacityPercent()` = 88
+- 基准：doc:others/rc/properties.html | wire key capacity_percent | green
 
-#### shouldAccessComponents_whenInstance
-- 输入：`new RcOsd(0,22.0,113.0,80,"CN")`
-- 预期：各访问器返回对应值
-- 断言：
-  ```java
-  RcOsd osd = new RcOsd(0,22.0,113.0,80,"CN");
-  assertThat(osd.modeCode()).isEqualTo(0);
-  assertThat(osd.battery()).isEqualTo(80);
-  assertThat(osd.country()).isEqualTo("CN");
-  ```
-- 基准：char | characterization | green
+#### testDeserializeLegacyBatteryAlias
+- Given：`{"battery":75}` → `fromJson(RcOsd.class)`
+- Then：`capacityPercent()` = 75（`@JsonAlias("battery")` 兼容旧版 wire key）
+- 基准：char | 兼容旧 SDK 字段名 | green
 
-#### shouldDeserializeSnakeCaseJson_whenAllFieldsNull
-- 输入：`"{\"mode_code\":0,\"latitude\":22.0}"` → `fromJson(RcOsd.class)`
-- 预期（特征化，当前行为）：`modeCode()`=null（因 #1）
-- 断言：`assertThat(osd.modeCode()).isNull()`
-- 基准：char | characterization | green
+#### testSerialize
+- Given：`new RcOsd(null, null, 66, null, null, null, null)`
+- When：`MessageCodec.toJson(osd)`
+- Then：JSON 含 `"capacity_percent":66`
+- 基准：char | green
 
-### 10.5 DockOsdTest (`@Tag("characterization")`)
+#### testNoModeCodeComponent
+- Given：`RcOsd.class.getRecordComponents()`
+- Then：组件名不含 `modeCode`（RC Pro / RC Plus 2 / 通用 RC 三页文档均无 `mode_code` → §5-122-② 删除）
+- 断言：`assertTrue(!names.contains("modeCode"))`
+- 基准：doc:others/rc/properties.html | breaking 删除 | green
 
-#### shouldHave37Components_whenRecord
-- 输入：`DockOsd.class.getRecordComponents()`
-- 预期：组件数 37
-- 断言：`assertThat(DockOsd.class.getRecordComponents()).hasSize(37)`
-- 基准：doc:dock2/properties.html | characterization | green
+### 10.5 DockOsd（当前无独立 characterization 测试类）
 
-#### shouldComponentsBeCamelCase
-- 输入：所有组件名
-- 预期：匹配 `^[a-z][a-zA-Z0-9]*$`
-- 断言：`assertThat(names).allMatch(n -> n.matches("^[a-z][a-zA-Z0-9]*$"))`
-- 基准：char | characterization | green
-
-#### shouldContainKeyFields_whenInspected
-- 输入：组件名列表
-- 预期：含 `modeCode, latitude, longitude, droneChargeState, networkState, droneInDock`（代表性，实现时按源码调整）
-- 断言：`assertThat(names).contains("modeCode","latitude","longitude")`
-- 基准：doc:dock2/properties.html | characterization | green
-
-#### shouldAllowNullFields_whenInstance
-- 输入：全 null 构造（按组件数填 null）
-- 预期：不抛异常
-- 断言：`assertThatCode(() -> new DockOsd(null,...)).doesNotThrowAnyException()`
-- 基准：char | characterization | green
-
-#### shouldDeserializeSnakeCaseJson_whenAllFieldsNull
-- 输入：`"{\"mode_code\":1,\"latitude\":22.0}"` → `fromJson(DockOsd.class)`
-- 预期（特征化，当前行为）：`modeCode()`=null（因 #1）
-- 断言：`assertThat(osd.modeCode()).isNull()`
-- 基准：char | characterization | green
+- 现状：`DockOsdTest.java` 不存在（原文档描述的「37 组件」断言与对应测试类均无实现，属陈旧记录）。
+- DockOsd 现 **40 组件**：`modeCode, latitude, longitude, height, …, positionState, selfConvergeCoordinate, droneAuthorityInfo`。
+- 字段覆盖分散于：§10.1 `OsdFieldTest`（OsdField 字段枚举反查，含 DockOsd 字段）+ 生产类 `DockOsd.Builder`（合并辅助）。
+- 如需独立 characterization 测试类，待补（不阻塞发布）。
+- 基准：char | 无独立测试类 | ⬜
 
 ---
 
@@ -3018,7 +3010,7 @@
 - 预期：`Double.class`（Dock2/Dock3 页均 `double`，-180~180；文档未声明废弃 → 不加 `@Deprecated`）
 - 基准：spec | 报告 §4 L393（A27-1） | green
 
-- 对应测试类：`DockOsdTest`（特征化扩展）
+- 对应测试类：（无独立测试类，待补；`rainfall`→`Integer`、`heading`→`Double` 已在源码落地，见 §10.5）
 
 ### 21.2 HmsData.Item：`code` Integer → String（`command/event/alert`）
 
