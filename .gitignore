@@ -24,5 +24,8 @@ dji-sdk-final-review/
 doc-change-tracker/
 .trae-html-share-packages/
 
+# Internal docs (never committed; also excluded from public mirror)
+docs/wechat-article/
+
 # Maven settings (contains credentials)
 settings.xml
